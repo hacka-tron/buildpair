@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buildpair Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700&display=swap">
+<style>
+
+/* Layout: a walkthrough sheet. Page chrome follows the viewer's theme; device frames are fixed-light specimens of the Margin Notes direction. */
+:root {
+  --page: #f4f5f8;
+  --ink: #141823;
+  --muted: #5b6272;
+  --rule: #dfe2ea;
+  --accent: #3557d6;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-head: "Schibsted Grotesk", "Inter", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --page: #10131a; --ink: #e8eaf0; --muted: #9aa1b2; --rule: #2a2f3b; --accent: #8da8ff; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --page: #10131a; --ink: #e8eaf0; --muted: #9aa1b2; --rule: #2a2f3b; --accent: #8da8ff; color-scheme: dark; }
+body { background: var(--page); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.55; padding-inline: 16px; padding-block: 0 72px; }
+.wrap { max-width: 1180px; margin-inline: auto; }
+header.top { padding-block: 44px 8px; max-width: 70ch; }
+header.top h1 { font-family: var(--font-head); font-weight: 700; font-size: clamp(30px, 4.6vw, 46px); line-height: 1.06; letter-spacing: -0.02em; margin: 0 0 14px; text-wrap: balance; }
+header.top p { color: var(--muted); margin: 0 0 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--muted); margin-top: 14px; }
+.legend b { color: var(--ink); font-weight: 600; }
+section.step { margin-top: 52px; padding-top: 26px; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
+@media (min-width: 900px) { section.step { grid-template-columns: auto minmax(0, 1fr); } }
+.explain { display: grid; gap: 10px; min-width: 0; max-width: 60ch; }
+.explain h2 { font-family: var(--font-head); font-size: 26px; line-height: 1.15; letter-spacing: -0.01em; margin: 0; }
+.explain p { margin: 0; color: var(--muted); }
+.explain ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; }
+.explain b { color: var(--ink); }
+.order { grid-row: 1; }
+@media (min-width: 900px) { .order { grid-row: auto; } }
+
+/* Phone */
+.phone { width: 300px; max-width: 100%; border-radius: 38px; padding: 9px; background: #0d0f14; box-shadow: 0 18px 40px -18px rgba(10, 14, 30, 0.45); }
+.screen { border-radius: 30px; overflow: hidden; min-height: 620px; display: flex; flex-direction: column; }
+.status { display: flex; justify-content: space-between; align-items: center; padding: 12px 22px 4px; font-size: 12px; font-weight: 600; }
+.status i { width: 14px; height: 8px; border-radius: 2px; border: 1.2px solid currentColor; display: block; }
+.scr-body { padding: 6px 16px 16px; display: grid; gap: 12px; flex: 1; align-content: start; }
+.tabbar { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 6px 14px; font-size: 10px; text-align: center; }
+.tabbar span { display: grid; justify-items: center; gap: 3px; }
+.tabbar svg { width: 20px; height: 20px; }
+
+/* Margin Notes specimen tokens */
+.mn { --bg: #ffffff; --ink: #151a26; --sub: #5d6474; --faint: #8a90a0; --line: #e6e8ef; --blue: #3557d6; --royal: #4169e1; --tint: #eef2fe; --note-ink: #1d2c66; --ok: #1f8a4c; --ok-soft: #e6f4ec; --warn: #a35b00; --warn-soft: #fdf1e1; background: var(--bg); color: var(--ink); font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif; font-size: 13px; line-height: 1.4; }
+.mn .lt { font-size: 27px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 2px 0 0; }
+.mn .sub { font-size: 12px; color: var(--sub); }
+.mn .sect { font-size: 13px; font-weight: 650; margin: 4px 0 -4px; }
+.mn .goal { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); }
+.mn .goal:first-of-type { border-top: 0; padding-top: 0; }
+.mn .g-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mn .g-name { font-size: 15px; font-weight: 650; }
+.mn .bar { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.mn .bar i { display: block; height: 100%; background: var(--royal); border-radius: 3px; }
+.mn .g-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--sub); font-size: 12px; font-variant-numeric: tabular-nums; }
+.mn .faces { display: flex; align-items: center; }
+.mn .faces i { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; font-style: normal; font-size: 9px; font-weight: 700; color: #fff; }
+.mn .faces i + i { margin-left: -6px; }
+.mn .lock { display: inline-flex; align-items: center; gap: 4px; color: var(--faint); font-size: 12px; }
+.mn .lock svg { width: 12px; height: 12px; }
+.mn .todo { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; padding: 9px 0; border-top: 1px solid var(--line); }
+.mn .todo:first-of-type { border-top: 0; }
+.mn .ck { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #b4bac8; margin-top: 1px; }
+.mn .ck.on { background: var(--royal); border-color: var(--royal); position: relative; }
+.mn .ck.on::after { content: ""; position: absolute; left: 5px; top: 3px; width: 4px; height: 8px; border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(45deg); }
+.mn .todo .for { color: var(--sub); font-size: 11px; }
+.mn .done-t { color: var(--faint); text-decoration: line-through; }
+.mn .tag { font-size: 10px; font-weight: 600; color: var(--sub); background: #f1f2f6; border-radius: 4px; padding: 1px 5px; margin-left: 4px; }
+.mn .margin { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; }
+.mn .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700; flex: none; }
+.mn .av.lg { width: 40px; height: 40px; font-size: 14px; }
+.mn .note { background: var(--tint); border-radius: 4px 12px 12px 12px; padding: 10px 11px; display: grid; gap: 7px; color: var(--note-ink); }
+.mn .note b { font-size: 11px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 1px; }
+.mn .who { font-size: 11px; color: var(--sub); }
+.mn .event { display: grid; grid-template-columns: 26px 1fr; gap: 8px; color: var(--sub); font-size: 12px; align-items: center; }
+.mn .event .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--royal); justify-self: center; }
+.mn .btn { background: var(--blue); color: #fff; border-radius: 10px; padding: 12px; font-weight: 600; font-size: 15px; text-align: center; }
+.mn .btn.sec { background: transparent; color: var(--blue); border: 1px solid var(--line); }
+.mn .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.mn .chip.ok { background: var(--ok-soft); color: var(--ok); }
+.mn .chip.warn { background: var(--warn-soft); color: var(--warn); }
+.mn .tabbar { border-top: 1px solid var(--line); color: var(--faint); background: #fff; }
+.mn .tabbar .on { color: var(--blue); }
+.mn .quiet { display: grid; gap: 8px; border: 1px dashed #c9cfdd; border-radius: 10px; padding: 10px 11px; color: var(--sub); }
+.mn .quiet strong { color: var(--ink); font-weight: 600; }
+.mn .actions { display: flex; gap: 6px; }
+.mn .actions span { font-size: 12px; font-weight: 600; color: var(--blue); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; }
+.mn .opt { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 11px 0; border-top: 1px solid var(--line); }
+.mn .opt:first-of-type { border-top: 0; }
+.mn .radio { box-sizing: border-box; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #b4bac8; margin-top: 1px; }
+.mn .radio.on { border: 6px solid var(--blue); }
+.mn .opt-t { font-weight: 600; font-size: 14px; }
+.mn .people { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mn .person { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 3px; font-size: 12px; }
+.mn .person.on { border-color: var(--blue); background: var(--tint); color: var(--note-ink); font-weight: 600; }
+.mn .person i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 9px; font-weight: 700; color: #fff; }
+.mn .sheet-handle { width: 36px; height: 5px; border-radius: 3px; background: #d6d9e2; justify-self: center; }
+.mn .reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+.mn .reasons span { font-size: 11px; background: var(--tint); color: var(--note-ink); padding: 3px 8px; border-radius: 6px; font-weight: 500; }
+.mn .card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; display: grid; gap: 10px; }
+.mn .lbl { font-size: 11px; font-weight: 600; color: var(--sub); }
+.mn .row { display: flex; gap: 10px; align-items: center; }
+.mn .quick { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; background: #f3f5fa; border-radius: 10px; padding: 9px 12px; font-size: 14px; }
+.mn .quick span { color: var(--blue); font-weight: 700; }
+.mn .quick em { font-style: normal; font-size: 11px; color: var(--blue); background: var(--tint); border-radius: 4px; padding: 1px 6px; flex-basis: 100%; width: fit-content; margin-left: 16px; }
+.mn .thread { display: grid; gap: 10px; }
+.mn .ev { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; }
+.mn .ev-mark { width: 22px; height: 22px; border-radius: 50%; background: var(--royal); position: relative; justify-self: center; }
+.mn .ev-mark::after { content: ""; position: absolute; left: 8px; top: 5px; width: 4px; height: 9px; border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(45deg); }
+.mn .ev-mark.skip { background: #fff; border: 1.5px solid #b4bac8; }
+.mn .ev-mark.skip::after { left: 5px; top: 9px; width: 9px; height: 0; border-right: 0; border-bottom: 2px solid #8a90a0; transform: none; }
+.mn .ev-text { font-size: 13px; }
+.mn .ev-text .when { color: var(--faint); font-size: 11px; margin-left: 4px; }
+.mn .reacts { display: flex; gap: 4px; margin-top: 4px; }
+.mn .reacts span { font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--sub); }
+.mn .reacts span.mine { border-color: var(--royal); color: var(--blue); background: var(--tint); }
+.mn .update-msg { background: #f3f5fa; border-radius: 4px 12px 12px 12px; padding: 9px 11px; }
+.mn .sys { text-align: center; font-size: 11px; color: var(--sub); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 6px 0; }
+.mn .compose { display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--line); padding: 10px 12px 14px; background: #fff; }
+.mn .compose .field { flex: 1; border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; color: var(--faint); font-size: 13px; }
+.mn .compose .pill { font-size: 12px; font-weight: 600; color: var(--blue); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; }
+.mn .seg { display: grid; grid-template-columns: 1fr 1fr; background: #eceef3; border-radius: 9px; padding: 2px; font-size: 12px; font-weight: 600; text-align: center; }
+.mn .seg span { padding: 6px; border-radius: 7px; color: var(--sub); }
+.mn .seg .on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+/* Web frame */
+.browser-wrap { overflow-x: auto; padding-bottom: 6px; }
+.browser { width: 940px; border-radius: 12px; overflow: hidden; border: 1px solid #c9cdd8; box-shadow: 0 18px 40px -22px rgba(10, 14, 30, 0.45); }
+.chrome { background: #e9ebf0; padding: 9px 12px; display: flex; gap: 6px; align-items: center; }
+.chrome i { width: 10px; height: 10px; border-radius: 50%; background: #c4c8d2; }
+.chrome .url { margin-left: 12px; background: #fff; border-radius: 6px; padding: 3px 12px; font-size: 11px; color: #5d6474; font-family: "Inter", sans-serif; }
+.web { display: grid; grid-template-columns: 190px 1fr 280px; min-height: 520px; }
+.web .side { background: #f7f8fb; border-right: 1px solid var(--line); padding: 18px 12px; display: grid; gap: 4px; align-content: start; font-size: 13px; }
+.web .side .brand { font-weight: 700; font-size: 15px; margin: 0 8px 14px; display: flex; align-items: center; gap: 8px; }
+.web .side .brand svg { width: 22px; height: 22px; }
+.web .side a { color: var(--sub); text-decoration: none; padding: 7px 10px; border-radius: 7px; display: flex; justify-content: space-between; }
+.web .side a.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.web .side .count { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.web .main { padding: 24px 28px; display: grid; gap: 14px; align-content: start; }
+.web .main h3 { font-size: 24px; letter-spacing: -0.02em; margin: 0; }
+.web .marg { border-left: 1px solid var(--line); background: #fbfbfd; padding: 24px 18px; display: grid; gap: 14px; align-content: start; }
+.web .marg h4 { margin: 0; font-size: 12px; font-weight: 600; color: var(--sub); }
+
+footer.end { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--rule); max-width: 70ch; }
+footer.end h2 { font-family: var(--font-head); font-size: 22px; margin: 0 0 8px; }
+footer.end p { color: var(--muted); margin: 0 0 8px; }
+
+/* Watching options: chat-list rows and an activity inbox, in the Margin Notes specimen tokens. */
+.grid4 { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 8px; }
+.opt-col { display: grid; gap: 12px; width: 300px; max-width: 100%; align-content: start; }
+.opt-col h2 { font-family: var(--font-head); font-size: 22px; line-height: 1.2; margin: 0; }
+.opt-col .rec { font-size: 12px; font-weight: 600; color: var(--accent); }
+.opt-col p { margin: 0; font-size: 14px; color: var(--muted); }
+.opt-col ul { margin: 0; padding-left: 18px; font-size: 14px; color: var(--muted); display: grid; gap: 4px; }
+.mn .topbar { display: flex; justify-content: space-between; align-items: center; }
+.mn .bell { position: relative; width: 30px; height: 30px; display: grid; place-items: center; color: var(--ink); }
+.mn .bell svg { width: 22px; height: 22px; }
+.mn .bell b { position: absolute; top: 0; right: -2px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--blue); color: #fff; font-size: 10px; display: grid; place-items: center; padding: 0 4px; }
+.mn .chats { display: grid; }
+.mn .chat { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.mn .chat:first-child { border-top: 0; }
+.mn .chat .av { width: 40px; height: 40px; font-size: 14px; }
+.mn .chat .t { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn .chat .t span { font-weight: 400; color: var(--sub); }
+.mn .chat .p { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn .chat .p.unread { color: var(--ink); font-weight: 500; }
+.mn .chat .r { display: grid; justify-items: end; gap: 4px; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.mn .dot-u { width: 9px; height: 9px; border-radius: 50%; background: var(--blue); }
+.mn .mini-bar { height: 3px; border-radius: 2px; background: var(--line); margin-top: 5px; overflow: hidden; }
+.mn .mini-bar i { display: block; height: 100%; background: var(--royal); }
+.mn .quiet-tag { font-size: 10px; font-weight: 600; color: var(--warn); background: var(--warn-soft); border-radius: 4px; padding: 1px 6px; }
+.mn .goalchips { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.mn .goalchips span { font-size: 10px; color: var(--sub); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.mn .needs { background: #f7f8fb; border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; }
+.mn .needs-h { font-size: 12px; font-weight: 600; color: var(--sub); padding: 8px 0 2px; }
+.mn .need { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 12px; }
+.mn .need:first-of-type { border-top: 0; }
+.mn .need .av { width: 28px; height: 28px; font-size: 11px; }
+.mn .need .go { font-size: 12px; font-weight: 600; color: var(--blue); }
+.mn .act { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.mn .act:first-of-type { border-top: 0; }
+.mn .act .av { width: 32px; height: 32px; font-size: 12px; }
+.mn .act .when { display: block; font-size: 11px; color: var(--faint); margin-top: 2px; }
+.mn .act.new { background: linear-gradient(90deg, var(--tint), transparent 85%); margin-inline: -16px; padding-inline: 16px; }
+.mn .grp-h { font-size: 12px; font-weight: 600; color: var(--sub); margin-top: 4px; }
+.mn .tabbar5 { grid-template-columns: repeat(5, 1fr); }
+.mn .sugg { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 0 9px 36px; }
+.mn .sugg span { font-size: 11px; font-weight: 600; color: var(--blue); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+.mn .needs .need + .sugg + .need { border-top: 1px solid var(--line); }
+.mn .sugg-bar { display: flex; gap: 6px; overflow-x: auto; padding: 8px 12px 0; border-top: 1px solid var(--line); background: #fff; }
+.mn .sugg-bar span { flex: none; font-size: 12px; font-weight: 600; color: var(--blue); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; background: #fff; }
+.mn .sugg-bar + .compose { border-top: 0; }
+</style>
+<style>
+/* Spaces additions */
+.phones-pair { align-items: flex-start; }
+.mn .sp-h { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 -2px; }
+.mn .sp-name { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 650; }
+.mn .sp-ico { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 700; }
+.mn .sp-who { font-size: 11px; color: var(--sub); display: flex; align-items: center; gap: 4px; }
+.mn .sp-who svg { width: 11px; height: 11px; }
+.mn .kind { font-size: 10px; font-weight: 600; color: var(--sub); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+.mn .rollup { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; font-size: 13px; }
+.mn .rollup-ico { width: 22px; height: 22px; border-radius: 6px; background: #f1f2f6; display: grid; place-items: center; justify-self: center; color: var(--sub); font-size: 11px; font-weight: 700; }
+.mn .rollup .items { color: var(--sub); font-size: 12px; margin-top: 2px; }
+.mn .split-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 650; color: var(--sub); margin-top: 2px; }
+.mn .split-h a { color: var(--blue); font-weight: 600; text-decoration: none; }
+.mn .listbox { border: 1px solid var(--line); border-radius: 12px; padding: 2px 12px; }
+.mn .listbox .todo { padding: 8px 0; }
+.mn .habit-dots { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.mn .habit-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.mn .habit-dots i.d { background: var(--royal); }
+.mn .collapsed { font-size: 12px; color: var(--sub); padding: 8px 0; border-top: 1px solid var(--line); }
+.mn .divider { text-align: center; font-size: 11px; color: var(--faint); position: relative; margin: 2px 0; }
+.mn .place { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.mn .place:first-of-type { border-top: 0; }
+.mn .member { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.mn .member:first-of-type { border-top: 0; }
+.mn .member .av { width: 32px; height: 32px; font-size: 12px; }
+.mn .role { font-size: 11px; color: var(--sub); }
+.web .side .grp { font-size: 11px; font-weight: 600; color: var(--faint); margin: 14px 10px 4px; }
+.web .side a .sp-ico { margin-right: 8px; }
+.web .side a span.l { display: flex; align-items: center; }
+.mn .box { box-sizing: border-box; width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid #b4bac8; display: grid; place-items: center; margin-top: 1px; }
+.mn .box.on { background: var(--blue); border-color: var(--blue); }
+.mn .box.on::after { content: ""; width: 9px; height: 5px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
+.mn .dots-row { grid-template-columns: 20px 1fr auto; }
+.mn .more { font-size: 11px; letter-spacing: 1px; color: var(--faint); padding: 2px 6px; border-radius: 6px; align-self: center; }
+.mn .more.on { background: #eceef3; color: var(--ink); }
+.mn .menu { position: absolute; right: 22px; top: 172px; width: 196px; background: #fff; border-radius: 12px; box-shadow: 0 12px 32px -8px rgba(15, 20, 40, 0.28), 0 0 0 1px rgba(15, 20, 40, 0.06); padding: 4px 0; z-index: 2; }
+.mn .mi { display: flex; align-items: center; gap: 10px; padding: 9px 14px; font-size: 14px; }
+.mn .mi svg { width: 17px; height: 17px; color: var(--sub); }
+.mn .mi.sep { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 11px; }
+.mn .toast-bar { margin-top: 150px; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #1b2131; color: #fff; border-radius: 12px; padding: 11px 14px; font-size: 13px; }
+.mn .toast-bar b { color: #a9beff; font-weight: 600; }
+.mn .who-pop { position: absolute; left: 0; top: 26px; background: #fff; border-radius: 10px; box-shadow: 0 10px 28px -8px rgba(15, 20, 40, 0.3), 0 0 0 1px rgba(15, 20, 40, 0.06); padding: 8px 12px; font-size: 12px; display: grid; gap: 3px; z-index: 3; min-width: 120px; }
+.mn .who-pop .wp-h { font-weight: 650; padding-bottom: 4px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
+.mn .chev { width: 12px; height: 12px; color: var(--faint); flex: none; }
+.mn .cl { display: inline-flex; align-items: center; gap: 5px; }
+.mn .needs-h.cl { display: flex; }
+.mn .newsp { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px dashed #c3c9d8; border-radius: 10px; color: var(--blue); font-weight: 600; font-size: 14px; }
+.mn .newsp .plus { width: 22px; height: 22px; border-radius: 6px; background: var(--tint); display: grid; place-items: center; font-size: 16px; line-height: 1; }
+.mn .sp-ico.big { width: 44px; height: 44px; border-radius: 12px; font-size: 18px; flex: none; }
+.mn .swatches { display: flex; gap: 10px; }
+.mn .swatches i { width: 26px; height: 26px; border-radius: 50%; display: block; }
+.mn .swatches i.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #151a26; }
+.mn .navrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.mn .nr-r { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--sub); font-size: 13px; }
+.mn .nr-r .chev { width: 14px; height: 14px; }
+.mn .sp-ico.edit { position: relative; }
+.mn .sp-ico.edit em { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 9px; font-weight: 600; color: var(--sub); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 0 5px; }
+.mn .gear { color: var(--ink); width: 26px; height: 26px; display: grid; place-items: center; }
+.mn .gear svg { width: 22px; height: 22px; }
+.mn .sgrp-h { font-size: 11px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: 0.04em; margin: 6px 0 -2px 12px; }
+.mn .sgrp { background: #fff; border-radius: 12px; padding: 0 12px; }
+.mn .srow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.mn .srow:first-child { border-top: 0; }
+.mn .srow span { color: var(--sub); font-size: 13px; }
+.mn .srow .ok-t { color: var(--ok); font-weight: 600; }
+.mn .srow .pro { font-size: 10px; font-weight: 700; color: var(--blue); background: var(--tint); border-radius: 4px; padding: 1px 6px; }
+.mn .srow.danger { color: #c0392b; }
+.mn .switch { width: 42px; height: 26px; border-radius: 13px; background: #d9dce4; position: relative; flex: none; }
+.mn .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.mn .switch.on { background: var(--blue); }
+.mn .switch.on::after { left: 18px; }
+.mn .trow { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; }
+.mn .goal-l { display: grid; grid-template-columns: 16px 1fr; gap: 4px 8px; align-items: center; font-size: 12px; }
+.mn .goal-l .ck { width: 6px; height: 6px; border: 0; background: var(--royal); justify-self: center; margin: 0; }
+.mn .plusbtn { width: 30px; height: 30px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; }
+.mn .plusbtn svg { width: 16px; height: 16px; }
+.mn .addrow { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
+.mn .addrow:first-child { border-top: 0; }
+.mn .ai { width: 32px; height: 32px; border-radius: 9px; background: var(--tint); color: var(--blue); display: grid; place-items: center; }
+.mn .ai svg { width: 17px; height: 17px; }
+.mn .sprow { grid-template-columns: 40px 1fr auto; }
+.mn .req-tag { font-size: 10px; font-weight: 700; color: #fff; background: var(--blue); border-radius: 4px; padding: 1px 6px; }
+.mn .disc-tag { font-size: 10px; font-weight: 600; color: var(--sub); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.mn .addinline { color: var(--blue); font-weight: 600; font-size: 13px; padding: 9px 0; border-top: 1px solid var(--line); }
+.mn.screen, .screen.mn { position: relative; }
+.mn .fab { position: absolute; right: 16px; bottom: 76px; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; box-shadow: 0 8px 18px -6px rgba(53, 87, 214, 0.6), 0 2px 4px rgba(15, 20, 40, 0.15); z-index: 4; }
+.mn .fab svg { width: 22px; height: 22px; }
+.mn .qa-input { border: 1.5px solid var(--blue); border-radius: 10px; padding: 11px 12px; font-size: 15px; display: flex; align-items: center; }
+.mn .caret { width: 1.5px; height: 18px; background: var(--blue); margin-left: 2px; }
+.mn .kbd { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; background: #d3d6dd; margin: 4px -16px -16px; padding: 8px 6px 14px; }
+.mn .kbd span { background: #fff; border-radius: 5px; text-align: center; font-size: 13px; padding: 8px 0; box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+.mn .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.mn .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1d2c66; background: var(--tint); border-radius: 999px; padding: 4px 10px 4px 5px; }
+.mn .badge .bi { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; }
+.mn .badge .bi svg { width: 11px; height: 11px; }
+.mn .badges.sm .badge { font-size: 11px; padding: 2px 8px 2px 3px; }
+.mn .badges.sm .badge:not(:has(.bi)) { padding-left: 8px; background: #f3f4f8; color: var(--sub); }
+.mn .badges.sm .bi { width: 15px; height: 15px; }
+.mn .compl { display: flex; flex-wrap: wrap; gap: 6px; }
+.mn .compl span { font-size: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; }
+.mn .compl b { color: var(--blue); margin-left: 3px; }
+.mn .todo.sel { background: var(--tint); margin-inline: -12px; padding-inline: 12px; }
+.mn .ck.selck { border: 2px solid var(--blue); background: #fff; position: relative; }
+.mn .ck.selck::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--blue); }
+.mn .actionbar { display: grid; grid-template-columns: repeat(4, 1fr) 40px; align-items: center; border-top: 1px solid var(--line); background: #fff; padding: 8px 6px 14px; font-size: 10px; color: var(--ink); text-align: center; }
+.mn .actionbar span { display: grid; justify-items: center; gap: 3px; }
+.mn .actionbar svg { width: 20px; height: 20px; color: var(--blue); }
+.mn .actionbar .adots svg { color: var(--sub); }
+.mn .actionbar .adots.on { background: #eceef3; border-radius: 8px; padding: 6px 0; }
+.mn .mrow { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.mn .mrow:first-child { border-top: 0; }
+.mn .mrow svg { width: 18px; height: 18px; color: var(--sub); }
+.mn .mrow.danger { color: #c0392b; }
+.mn .mrow.danger svg { color: #c0392b; }
+.mn .rowplus { width: 20px; height: 20px; color: var(--blue); display: grid; place-items: center; font-size: 24px; font-weight: 400; line-height: 1; }
+.mn .addfield { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; font-size: 14px; color: var(--faint); background: #fff; }
+.mn .rolesel { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--sub); }
+.mn .dd { width: 14px; height: 14px; }
+.mn .dd-wrap { display: inline-flex; vertical-align: middle; color: var(--sub); margin-left: 2px; }
+.mn .access { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; }
+.mn .acc-ic { width: 32px; height: 32px; border-radius: 50%; background: #eef0f4; color: var(--sub); display: grid; place-items: center; }
+.mn .acc-ic svg { width: 16px; height: 16px; }
+.mn .copylink { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 8px; margin: 2px 0 10px; color: var(--blue); font-weight: 600; font-size: 13px; }
+.mn .copylink svg, .mn .copy-sm svg { width: 15px; height: 15px; }
+.mn .copy-sm { display: inline-flex; align-items: center; gap: 5px; color: var(--blue); font-weight: 600; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
+.mn .addfield.typing { color: var(--ink); border-color: var(--blue); border-width: 1.5px; display: flex; align-items: center; }
+.mn .suggest { background: #fff; border-radius: 12px; box-shadow: 0 10px 28px -8px rgba(15, 20, 40, 0.28), 0 0 0 1px rgba(15, 20, 40, 0.06); padding: 4px 12px; margin-top: -6px; }
+.mn .sg-h { font-size: 11px; font-weight: 600; color: var(--sub); padding: 8px 0 2px; }
+.mn .sg-row { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: center; padding: 7px 0; font-size: 13px; }
+.mn .sg-row .av { width: 32px; height: 32px; font-size: 11px; }
+.mn .idic { width: 32px; height: 32px; border-radius: 50%; background: var(--tint); color: var(--blue); display: grid; place-items: center; font-weight: 700; }
+.mn .idchip { display: inline-block; margin-top: 4px; font-size: 11px; color: var(--sub); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.mn .invrow { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; }
+.mn .acc-ic.inv { background: var(--tint); color: var(--blue); }
+.mn .qa-line { font-size: 17px; display: flex; align-items: center; padding: 2px 0; }
+.mn .qa-tools { display: flex; align-items: center; gap: 8px; }
+.mn .qt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--sub); background: #f1f2f6; border-radius: 8px; padding: 6px 9px; }
+.mn .qt svg { width: 15px; height: 15px; }
+.mn .qt.on { color: var(--blue); background: var(--tint); font-weight: 600; }
+.mn .qa-send { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; }
+.mn .qa-send svg { width: 17px; height: 17px; }
+.mn .minical { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.mn .mc-h { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; color: var(--sub); }
+.mn .mc-h b { color: var(--ink); }
+.mn .mc-g { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; row-gap: 4px; font-variant-numeric: tabular-nums; }
+.mn .mc-g i { font-style: normal; padding: 4px 0; border-radius: 50%; width: 26px; justify-self: center; }
+.mn .mc-g.dow i { color: var(--faint); font-size: 10px; font-weight: 600; }
+.mn .mc-g i.o { color: var(--faint); }
+.mn .mc-g i.t { color: var(--blue); font-weight: 700; }
+.mn .mc-g i.s { background: var(--blue); color: #fff; font-weight: 600; }
+.mn .stepper { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 14px; }
+.mn .stepper span { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--blue); font-weight: 600; }
+.mn .stepper em { font-style: normal; color: var(--sub); font-size: 13px; }
+.mn .dim { position: absolute; inset: 0; background: rgba(15, 20, 40, 0.38); z-index: 5; }
+.mn .float-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; }
+.mn .float-sheet > .scr-body { box-shadow: 0 -8px 24px -10px rgba(15, 20, 40, 0.35); }
+.brandboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.bb-card { background: #ffffff; border: 1px solid #dfe2ea; border-radius: 16px; padding: 22px; display: grid; gap: 14px; align-content: start; justify-items: start; color: #151a26; }
+.bb-l { font-size: 13px; color: #5b6272; line-height: 1.45; }
+.bp-mark { width: 72px; height: 72px; }
+.bp-lockup { display: flex; align-items: center; gap: 10px; }
+.bp-lockup svg { width: 44px; height: 44px; }
+.bp-lockup span { font-family: "Schibsted Grotesk", "Inter", sans-serif; font-weight: 700; font-size: 34px; letter-spacing: -0.03em; color: #151a26; }
+.bp-lockup.sm svg { width: 30px; height: 30px; }
+.bp-lockup.sm span { font-size: 22px; }
+.icons { display: flex; align-items: center; gap: 14px; }
+.appicon { width: 64px; height: 64px; border-radius: 15px; background: #4169e1; display: grid; place-items: center; box-shadow: 0 6px 14px -6px rgba(53, 87, 214, 0.6); }
+.appicon svg { width: 46px; height: 46px; }
+.appicon.round { border-radius: 50%; }
+.favicon { width: 28px; height: 28px; border-radius: 6px; background: #fff; border: 1px solid #dfe2ea; display: grid; place-items: center; }
+.favicon svg { width: 22px; height: 22px; }
+.mn .welcome-h { font-family: "Schibsted Grotesk", "Inter", sans-serif; font-size: 32px; line-height: 1.05; letter-spacing: -0.03em; margin: 0; }
+.screen.lock { background: linear-gradient(180deg, #2c3c74 0%, #4a5f9e 55%, #8b98c4 100%); color: #fff; display: flex; flex-direction: column; align-items: center; padding: 34px 12px 12px; gap: 6px; font-family: -apple-system, "Inter", system-ui, sans-serif; }
+.lk-time { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.lk-date { font-size: 15px; opacity: 0.85; margin-bottom: 18px; }
+.notif { width: 100%; background: rgba(255,255,255,0.78); color: #151a26; border-radius: 16px; padding: 10px 12px; display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; font-size: 13px; }
+.nt-ic { width: 32px; height: 32px; border-radius: 8px; background: #4169e1; display: grid; place-items: center; }
+.nt-ic svg { width: 24px; height: 24px; }
+.nt-top { display: flex; justify-content: space-between; font-size: 11px; color: #5b6272; }
+.nt-top b { font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+.nt-t { font-weight: 600; margin-top: 1px; }
+.nt-b { color: #2b3140; }
+.screen.msg { background: #fff; font-family: -apple-system, "Inter", system-ui, sans-serif; color: #151a26; }
+.msg-h { display: grid; justify-items: center; gap: 4px; padding: 6px 0 12px; border-bottom: 1px solid #e6e8ef; font-size: 12px; }
+.msg-body { padding: 16px 14px; display: grid; gap: 8px; justify-items: start; }
+.bubble { background: #e9e9eb; border-radius: 18px; padding: 8px 12px; font-size: 14px; max-width: 80%; }
+.linkcard { width: 78%; border-radius: 16px; overflow: hidden; background: #e9e9eb; }
+.lc-top { background: #4169e1; display: grid; place-items: center; height: 96px; }
+.lc-top svg { width: 54px; height: 54px; }
+.lc-b { padding: 9px 12px; display: grid; gap: 2px; font-size: 13px; }
+.lc-b span { color: #3c4252; font-size: 12px; }
+.lc-b em { font-style: normal; color: #6b7280; font-size: 11px; }
+.web .side .brand .wm { font-family: "Schibsted Grotesk", "Inter", sans-serif; font-weight: 700; letter-spacing: -0.03em; font-size: 17px; }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <h1>Buildpair with spaces</h1>
+  <p>Everything lives in a <b>space</b>: a list of to-dos, habits and goals, with one chat for the people in it. "Life" might be shared with your partner, "Ledgerly" with fellow builders, "Running" with a friend, and "Private" with nobody.</p>
+  <p>Drawn iPhone-style in the Margin Notes direction. Android uses the same layout with its own native controls, and the last screen shows the laptop version.</p>
+  <div class="legend"><span><b>Maya</b> is you</span><span><b>Jordan</b> is Maya's partner; they share "Life" with 3 friends</span><span><b>Sam, Chloe, Theo</b> and <b>Ana</b> support "Ledgerly"</span><span><b>Alex</b> is a running friend</span><span>All people are made-up examples</span></div>
+</header>
+
+<!-- 1. TODAY -->
+<section class="step" style="grid-template-columns:1fr">
+  <div class="phones-pair order" style="display:flex;flex-wrap:wrap;gap:22px">
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:10px">
+      <div class="topbar"><h3 class="lt">Today</h3><span class="row" style="gap:8px"><span class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><b>2</b></span><span class="av" style="background:#3557d6;width:30px;height:30px;font-size:12px">M</span></span></div>
+
+      <div class="sp-h"><span class="sp-name"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg><span class="sp-ico" style="background:#3557d6">L</span>Ledgerly</span><span class="sp-who">Sam, Chloe +2</span></div>
+      <div>
+        <div class="todo"><span class="ck on"></span><div><div class="done-t">Fix invoice PDF bug<span class="tag">Jira</span></div><div class="for">Launch v1</div></div></div>
+        <div class="todo"><span class="ck"></span><div><div>Email 3 beta users</div><div class="for">First 10 paying users</div></div></div>
+      </div>
+
+      <div class="sp-h"><span class="sp-name"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg><span class="sp-ico" style="background:#2f8f5b">L</span>Life</span><span class="sp-who">Jordan + 3</span></div>
+      <div>
+        <div class="todo"><span class="ck"></span><div><div>Pick up kids from daycare</div><div class="for">5:30 PM</div></div></div>
+        <div class="todo"><span class="ck"></span><div><div>Gym<span class="habit-dots"><i class="d"></i><i class="d"></i><i></i><i></i></span></div><div class="for">Habit · 2 of 4 this week</div></div></div>
+      </div>
+
+      <div class="sp-h"><span class="sp-name"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg><span class="sp-ico" style="background:#5d6474">P</span>Private</span><span class="sp-who"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Only me</span></div>
+      <div>
+        <div class="todo"><span class="ck"></span><div><div>Call the accountant</div></div></div>
+      </div>
+    </div>
+    <span class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span>
+    <div class="tabbar">
+      <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12l4 4 10-10"/></svg>Today</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="4" width="8" height="7" rx="2"/><rect x="3" y="13" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/></svg>Spaces</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5"/></svg>Supporting</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Discover</span>
+    </div>
+  </div></div>
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:10px">
+      <div class="topbar"><h3 class="lt">Today</h3><span class="row" style="gap:8px"><span class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><b>2</b></span><span class="av" style="background:#3557d6;width:30px;height:30px;font-size:12px">M</span></span></div>
+
+      <div class="sp-h"><span class="sp-name"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg><span class="sp-ico" style="background:#3557d6">L</span>Ledgerly</span><span class="sp-who">Sam, Chloe +2</span></div>
+      <div>
+        <div class="todo"><span class="ck on"></span><div><div class="done-t">Fix invoice PDF bug<span class="tag">Jira</span></div><div class="for">Launch v1</div></div></div>
+        <div class="todo"><span class="ck"></span><div><div>Email 3 beta users</div><div class="for">First 10 paying users</div></div></div>
+      </div>
+
+      <div class="sp-h"><span class="sp-name"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg><span class="sp-ico" style="background:#2f8f5b">L</span>Life</span><span class="sp-who">Jordan + 3</span></div>
+      <div>
+        <div class="todo"><span class="ck"></span><div><div>Pick up kids from daycare</div><div class="for">5:30 PM</div></div></div>
+        <div class="todo"><span class="ck"></span><div><div>Gym<span class="habit-dots"><i class="d"></i><i class="d"></i><i></i><i></i></span></div><div class="for">Habit · 2 of 4 this week</div></div></div>
+      </div>
+
+      <div class="sp-h"><span class="sp-name"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg><span class="sp-ico" style="background:#5d6474">P</span>Private</span><span class="sp-who"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Only me</span></div>
+      <div>
+        <div class="todo"><span class="ck"></span><div><div>Call the accountant</div></div></div>
+      </div>
+    </div>
+    <div class="dim"></div>
+    <div class="float-sheet">
+      <div class="scr-body" style="background:#fff;border-radius:16px 16px 0 0;flex:none;padding-top:14px;gap:10px">
+        <div class="qa-line">Dentist<span class="caret"></span></div>
+        <div class="qa-tools">
+          <span class="qt on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Fri, 3:00 PM</span>
+          <span class="qt"><span class="sp-ico" style="background:#2f8f5b;width:16px;height:16px;font-size:9px;border-radius:4px">L</span>Life<svg class="dd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 14l5-5 5 5"/></svg></span>
+          <span class="qa-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+        </div>
+        <div class="kbd"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="phone"><div class="screen mn" style="background:#eef0f4">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="scr-body" style="background:#fff;border-radius:16px 16px 0 0;flex:none;padding-top:10px;gap:10px">
+        <span class="sheet-handle"></span>
+        <div class="seg"><span class="on">Date</span><span>Repeat</span></div>
+        <div class="people" style="margin-top:0"><span class="person">Today</span><span class="person">Tomorrow</span><span class="person on">Friday</span><span class="person">Next week</span></div>
+        <div class="minical">
+          <div class="mc-h"><b>October</b><span>‹ ›</span></div>
+          <div class="mc-g dow"><i>M</i><i>T</i><i>W</i><i>T</i><i>F</i><i>S</i><i>S</i></div>
+          <div class="mc-g"><i class="o">28</i><i class="o">29</i><i class="o">30</i><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i><i class="t">10</i><i>11</i><i>12</i><i>13</i><i>14</i><i>15</i><i class="s">16</i><i>17</i><i>18</i></div>
+        </div>
+        <div class="listbox" style="padding:0 12px">
+          <div class="srow" style="border-top:0">Time<span>3:00 PM</span></div>
+          <div class="srow">Reminder<span>30 min before</span></div>
+          <div class="srow">Repeat<span>Never</span></div>
+        </div>
+        <div class="btn">Done</div>
+      </div>
+    </div>
+  </div></div>
+  <div class="phone"><div class="screen mn" style="background:#eef0f4">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="scr-body" style="background:#fff;border-radius:16px 16px 0 0;flex:none;padding-top:10px;gap:10px">
+        <span class="sheet-handle"></span>
+        <div class="seg"><span>Date</span><span class="on">Repeat</span></div>
+        <div class="listbox" style="padding:0 12px">
+          <div class="opt" style="border-top:0;padding:9px 0"><span class="radio"></span><div class="opt-t" style="font-size:14px">Every day</div></div>
+          <div class="opt" style="padding:9px 0"><span class="radio"></span><div class="opt-t" style="font-size:14px">On certain days</div></div>
+          <div class="opt" style="padding:9px 0"><span class="radio on"></span><div><div class="opt-t" style="font-size:14px">A number of times a week</div><div class="stepper"><span>−</span><b>4</b><span>+</span><em>times a week</em></div></div></div>
+          <div class="opt" style="padding:9px 0"><span class="radio"></span><div class="opt-t" style="font-size:14px">Every month</div></div>
+        </div>
+        <div class="listbox" style="padding:0 12px">
+          <div class="srow" style="border-top:0">Ends<span>Never</span></div>
+        </div>
+        <div class="sub" style="font-size:12px">Repeating makes this a habit, with its own weekly progress.</div>
+        <div class="btn">Done</div>
+      </div>
+    </div>
+  </div></div>
+  </div>
+  <div class="explain">
+    <h2>1. Today, grouped by space</h2>
+    <p>The daily to-do list, grouped by the space each thing lives in, so you can see who's along for each part of your day.</p>
+    <ul>
+      <li>The floating <b>+</b> in the bottom-right corner, like TickTick's, opens a small <b>add bar</b> that floats above the keyboard, over a dimmed Today screen, so you never lose your place (second phone). Type what it is, and natural language still works: "dentist friday 3pm" fills in the date for you.</li>
+      <li>Under the text are two chips. The <b>date chip</b> opens the scheduler (third phone): quick picks (Today, Tomorrow, Friday, Next week), a small calendar, time, reminder and repeat.</li>
+      <li>The <b>space chip</b> opens a pull-up list of your spaces (screen 4), so the item lands in the right place. It starts on your most recent space.</li>
+      <li><b>No "habit" or "goal" buttons.</b> The schedule decides: a single date makes a <b>to-do</b>; setting it to repeat (fourth phone, "4 times a week") makes a <b>habit</b> with weekly progress; a deadline with steps underneath becomes a <b>goal</b>.</li>
+      <li><b>Ledgerly</b> (shared with four fellow builders) holds work goals. The Jira bug ticked itself off.</li>
+      <li><b>Life</b> (shared with Jordan and 3 friends) holds one-off things like picking up the kids, plus the gym habit with its four weekly dots.</li>
+      <li><b>Private</b> is for things nobody else sees.</li>
+      <li>Each space's section <b>collapses</b> with the arrow next to its name, so you can fold away what you don't need right now.</li>
+      <li>Tabs: <b>Today</b>, <b>Spaces</b> (all of yours), <b>Supporting</b> (spaces others share with you), <b>Discover</b>. Your profile is the photo in the top corner, next to the bell.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. YOUR SPACES -->
+<section class="step">
+  <div class="phone order"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:10px">
+      <div class="topbar"><h3 class="lt">Spaces</h3></div>
+      <div class="chats">
+        <div class="chat sprow"><span class="sp-ico big" style="background:#3557d6;width:40px;height:40px;font-size:15px">L</span><div style="min-width:0"><div class="t">Ledgerly</div><div class="p">2 goals · 5 to-dos left this week</div><div class="faces" style="margin-top:4px"><i style="background:#c47f0c">S</i><i style="background:#2f6f6a">C</i><i style="background:#8a5a2b">T</i><i style="background:#b0487a">A</i></div></div><div class="r">10:02<span class="dot-u"></span></div></div>
+        <div class="chat sprow"><span class="sp-ico big" style="background:#2f8f5b;width:40px;height:40px;font-size:15px">L</span><div style="min-width:0"><div class="t">Life</div><div class="p">1 habit · 1 goal · 3 to-dos today</div><div class="faces" style="margin-top:4px"><i style="background:#c97a9e">J</i><i style="background:#5d8aa8">K</i><i style="background:#8a5a2b">T</i><i style="background:#b0487a">A</i></div></div><div class="r">9:30</div></div>
+        <div class="chat sprow"><span class="sp-ico big" style="background:#c0392b;width:40px;height:40px;font-size:15px">R</span><div style="min-width:0"><div class="t">Running</div><div class="p">Half marathon · week 1 of 12</div><div class="row" style="gap:6px;margin-top:4px"><span class="req-tag">2 requests</span><span class="disc-tag">On Discover</span></div></div><div class="r">Mon</div></div>
+        <div class="chat sprow"><span class="sp-ico big" style="background:#5d6474;width:40px;height:40px;font-size:15px">P</span><div style="min-width:0"><div class="t">Private</div><div class="p">4 to-dos · only you</div></div><div class="r"></div></div>
+      </div>
+      <div class="collapsed" style="border-top:0">Archived spaces · 2</div>
+    </div>
+    <span class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span>
+    <div class="tabbar">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12l4 4 10-10"/></svg>Today</span>
+      <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="4" width="8" height="7" rx="2"/><rect x="3" y="13" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/></svg>Spaces</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5"/></svg>Supporting</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Discover</span>
+    </div>
+  </div></div>
+  <div class="explain">
+    <h2>2. Spaces: everything you've set up</h2>
+    <p>The second tab lists your own spaces, most recent activity first.</p>
+    <ul>
+      <li>Each row shows the space's name, a short summary (goals, habits, what's left this week), and the faces of the people in it.</li>
+      <li>A <b>blue dot</b> means new activity in the chat. <b>Requests</b> and <b>On Discover</b> tags show when people have offered support, or when the space is visible on Discover.</li>
+      <li>On this tab, the floating <b>+</b> creates a <b>new space</b> and opens its setup (screen 4). Old spaces can be archived and live at the bottom.</li>
+      <li>Tap a row to open the space (next screen).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. A SPACE -->
+<section class="step" style="grid-template-columns:1fr">
+  <div class="phones-pair order" style="display:flex;flex-wrap:wrap;gap:22px">
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:10px">
+      <div><span class="sub">‹ Spaces</span>
+        <div class="topbar" style="margin-top:6px"><h3 class="lt">Life</h3><span class="faces"><i style="background:#c97a9e">J</i><i style="background:#3557d6">M</i></span></div>
+        <span class="sub">You, Jordan and 3 friends</span></div>
+      <div class="split-h"><span class="cl"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>In this space</span><a href="#">See all</a></div>
+      <div class="listbox">
+        <div class="todo"><span class="ck"></span><div><div>Gym 4x a week<span class="kind">Habit</span></div><div class="for">2 of 4 this week</div></div></div>
+        <div class="todo"><span class="ck"></span><div><div>Pick up kids from daycare</div><div class="for">Today 5:30 PM</div></div></div>
+        <div class="todo"><span class="ck"></span><div><div>Plan Lisbon trip<span class="kind">Goal</span></div><div class="for">3 of 7 · by Dec 1</div></div></div>
+        <div class="collapsed">Done this week · 6</div>
+        <div class="addinline">+ Add to Life</div>
+      </div>
+      <div class="split-h"><span class="cl"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>Chat</span></div>
+      <div class="thread">
+        <div class="rollup"><span class="rollup-ico">4</span><div>Maya finished 4 things in Life<div class="items">Groceries, Pay rent, Book vet, Upper body</div><div class="reacts" style="position:relative"><span class="mine">🔥 5</span><span>👏 2</span><div class="who-pop"><div class="wp-h">🔥 5 people</div><div>Jordan</div><div>Kim</div><div>Theo</div><div>Ana</div><div>You</div></div></div></div></div>
+        <div class="ev"><span class="ev-mark skip"></span><div class="ev-text">Maya skipped <b>Gym</b><span class="when">Thu</span><div class="update-msg" style="margin-top:4px">Car broke down. Going Saturday instead.</div></div></div>
+        <div class="margin"><div class="av" style="background:#c97a9e">J</div><div class="note"><div>I can take the kids Saturday morning so you can go.</div><span class="who">Jordan · 20 min ago</span></div></div>
+      </div>
+    </div>
+    <div class="compose"><span class="field">Message…</span></div>
+  </div></div>
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:10px">
+      <div><span class="sub">‹ Spaces</span>
+        <div class="topbar" style="margin-top:6px"><h3 class="lt">Life</h3><span class="faces"><i style="background:#c97a9e">J</i><i style="background:#3557d6">M</i></span></div>
+        <span class="sub">You, Jordan and 3 friends</span></div>
+      <div class="split-h"><span class="cl">In this space</span><span class="sub">1 selected</span></div>
+      <div class="listbox">
+        <div class="todo sel"><span class="ck selck"></span><div><div>Gym 4x a week<span class="kind">Habit</span></div><div class="for">2 of 4 this week</div></div></div>
+        <div class="todo"><span class="ck on"></span><div><div class="done-t">Pick up kids from daycare</div><div class="for">Today 5:30 PM</div></div></div>
+        <div class="todo"><span class="ck"></span><div><div>Plan Lisbon trip<span class="kind">Goal</span></div><div class="for">3 of 7 · by Dec 1</div></div></div>
+      </div>
+      <div class="sub" style="font-size:12px">Long-press selected "Gym". Tap more items to select several.</div>
+    </div>
+    <div class="actionbar"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>Skip today</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M9 9l6 6M15 9l-6 6"/></svg>Won't do</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Update</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/></svg>Move</span><span class="adots"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></span></div>
+  </div></div>
+  <div class="phone"><div class="screen mn" style="background:#eef0f4">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="scr-body" style="background:#fff;border-radius:16px 16px 0 0;flex:none;padding-top:10px">
+        <span class="sheet-handle"></span>
+        <div class="row" style="justify-content:space-between"><h3 class="lt" style="font-size:20px">Gym 4x a week</h3><span class="kind" style="margin:0">Habit · Life</span></div>
+        <div class="listbox" style="padding:0 12px">
+          <div class="mrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Edit</div>
+          <div class="mrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Change schedule</div>
+          <div class="mrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/></svg>Reminder</div>
+          <div class="mrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/></svg>Move to another space</div>
+          <div class="mrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Only visible to me</div>
+          <div class="mrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Duplicate</div>
+          <div class="mrow danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Delete</div>
+        </div>
+      </div>
+    </div>
+    <div class="actionbar"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>Skip today</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M9 9l6 6M15 9l-6 6"/></svg>Won't do</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Update</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/></svg>Move</span><span class="adots on"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></span></div>
+  </div></div>
+  </div>
+  <div class="explain">
+    <h2>3. Inside a space: the list and the chat together</h2>
+    <p>Opening a space shows what's in it and the conversation about it on one screen.</p>
+    <ul>
+      <li><b>On top, the list:</b> habits, goals and to-dos, each labeled. The list and the chat each <b>collapse</b> with their arrow. Finished things fold into "Done this week" instead of cluttering the list.</li>
+      <li><b>Below, the chat:</b> everything that happens in the space, plus messages.</li>
+      <li><b>Small to-dos roll up</b> into one line per day ("Maya finished 4 things in Life") so the chat stays readable. Goals and habits post their own lines.</li>
+      <li><b>Reactions stack</b>, like in Teams or Slack: five people sending 🔥 shows as one "🔥 5" chip. Tap a chip to add yours; press and hold to see who reacted (shown on the left phone).</li>
+      <li><b>Done is one tap:</b> tick the circle and you're finished. No forms.</li>
+      <li><b>Long-press</b> an item to select it, like in TickTick (middle). The bottom bar turns into an action bar: <b>Skip today</b>, <b>Won't do</b>, <b>Update</b> (post a note to the chat) and <b>Move</b>. Tap more items to act on several at once.</li>
+      <li>The <b>•••</b> at the far right of the action bar opens the full menu (right): edit, change schedule, reminder, move to another space, only visible to me, duplicate, delete.</li>
+      <li><b>Skip and Won't do apply instantly.</b> A small bar then offers <b>Add a reason</b>, which you can tap or ignore.</li>
+      <li><b>Update</b> lets you post a note about any item at any time ("Halfway through the plan, feeling good"), and it lands in the space's chat. That's how "Car broke down. Going Saturday instead." got there, and why Jordan could offer to take the kids.</li>
+      <li>Any single item can be set to <b>Only visible to me</b> from the full menu, and it stays private inside a shared space.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 3. NEW GOAL: WHERE DOES IT GO -->
+<section class="step">
+  <div class="phones-pair order" style="display:flex;flex-wrap:wrap;gap:22px">
+  <div class="phone"><div class="screen mn" style="background:#eef0f4">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="scr-body" style="background:#fff;border-radius:16px 16px 0 0;flex:none;padding-top:10px">
+        <span class="sheet-handle"></span>
+        <h3 class="lt" style="font-size:22px">Add to a space</h3>
+        <div class="sub" style="font-size:13px;margin-top:-6px">Dentist · Fri, 3:00 PM</div>
+        <div>
+          <div class="place"><span class="radio on"></span><div><div class="opt-t">Life</div><div class="sub">You, Jordan and 3 friends</div></div><span class="sp-ico" style="background:#2f8f5b">L</span></div>
+          <div class="place"><span class="radio"></span><div><div class="opt-t">Ledgerly</div><div class="sub">You, Sam, Chloe and 2 others</div></div><span class="sp-ico" style="background:#3557d6">L</span></div>
+          <div class="place"><span class="radio"></span><div><div class="opt-t">Private</div><div class="sub">Only me</div></div><span class="sp-ico" style="background:#5d6474">P</span></div>
+          <div class="place"><span class="rowplus">+</span><div><div class="opt-t" style="color:#3557d6">New space</div><div class="sub">Set up a new list with its own people</div></div><span></span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:12px">
+      <div class="topbar"><span class="sub" style="font-size:14px">Cancel</span><span style="font-weight:650;font-size:15px">New space</span><span class="sub" style="font-size:14px;color:#3557d6;font-weight:600">Create</span></div>
+      <div class="row" style="gap:12px;margin-top:6px"><span class="sp-ico big edit" style="background:#c0392b">R<em>Edit</em></span><div class="card" style="flex:1;padding:9px 12px;gap:2px"><span class="lbl">Name</span><span style="font-size:15px;font-weight:600">Running</span></div></div>
+      <div class="card" style="gap:2px;padding:9px 12px"><span class="lbl">What it's for</span><span>Training for my first half marathon, April 12</span></div>
+      <div class="sub" style="font-size:12px;margin-top:-4px">Goals in this space: Run a half marathon · by April 12</div>
+      <div class="lbl">Who's in it</div>
+      <div class="addfield typing">jo<span class="caret"></span></div>
+      <div class="suggest">
+        <div class="sg-h">People you share spaces with</div>
+        <div class="sg-row"><div class="av" style="background:#c97a9e">J</div><div><div style="font-weight:600">Jordan Lee</div><div class="role">@jordanlee · in Life</div></div></div>
+        <div class="sg-row"><div class="av" style="background:#5d8aa8">JK</div><div><div style="font-weight:600">Joanne Kim</div><div class="role">@kimjo · in Life</div></div></div>
+        <div class="sg-h">Add by ID</div>
+        <div class="sg-row id"><span class="idic">#</span><div><div style="font-weight:600">Enter someone's Buildpair ID</div><div class="role">Like BP-4821-KQ, shown on their profile</div></div></div>
+      </div>
+      <div class="listbox" style="padding:2px 12px">
+        <div class="member" style="border-top:0"><div class="av" style="background:#3557d6">M</div><div><div style="font-weight:600">Maya (you)</div><div class="role">maya</div></div><span class="role">Owner</span></div>
+        <div class="member"><div class="av" style="background:#c0392b">A</div><div><div style="font-weight:600">Alex Rivera</div><div class="role">alexruns</div></div><span class="rolesel">Supporter<svg class="dd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10l5 5 5-5"/></svg></span></div>
+      </div>
+      <div class="listbox" style="padding:2px 12px">
+        <div class="invrow"><span class="acc-ic inv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><div><div class="opt-t" style="font-size:14px">Invite with a link</div><div class="sub">People who open it can ask to join. You approve each one.</div></div><span class="copy-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Share</span></div>
+      </div>
+      <div class="listbox" style="padding:2px 12px">
+        <div class="trow"><div><div class="opt-t" style="font-size:14px">Show on Discover</div><div class="sub">People can offer to support this space.</div></div><span class="switch on"></span></div>
+        <div style="padding:0 0 10px"><div class="lbl" style="margin-bottom:6px">Anything else you'd like from supporters? (optional)</div><div class="people" style="margin-top:0"><span class="person on">Check in when I go quiet</span><span class="person">Train together</span><span class="person">+ Add</span></div></div>
+      </div>
+    </div>
+  </div></div>
+  </div>
+  <div class="explain">
+    <h2>4. Picking a space, and creating one</h2>
+    <p>The pull-up you get from the space chip when adding anything (left). Tap a space and you're done.</p>
+    <ul>
+      <li><b>An existing space</b>, so the people already in it see the new item too. "First 10 paying users" would go into Ledgerly.</li>
+      <li><b>A new space</b>: tap the <b>New space</b> row at the bottom of the list (it has a + where the others have a circle) to open a short setup (right). Name it and say what it's for (required, because that's what supporters read). <b>Who's in it:</b> add people by name, username or ID, or share an invite link. Flip <b>Show on Discover</b> to let new people offer support, and optionally add anything else you'd like from them. The same controls live on every space's people screen. The space gets an automatic color and initial; tap the icon if you want to change it.</li>
+      <li><b>Private</b> if nobody should see it.</li>
+      <li>Anything can move between spaces later, from its long-press menu.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 4. WHO'S IN THIS SPACE -->
+<section class="step">
+  <div class="phone order"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body">
+      <div><span class="sub">‹ Ledgerly</span><h3 class="lt" style="margin-top:6px">People in this space</h3></div>
+      <div class="addfield">Add people by name or username</div>
+      <div>
+        <div class="member"><div class="av" style="background:#3557d6">M</div><div><div style="font-weight:600">Maya (you)</div><div class="role">Owner</div></div><span></span></div>
+        <div class="member"><div class="av" style="background:#c47f0c">S</div><div><div style="font-weight:600">Sam</div><div class="role">Joined from Discover · March</div></div><span class="rolesel">Supporter<svg class="dd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10l5 5 5-5"/></svg></span></div>
+        <div class="member"><div class="av" style="background:#2f6f6a">C</div><div><div style="font-weight:600">Chloe</div><div class="role">Invited friend</div></div><span class="rolesel">Supporter<svg class="dd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10l5 5 5-5"/></svg></span></div>
+        <div class="member"><div class="av" style="background:#8a5a2b">T</div><div><div style="font-weight:600">Theo</div><div class="role">Invited friend</div></div><span class="rolesel">Supporter<svg class="dd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10l5 5 5-5"/></svg></span></div>
+        <div class="member"><div class="av" style="background:#b0487a">A</div><div><div style="font-weight:600">Ana</div><div class="role">Joined from Discover · May</div></div><span class="rolesel">Supporter<svg class="dd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10l5 5 5-5"/></svg></span></div>
+      </div>
+      <div class="listbox" style="padding:0 12px">
+        <div class="invrow"><span class="acc-ic inv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><div><div class="opt-t" style="font-size:14px">Invite with a link</div><div class="sub">People who open it can ask to join. You approve each one.</div></div><span class="copy-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Share</span></div>
+        <div class="trow" style="border-top:1px solid var(--line)"><div><div class="opt-t" style="font-size:14px">Show on Discover</div><div class="sub">People can offer to support this space.</div></div><span class="switch"></span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="explain">
+    <h2>5. Who's in a space</h2>
+    <p>Sharing is set per space, not per goal, so it's one decision instead of many.</p>
+    <ul>
+      <li>Everyone is listed as a person. Add <b>friends</b> by invite, or <b>post the space to Discover</b> so new people can offer support. A space with several people in it <i>is</i> the group; there's no separate "group" to manage.</li>
+      <li>Everyone in a space sees its list and chat, reacts and messages.</li>
+      <li><b>Adding people:</b> start typing in <b>Add people</b> (screen 4 shows it open). Suggestions come first from <b>people you already share spaces with</b>, then anyone by name or username. You can also <b>add someone by their Buildpair ID</b> (like BP-4821-KQ), which everyone has on their profile. Everyone added shows in the list with their role (<b>Supporter</b>, or remove them from the same menu).</li>
+      <li><b>Invite with a link</b>, the way group chats like WhatsApp or Discord do it: tap <b>Share</b> to send the link by text, email or any app. Anyone who opens it can ask to join, and their request lands in the space's Requests for you to approve. You can reset the link anytime to stop old invites working.</li>
+      <li>The same controls appear in the new-space setup, along with the <b>Show on Discover</b> switch.</li>
+      <li><b>Exceptions:</b> any single item can be set to "Only visible to me" from its long-press menu. It shows a small lock in the list and stays private even inside a shared space.</li>
+      <li>A space with nobody else in it is simply private.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 5. WATCHING -->
+<section class="step">
+  <div class="phones-pair order" style="display:flex;flex-wrap:wrap;gap:22px">
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body">
+      <div class="topbar"><h3 class="lt">Supporting</h3><span class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><b>2</b></span></div>
+      <div class="needs">
+        <div class="needs-h cl"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>Check in on · 2</div>
+        <div class="need"><div class="av" style="background:#c0392b">A</div><span><b>Alex</b> · Marathon training has been quiet for 9 days</span><span class="go">Check in</span></div>
+        <div class="need"><div class="av" style="background:#7a4fb5">P</div><span><b>Priya</b> wrote her weekly reflection</span><span class="go">Reply</span></div>
+      </div>
+      <div class="chats">
+        <div class="chat"><div class="av" style="background:#c97a9e">J</div><div style="min-width:0"><div class="t">Get fit for summer <span>· Jordan</span></div><div class="p unread">Jordan finished 3 things today</div></div><div class="r">9:30<span class="dot-u"></span></div></div>
+        <div class="chat"><div class="av" style="background:#c47f0c">S</div><div style="min-width:0"><div class="t">Shipnote <span>· Sam</span></div><div class="p unread">Sam completed Invite flow</div><div class="mini-bar"><i style="width:60%"></i></div></div><div class="r">8:40<span class="dot-u"></span></div></div>
+        <div class="chat"><div class="av" style="background:#c0392b">A</div><div style="min-width:0"><div class="t">Marathon training <span>· Alex</span></div><div class="p">Alex skipped Long run: knee is sore</div><div class="mini-bar"><i style="width:42%"></i></div></div><div class="r">Sat</div></div>
+        <div class="chat"><div class="av" style="background:#2f6f6a">C</div><div style="min-width:0"><div class="t">Novel draft <span>· Chloe + 3</span></div><div class="p">Chloe: Anyone up for a writing sprint Thursday?</div><div class="mini-bar"><i style="width:35%"></i></div></div><div class="r">Sun</div></div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12l4 4 10-10"/></svg>Today</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="4" width="8" height="7" rx="2"/><rect x="3" y="13" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/></svg>Spaces</span>
+      <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5"/></svg>Supporting</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Discover</span>
+    </div>
+  </div></div>
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:10px">
+      <div><span class="sub">‹ Supporting</span><h3 class="lt" style="margin-top:6px">Marathon training</h3><span class="sub">Alex's space · you're supporting</span></div>
+      <div class="listbox">
+        <div class="todo"><span class="ck"></span><div><div>Half marathon<span class="kind">Goal</span></div><div class="for">Week 5 of 12 · <span class="quiet-tag">Quiet 9 days</span></div></div></div>
+      </div>
+      <div class="thread">
+        <div class="ev"><span class="ev-mark"></span><div class="ev-text">Alex completed <b>Tempo run</b><span class="when">2 weeks ago</span><div class="reacts"><span class="mine">🔥 You</span></div></div></div>
+        <div class="ev"><span class="ev-mark skip"></span><div class="ev-text">Alex skipped <b>Long run</b><span class="when">9 days ago</span><div class="update-msg" style="margin-top:4px">Knee is sore, taking a few days off.</div></div></div>
+      </div>
+    </div>
+    <div class="sugg-bar"><span>How's the knee?</span><span>Walk instead this week?</span><span>Send a nudge</span></div>
+    <div class="compose"><span class="field">Message Alex…</span></div>
+  </div></div>
+  </div>
+  <div class="explain">
+    <h2>6. Supporting: spaces others share with you</h2>
+    <p>The same idea from the other side.</p>
+    <ul>
+      <li><b>"Check in on"</b> lists what needs you right now. It's shown only to supporters, never to the person themselves, and it <b>collapses</b> with its arrow.</li>
+      <li>Below, <b>one row per shared space</b>, newest activity first, with a blue dot for unread.</li>
+      <li>Tap <b>Check in</b> to open the space's chat (right). <b>Suggestions</b> based on their last update sit above the message box. Tap one to start a message you can edit.</li>
+      <li>The <b>bell</b> opens Activity: reactions, replies and requests aimed at you.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6. DISCOVER -->
+<section class="step" style="grid-template-columns:1fr">
+  <div class="phones-pair order" style="display:flex;flex-wrap:wrap;gap:22px">
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:10px">
+      <h3 class="lt">Discover</h3>
+      <div class="seg"><span class="on">For you</span><span>Browse</span></div>
+      <div class="card">
+        <div class="row"><div class="av" style="background:#1f7a8c">DK</div><div style="min-width:0"><div style="font-weight:650;font-size:15px">Spring half · Dana</div><div class="sub">Training for my first half marathon in May</div></div></div>
+        <div class="goal-l"><span class="ck"></span>Run a half marathon · May 18<span class="ck"></span>Run 4x a week · habit</div>
+        <div class="badges sm"><span class="badge"><span class="bi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>Fast responder</span><span class="badge">Honest takes 8</span></div>
+        <div class="reasons"><span>Like your Running space</span><span>2 hrs overlap</span></div>
+        <div class="sub">Also wants: train together</div>
+        <div class="btn">Offer support</div>
+      </div>
+      <div class="card">
+        <div class="row"><div class="av" style="background:#8a5a2b">TO</div><div style="min-width:0"><div style="font-weight:650;font-size:15px">Pottery shop launch · Tomás</div><div class="sub">Opening an online store by December</div></div></div>
+        <div class="goal-l"><span class="ck"></span>Launch the shop · Dec 1</div>
+        <div class="reasons"><span>Also launching something</span><span>Same time zone</span></div>
+        <div class="btn sec">Offer support</div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12l4 4 10-10"/></svg>Today</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="4" width="8" height="7" rx="2"/><rect x="3" y="13" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/></svg>Spaces</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5"/></svg>Supporting</span>
+      <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Discover</span>
+    </div>
+  </div></div>
+
+  <div class="phone"><div class="screen mn" style="background:#eef0f4">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="scr-body" style="background:#fff;border-radius:16px 16px 0 0;flex:none;padding-top:10px">
+        <span class="sheet-handle"></span>
+        <h3 class="lt" style="font-size:22px">Offer support to Dana</h3>
+        <div class="opt" style="border-top:0"><span class="radio"></span><div><div class="opt-t">Support Dana's space</div><div class="sub">You join "Spring half" as a supporter.</div></div></div>
+        <div class="opt"><span class="radio on"></span><div><div class="opt-t">Support each other</div><div class="sub">You support "Spring half". Suggest spaces Dana could support back; she picks one:</div>
+          <div class="people"><span class="person on"><i style="background:#c0392b">R</i>Running</span><span class="person on"><i style="background:#3557d6">L</i>Ledgerly</span><span class="person"><i style="background:#2f8f5b">L</i>Life</span></div></div></div>
+        <div class="card" style="gap:4px;padding:10px 12px"><span class="lbl">Note</span><span>Also training for a spring half! Happy to check in, and I'd love the same.</span></div>
+        <div class="btn">Send offer</div>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:10px">
+      <div><span class="sub">‹ Running</span><h3 class="lt" style="margin-top:6px">Requests</h3><span class="sub">People who want to support this space</span></div>
+      <div class="card">
+        <div class="row"><div class="av lg" style="background:#7a6bd1">LM</div><div><div style="font-weight:650;font-size:15px">Leo Martins</div><div class="sub">Wants to support Running</div></div></div>
+        <div>"Ran my first half last year. Happy to keep you honest."</div>
+        <div class="row" style="gap:8px"><div class="btn" style="flex:1;padding:9px">Accept</div><div class="btn sec" style="flex:1;padding:9px">Decline</div></div>
+      </div>
+      <div class="card">
+        <div class="row"><div class="av lg" style="background:#1f7a8c">DK</div><div><div style="font-weight:650;font-size:15px">Dana Kim</div><div class="sub">Wants to support Running · support each other</div></div></div>
+        <div>"Saw your Running space. I'm training for a spring half too. Want to keep each other going?"</div>
+        <div class="lbl">In return, pick one of Dana's spaces to support</div>
+        <div class="listbox" style="padding:2px 12px">
+          <div class="opt" style="border-top:0;padding:8px 0"><span class="radio on"></span><div><div class="opt-t" style="font-size:13px">Spring half</div><div class="sub">First half marathon in May · wants check-ins when quiet</div></div></div>
+          <div class="opt" style="padding:8px 0"><span class="radio"></span><div><div class="opt-t" style="font-size:13px">Learn Spanish</div><div class="sub">B1 by summer · wants honest takes</div></div></div>
+        </div>
+        <div class="row" style="gap:8px"><div class="btn" style="flex:1;padding:9px">Accept</div><div class="btn sec" style="flex:1;padding:9px">Decline</div></div>
+      </div>
+    </div>
+  </div></div>
+  </div>
+  <div class="explain">
+    <h2>7. Discover: spaces that want support</h2>
+    <p>No separate post to write. A space appears on Discover when you flip its <b>Show on Discover</b> switch (screens 4 and 5).</p>
+    <ul>
+      <li><b>What people see</b> (first phone) comes from the space itself, plus the owner's top badge and compliment: what it's for, its goals, and anything extra you asked for ("Also wants: train together"). Locked items stay hidden. Flip the switch off to take it down.</li>
+      <li><b>For you</b> shows spaces that fit you, with reasons: a similar goal, overlapping hours, same time zone. <b>Browse</b> lets you filter yourself.</li>
+      <li><b>Offer support</b> (second phone): either just support their space, or <b>support each other</b>, where you suggest one or more of your spaces they could support back. Add a short note.</li>
+      <li><b>Requests land in your space</b> (third phone): who's offering, their note, and for "support each other", the spaces they suggested and what each needs. You pick <b>one</b> of those spaces, then accept or decline.</li>
+      <li><b>Keeping it healthy:</b> limited open offers, offers expire after a week, and anyone can decline, leave or block quietly. No swiping.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7. PROFILE AND SETTINGS -->
+<section class="step" style="grid-template-columns:1fr">
+  <div class="phones-pair order" style="display:flex;flex-wrap:wrap;gap:22px">
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:12px">
+      <div class="topbar"><span class="sub" style="font-size:14px">‹ Today</span><span class="gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span></div>
+      <div class="row" style="gap:14px"><div class="av" style="background:#3557d6;width:64px;height:64px;font-size:24px">M</div><div><div style="font-size:20px;font-weight:700;letter-spacing:-0.01em">Maya Chen</div><div class="sub">@maya · Lisbon · UTC+0</div><div class="idchip">ID BP-4821-KQ · Copy</div></div></div>
+      <div style="font-size:13px">Building Ledgerly, invoicing for freelancers. Training for my first half marathon.</div>
+      <div class="sub">Supporting 4 people · supported by 6 · 12 goals finished</div>
+      <div class="badges"><span class="badge"><span class="bi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>Fast responder</span><span class="badge"><span class="bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span>Reliable supporter</span><span class="badge"><span class="bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span>Finisher</span></div>
+      <div class="split-h"><span>Compliments</span><span class="sub" style="font-weight:400">From 9 people</span></div>
+      <div class="compl"><span>Honest takes <b>12</b></span><span>Keeps me going <b>9</b></span><span>Friendly <b>7</b></span><span>Great advice <b>4</b></span></div>
+      <div class="btn sec" style="padding:9px">Edit profile</div>
+      <div class="split-h"><span>On Discover</span></div>
+      <div class="listbox" style="padding:2px 12px"><div class="todo" style="grid-template-columns:22px 1fr auto"><span class="sp-ico" style="background:#c0392b">R</span><div><div>Running</div><div class="for">Posted · 2 offers</div></div><span class="nr-r"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div></div>
+      <div class="split-h"><span>Finished goals</span><span class="sub" style="font-weight:400">Public</span></div>
+      <div class="listbox" style="padding:2px 12px">
+        <div class="todo"><span class="ck on"></span><div><div>Launch Ledgerly beta</div><div class="for">September · Ledgerly</div></div></div>
+        <div class="todo"><span class="ck on"></span><div><div>Run 10k under 55 minutes</div><div class="for">August · Running</div></div></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="phone"><div class="screen mn" style="background:#f2f3f7">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:8px">
+      <div><span class="sub">‹ Profile</span><h3 class="lt" style="margin-top:6px">Settings</h3></div>
+      <div class="sgrp-h">Notifications</div>
+      <div class="sgrp"><div class="srow">Daily reminder<span>8:00 AM</span></div><div class="srow">Weekly reflection<span>Fridays</span></div><div class="srow">Quiet hours<span>10 PM – 7 AM</span></div></div>
+      <div class="sgrp-h">Privacy</div>
+      <div class="sgrp"><div class="srow">New items go to<span>Private</span></div><div class="srow">Who can see my profile<span>Supporters</span></div><div class="srow">Blocked people<span>0</span></div></div>
+      <div class="sgrp-h">Connected tools</div>
+      <div class="sgrp"><div class="srow">Jira<span class="ok-t">Connected</span></div><div class="srow">Trello, Linear and more<span class="pro">Pro</span></div></div>
+      <div class="sgrp-h">Appearance</div>
+      <div class="sgrp"><div class="srow">Theme<span>Match system</span></div><div class="srow">More themes<span class="pro">Pro</span></div></div>
+      <div class="sgrp-h">Account</div>
+      <div class="sgrp"><div class="srow">Plan<span>Free · Upgrade</span></div><div class="srow">Email<span>maya@…</span></div><div class="srow">Help and feedback<span></span></div><div class="srow danger">Log out</div></div>
+    </div>
+  </div></div>
+  <div class="phone"><div class="screen mn" style="background:#eef0f4">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="scr-body" style="background:#fff;border-radius:16px 16px 0 0;flex:none;padding-top:10px">
+        <span class="sheet-handle"></span>
+        <div class="row" style="gap:12px"><div class="av lg" style="background:#1f7a8c">DK</div><div><h3 class="lt" style="font-size:20px;margin:0">How's Dana as a supporter?</h3><div class="sub">4 weeks supporting your Running space</div></div></div>
+        <div class="lbl">Give a compliment (pick any)</div>
+        <div class="people" style="margin-top:0"><span class="person on">Honest takes</span><span class="person on">Keeps me going</span><span class="person">Friendly</span><span class="person">Great advice</span><span class="person">Always checks in</span><span class="person">Funny</span></div>
+        <div class="card" style="padding:10px 12px;gap:2px"><span class="lbl">Add a note (optional)</span><span>The "walk instead" idea saved my week.</span></div>
+        <div class="btn">Send compliment</div>
+        <div class="row" style="justify-content:space-between"><span class="sub">Not working out?</span><span class="sub" style="color:#3557d6;font-weight:600">Not a good fit · Report</span></div>
+      </div>
+    </div>
+  </div></div>
+  </div>
+  <div class="explain">
+    <h2>8. Profile and settings</h2>
+    <p>Neither needs a tab. Your photo in the top corner of Today opens your profile, and the gear on your profile opens settings.</p>
+    <ul>
+      <li><b>Profile</b> (left): photo, name, username, your <b>Buildpair ID</b> (tap to copy, so friends can add you), time zone, a line about what you're building, and a plain line of how you support others.</li>
+      <li><b>Badges</b> are earned automatically from what you actually do, so they can be trusted: <b>Fast responder</b> (usually replies within a day), <b>Reliable supporter</b> (checked in on someone for 4+ weeks), <b>Finisher</b> (finished 5 goals), <b>Season complete</b>, and a few more.</li>
+      <li><b>Compliments</b> come from the people you support, and they add up ("Honest takes 12"). They're positive only.</li>
+      <li><b>Giving one</b> (right): after a few weeks of support, or when a goal is finished, the app asks "How's Dana as a supporter?" Pick any compliments and add an optional note. There are <b>no star ratings</b>, which tend to inflate and make people hold back honest feedback. If it isn't working, "Not a good fit" quietly improves future matches, and Report handles anything serious.</li>
+      <li><b>On Discover:</b> the spaces you've posted and how many offers are waiting.</li>
+      <li><b>Finished goals</b> you chose to make public, which is what other people see when deciding whether to offer support.</li>
+      <li><b>Settings</b> (middle), in native grouped lists: notifications (daily reminder, weekly reflection, quiet hours), privacy (where new items go, who sees your profile, blocked people), connected tools (Jira; more tools on Pro), appearance (follow the system's light or dark mode; the extra themes live here, on Pro), and account (plan, email, help, log out).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9. BRAND -->
+<section class="step" style="grid-template-columns:1fr">
+  <div class="brandboard">
+    <div class="bb-card">
+      <svg class="bp-mark" viewBox="0 0 48 48" aria-label="Buildpair mark"><rect x="4" y="10" width="24" height="28" rx="7" fill="#4169e1"/><rect x="20" y="10" width="24" height="28" rx="7" fill="none" stroke="#151a26" stroke-width="4"/></svg>
+      <span class="bb-l">The mark: two shapes side by side, one filled and one outlined. You and the person in your corner.</span>
+    </div>
+    <div class="bb-card">
+      <div class="bp-lockup"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="10" width="24" height="28" rx="7" fill="#4169e1"/><rect x="20" y="10" width="24" height="28" rx="7" fill="none" stroke="#151a26" stroke-width="4"/></svg><span>Buildpair</span></div>
+      <span class="bb-l">Wordmark: Schibsted Grotesk Bold, tight letter-spacing, always one word with a capital B.</span>
+    </div>
+    <div class="bb-card">
+      <div class="icons">
+        <div class="appicon"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="11" width="22" height="26" rx="6.5" fill="#fff"/><rect x="21" y="11" width="22" height="26" rx="6.5" fill="none" stroke="#fff" stroke-width="3.5" opacity=".95"/></svg></div>
+        <div class="appicon round"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="14" width="17" height="20" rx="5" fill="#fff"/><rect x="22" y="14" width="17" height="20" rx="5" fill="none" stroke="#fff" stroke-width="3"/></svg></div>
+        <div class="favicon"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="10" width="24" height="28" rx="7" fill="#4169e1"/><rect x="20" y="10" width="24" height="28" rx="7" fill="none" stroke="#151a26" stroke-width="5"/></svg></div>
+      </div>
+      <span class="bb-l">App icon on iPhone (rounded square), Android (adaptive, round crop) and the browser tab.</span>
+    </div>
+  </div>
+
+  <div class="phones-pair order" style="display:flex;flex-wrap:wrap;gap:22px">
+  <!-- launch -->
+  <div class="phone"><div class="screen mn" style="justify-content:center;align-items:center">
+    <div style="display:grid;justify-items:center;gap:14px">
+      <svg viewBox="0 0 48 48" style="width:72px;height:72px" aria-hidden="true"><rect x="4" y="10" width="24" height="28" rx="7" fill="#4169e1"/><rect x="20" y="10" width="24" height="28" rx="7" fill="none" stroke="#151a26" stroke-width="4"/></svg>
+    </div>
+  </div></div>
+  <!-- welcome -->
+  <div class="phone"><div class="screen mn">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="scr-body" style="gap:16px;align-content:end;padding-bottom:28px">
+      <div class="bp-lockup sm"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="10" width="24" height="28" rx="7" fill="#4169e1"/><rect x="20" y="10" width="24" height="28" rx="7" fill="none" stroke="#151a26" stroke-width="4"/></svg><span>Buildpair</span></div>
+      <h3 class="welcome-h">Set goals.<br>Bring people along.</h3>
+      <p class="sub" style="font-size:14px;margin:0">Track what you're building and the life around it, with friends who check in when you go quiet.</p>
+      <div class="btn">Create an account</div>
+      <div class="btn sec">I already have one</div>
+      <div class="sub" style="font-size:11px;text-align:center">Got an invite link? Open it and you'll land in the space.</div>
+    </div>
+  </div></div>
+  <!-- lock screen notification -->
+  <div class="phone"><div class="screen lock">
+    <div class="lk-time">9:41</div>
+    <div class="lk-date">Saturday, October 10</div>
+    <div class="notif">
+      <div class="nt-ic"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="11" width="22" height="26" rx="6.5" fill="#fff"/><rect x="21" y="11" width="22" height="26" rx="6.5" fill="none" stroke="#fff" stroke-width="3.5"/></svg></div>
+      <div><div class="nt-top"><b>Buildpair</b><span>now</span></div><div class="nt-t">Jordan in Life</div><div class="nt-b">I can take the kids Saturday morning so you can go.</div></div>
+    </div>
+    <div class="notif">
+      <div class="nt-ic"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="11" width="22" height="26" rx="6.5" fill="#fff"/><rect x="21" y="11" width="22" height="26" rx="6.5" fill="none" stroke="#fff" stroke-width="3.5"/></svg></div>
+      <div><div class="nt-top"><b>Buildpair</b><span>8:00 AM</span></div><div class="nt-t">3 things today</div><div class="nt-b">Pick up kids, Gym, Email 3 beta users</div></div>
+    </div>
+  </div></div>
+  <!-- invite link preview -->
+  <div class="phone"><div class="screen msg mn" style="background:#fff">
+    <div class="status"><span>9:41</span><i></i></div>
+    <div class="msg-h"><div class="av" style="background:#3557d6;width:34px;height:34px;font-size:13px">M</div><b>Maya</b></div>
+    <div class="msg-body">
+      <div class="bubble">Join my running space so you can keep me honest 😅</div>
+      <div class="linkcard">
+        <div class="lc-top"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="10" width="24" height="28" rx="7" fill="#fff"/><rect x="20" y="10" width="24" height="28" rx="7" fill="none" stroke="#fff" stroke-width="4"/></svg></div>
+        <div class="lc-b"><b>Maya invited you to "Running"</b><span>Training for my first half marathon, April 12</span><em>buildpair.app</em></div>
+      </div>
+    </div>
+  </div></div>
+  </div>
+  <div class="explain">
+    <h2>9. Where the Buildpair brand shows up</h2>
+    <p>Native apps keep branding out of the way inside the product. The brand belongs where people first meet the app, or meet it outside the app.</p>
+    <ul>
+      <li><b>The mark</b>: two rounded shapes side by side, one filled royal blue and one outlined. It reads as "you and the person in your corner" without spelling it out. On the royal blue app icon both shapes turn white.</li>
+      <li><b>App icon</b> on the home screen, as an iPhone rounded square and an Android adaptive icon, plus the <b>browser tab</b> icon on the web.</li>
+      <li><b>Launch screen</b> (first phone): just the mark on white for the split second the app opens. No slogan, no animation.</li>
+      <li><b>Welcome screen</b> (second phone): the wordmark, a short promise ("Set goals. Bring people along."), and sign-up. Invite links skip straight into the space after sign-up.</li>
+      <li><b>Notifications</b> (third phone): the app icon is the brand. The text is about people ("Jordan in Life"), not about Buildpair.</li>
+      <li><b>Invite links</b> (fourth phone): when you share a space, messaging apps show a preview card with the mark on royal blue, the space name and what it's for. This is how most new people will first see Buildpair, so it's worth getting right.</li>
+      <li><b>Web</b>: the wordmark at the top of the sidebar (screen 10), and on the landing page and emails (not drawn).</li>
+      <li><b>Not inside the app's screens:</b> Today, Spaces, Supporting and Discover don't carry a logo in their headers. Royal blue on buttons, notes and selection already does that job.</li>
+      <li>This mark is a starting point. Before launch, check the name and mark for conflicts (a trademark search), and consider having a designer refine it.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6. WEB -->
+<section class="step" style="grid-template-columns:1fr">
+  <div class="explain">
+    <h2>10. On a laptop: spaces on the left, list in the middle, chat on the right</h2>
+    <p>The extra width lets the list and the chat sit side by side, like a shared document with comments.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/spaces/life</span></div>
+    <div class="web mn">
+      <nav class="side">
+        <div class="brand"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="10" width="24" height="28" rx="7" fill="#4169e1"/><rect x="20" y="10" width="24" height="28" rx="7" fill="none" stroke="#151a26" stroke-width="4"/></svg><span class="wm">Buildpair</span></div>
+        <a href="#">Today <span class="count">5</span></a>
+        <a href="#">Supporting <span class="count">2</span></a>
+        <a href="#">Discover</a>
+        <div class="grp">Your spaces</div>
+        <a href="#"><span class="l"><span class="sp-ico" style="background:#3557d6">L</span>Ledgerly</span></a>
+        <a href="#" class="on"><span class="l"><span class="sp-ico" style="background:#2f8f5b">L</span>Life</span></a>
+        <a href="#"><span class="l"><span class="sp-ico" style="background:#c0392b">R</span>Running</span></a>
+        <a href="#"><span class="l"><span class="sp-ico" style="background:#5d6474">P</span>Private</span></a>
+      </nav>
+      <div class="main">
+        <div class="topbar"><h3>Life</h3><span class="faces"><i style="background:#c97a9e">J</i><i style="background:#3557d6">M</i></span></div>
+        <span class="sub">You, Jordan and 3 friends</span>
+        <div style="max-width:520px">
+          <p class="sect" style="margin-bottom:6px">Habits and goals</p>
+          <div class="todo"><span class="ck"></span><div><div>Gym 4x a week<span class="kind">Habit</span><span class="habit-dots"><i class="d"></i><i class="d"></i><i></i><i></i></span></div></div></div>
+          <div class="todo"><span class="ck"></span><div><div>Plan Lisbon trip<span class="kind">Goal</span></div><div class="for">3 of 7 · by Dec 1</div></div></div>
+        </div>
+        <div style="max-width:520px">
+          <p class="sect" style="margin-bottom:6px">To-dos</p>
+          <div class="todo"><span class="ck"></span><div>Pick up kids from daycare<div class="for">Today 5:30 PM</div></div></div>
+          <div class="todo"><span class="ck"></span><div>Dentist<div class="for">Fri 3:00 PM</div></div></div>
+          <div class="todo"><span class="ck on"></span><div class="done-t">Pay rent</div></div>
+        </div>
+      </div>
+      <aside class="marg">
+        <h4>Chat</h4>
+        <div class="rollup"><span class="rollup-ico">4</span><div>Maya finished 4 things<div class="items">Groceries, Pay rent, Book vet, Upper body</div></div></div>
+        <div class="ev"><span class="ev-mark skip"></span><div class="ev-text">Maya skipped <b>Gym</b><div class="update-msg" style="margin-top:4px">Car broke down. Going Saturday instead.</div></div></div>
+        <div class="margin"><div class="av" style="background:#c97a9e">J</div><div class="note"><div>I can take the kids Saturday morning so you can go.</div><span class="who">Jordan · 20 min ago</span></div></div>
+        <div class="btn sec" style="font-size:13px;padding:9px">Message</div>
+      </aside>
+    </div>
+  </div></div>
+</section>
+
+<footer class="end">
+  <h2>What changed</h2>
+  <p>Sharing now happens per <b>space</b> instead of per goal. One-off to-dos finally have a home ("Life"). Big goals can get their own space or join an existing one, and every space has one chat with small to-dos rolled up so it stays readable.</p>
+  <p>Not drawn yet: the Activity screen behind the bell, habits in detail, the shared focus timer, and the Pro upgrade screen.</p>
+</footer>
+</div>
+
+</html>

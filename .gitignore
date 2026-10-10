@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.turbo/
+.wrangler/
+.expo/
+web-build/
+*.log
+.env
+.env.*
+!.env.example
+.dev.vars
+coverage/
+ios/
+android/
+.DS_Store
+wrangler.preview.json

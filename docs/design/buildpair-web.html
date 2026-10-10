@@ -1,0 +1,1730 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buildpair Desktop Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700&display=swap">
+<style>
+
+/* Layout: a walkthrough sheet. Page chrome follows the viewer's theme; device frames are fixed-light specimens of the Margin Notes direction. */
+:root {
+  --page: #f4f5f8;
+  --ink: #141823;
+  --muted: #5b6272;
+  --rule: #dfe2ea;
+  --accent: #3557d6;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-head: "Schibsted Grotesk", "Inter", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --page: #10131a; --ink: #e8eaf0; --muted: #9aa1b2; --rule: #2a2f3b; --accent: #8da8ff; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --page: #10131a; --ink: #e8eaf0; --muted: #9aa1b2; --rule: #2a2f3b; --accent: #8da8ff; color-scheme: dark; }
+body { background: var(--page); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.55; padding-inline: 16px; padding-block: 0 72px; }
+.wrap { max-width: 1180px; margin-inline: auto; }
+header.top { padding-block: 44px 8px; max-width: 70ch; }
+header.top h1 { font-family: var(--font-head); font-weight: 700; font-size: clamp(30px, 4.6vw, 46px); line-height: 1.06; letter-spacing: -0.02em; margin: 0 0 14px; text-wrap: balance; }
+header.top p { color: var(--muted); margin: 0 0 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--muted); margin-top: 14px; }
+.legend b { color: var(--ink); font-weight: 600; }
+section.step { margin-top: 52px; padding-top: 26px; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
+@media (min-width: 900px) { section.step { grid-template-columns: auto minmax(0, 1fr); } }
+.explain { display: grid; gap: 10px; min-width: 0; max-width: 60ch; }
+.explain h2 { font-family: var(--font-head); font-size: 26px; line-height: 1.15; letter-spacing: -0.01em; margin: 0; }
+.explain p { margin: 0; color: var(--muted); }
+.explain ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; }
+.explain b { color: var(--ink); }
+.order { grid-row: 1; }
+@media (min-width: 900px) { .order { grid-row: auto; } }
+
+/* Phone */
+.phone { width: 300px; max-width: 100%; border-radius: 38px; padding: 9px; background: #0d0f14; box-shadow: 0 18px 40px -18px rgba(10, 14, 30, 0.45); }
+.screen { border-radius: 30px; overflow: hidden; min-height: 620px; display: flex; flex-direction: column; }
+.status { display: flex; justify-content: space-between; align-items: center; padding: 12px 22px 4px; font-size: 12px; font-weight: 600; }
+.status i { width: 14px; height: 8px; border-radius: 2px; border: 1.2px solid currentColor; display: block; }
+.scr-body { padding: 6px 16px 16px; display: grid; gap: 12px; flex: 1; align-content: start; }
+.tabbar { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 6px 14px; font-size: 10px; text-align: center; }
+.tabbar span { display: grid; justify-items: center; gap: 3px; }
+.tabbar svg { width: 20px; height: 20px; }
+
+/* Margin Notes specimen tokens */
+.mn { --bg: #ffffff; --ink: #151a26; --sub: #5d6474; --faint: #8a90a0; --line: #e6e8ef; --blue: #3557d6; --royal: #4169e1; --tint: #eef2fe; --note-ink: #1d2c66; --ok: #1f8a4c; --ok-soft: #e6f4ec; --warn: #a35b00; --warn-soft: #fdf1e1; background: var(--bg); color: var(--ink); font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif; font-size: 13px; line-height: 1.4; }
+.mn .lt { font-size: 27px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 2px 0 0; }
+.mn .sub { font-size: 12px; color: var(--sub); }
+.mn .sect { font-size: 13px; font-weight: 650; margin: 4px 0 -4px; }
+.mn .goal { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); }
+.mn .goal:first-of-type { border-top: 0; padding-top: 0; }
+.mn .g-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mn .g-name { font-size: 15px; font-weight: 650; }
+.mn .bar { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.mn .bar i { display: block; height: 100%; background: var(--royal); border-radius: 3px; }
+.mn .g-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--sub); font-size: 12px; font-variant-numeric: tabular-nums; }
+.mn .faces { display: flex; align-items: center; }
+.mn .faces i { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; font-style: normal; font-size: 9px; font-weight: 700; color: #fff; }
+.mn .faces i + i { margin-left: -6px; }
+.mn .lock { display: inline-flex; align-items: center; gap: 4px; color: var(--faint); font-size: 12px; }
+.mn .lock svg { width: 12px; height: 12px; }
+.mn .todo { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; padding: 9px 0; border-top: 1px solid var(--line); }
+.mn .todo:first-of-type { border-top: 0; }
+.mn .ck { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #b4bac8; margin-top: 1px; }
+.mn .ck.on { background: var(--royal); border-color: var(--royal); position: relative; }
+.mn .ck.on::after { content: ""; position: absolute; left: 5px; top: 3px; width: 4px; height: 8px; border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(45deg); }
+.mn .todo .for { color: var(--sub); font-size: 11px; }
+.mn .done-t { color: var(--faint); text-decoration: line-through; }
+.mn .tag { font-size: 10px; font-weight: 600; color: var(--sub); background: #f1f2f6; border-radius: 4px; padding: 1px 5px; margin-left: 4px; }
+.mn .margin { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; }
+.mn .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700; flex: none; }
+.mn .av.lg { width: 40px; height: 40px; font-size: 14px; }
+.mn .note { background: var(--tint); border-radius: 4px 12px 12px 12px; padding: 10px 11px; display: grid; gap: 7px; color: var(--note-ink); }
+.mn .note b { font-size: 11px; font-weight: 700; color: var(--blue); display: block; margin-bottom: 1px; }
+.mn .who { font-size: 11px; color: var(--sub); }
+.mn .event { display: grid; grid-template-columns: 26px 1fr; gap: 8px; color: var(--sub); font-size: 12px; align-items: center; }
+.mn .event .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--royal); justify-self: center; }
+.mn .btn { background: var(--blue); color: #fff; border-radius: 10px; padding: 12px; font-weight: 600; font-size: 15px; text-align: center; }
+.mn .btn.sec { background: transparent; color: var(--blue); border: 1px solid var(--line); }
+.mn .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.mn .chip.ok { background: var(--ok-soft); color: var(--ok); }
+.mn .chip.warn { background: var(--warn-soft); color: var(--warn); }
+.mn .tabbar { border-top: 1px solid var(--line); color: var(--faint); background: #fff; }
+.mn .tabbar .on { color: var(--blue); }
+.mn .quiet { display: grid; gap: 8px; border: 1px dashed #c9cfdd; border-radius: 10px; padding: 10px 11px; color: var(--sub); }
+.mn .quiet strong { color: var(--ink); font-weight: 600; }
+.mn .actions { display: flex; gap: 6px; }
+.mn .actions span { font-size: 12px; font-weight: 600; color: var(--blue); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; }
+.mn .opt { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 11px 0; border-top: 1px solid var(--line); }
+.mn .opt:first-of-type { border-top: 0; }
+.mn .radio { box-sizing: border-box; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #b4bac8; margin-top: 1px; }
+.mn .radio.on { border: 6px solid var(--blue); }
+.mn .opt-t { font-weight: 600; font-size: 14px; }
+.mn .people { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mn .person { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 3px; font-size: 12px; }
+.mn .person.on { border-color: var(--blue); background: var(--tint); color: var(--note-ink); font-weight: 600; }
+.mn .person i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 9px; font-weight: 700; color: #fff; }
+.mn .sheet-handle { width: 36px; height: 5px; border-radius: 3px; background: #d6d9e2; justify-self: center; }
+.mn .reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+.mn .reasons span { font-size: 11px; background: var(--tint); color: var(--note-ink); padding: 3px 8px; border-radius: 6px; font-weight: 500; }
+.mn .card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; display: grid; gap: 10px; }
+.mn .lbl { font-size: 11px; font-weight: 600; color: var(--sub); }
+.mn .row { display: flex; gap: 10px; align-items: center; }
+.mn .quick { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; background: #f3f5fa; border-radius: 10px; padding: 9px 12px; font-size: 14px; }
+.mn .quick span { color: var(--blue); font-weight: 700; }
+.mn .quick em { font-style: normal; font-size: 11px; color: var(--blue); background: var(--tint); border-radius: 4px; padding: 1px 6px; flex-basis: 100%; width: fit-content; margin-left: 16px; }
+.mn .thread { display: grid; gap: 10px; }
+.mn .ev { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; }
+.mn .ev-mark { width: 22px; height: 22px; border-radius: 50%; background: var(--royal); position: relative; justify-self: center; }
+.mn .ev-mark::after { content: ""; position: absolute; left: 8px; top: 5px; width: 4px; height: 9px; border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(45deg); }
+.mn .ev-mark.skip { background: #fff; border: 1.5px solid #b4bac8; }
+.mn .ev-mark.skip::after { left: 5px; top: 9px; width: 9px; height: 0; border-right: 0; border-bottom: 2px solid #8a90a0; transform: none; }
+.mn .ev-text { font-size: 13px; }
+.mn .ev-text .when { color: var(--faint); font-size: 11px; margin-left: 4px; }
+.mn .reacts { display: flex; gap: 4px; margin-top: 4px; }
+.mn .reacts span { font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--sub); }
+.mn .reacts span.mine { border-color: var(--royal); color: var(--blue); background: var(--tint); }
+.mn .update-msg { background: #f3f5fa; border-radius: 4px 12px 12px 12px; padding: 9px 11px; }
+.mn .sys { text-align: center; font-size: 11px; color: var(--sub); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 6px 0; }
+.mn .compose { display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--line); padding: 10px 12px 14px; background: #fff; }
+.mn .compose .field { flex: 1; border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; color: var(--faint); font-size: 13px; }
+.mn .compose .pill { font-size: 12px; font-weight: 600; color: var(--blue); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; }
+.mn .seg { display: grid; grid-template-columns: 1fr 1fr; background: #eceef3; border-radius: 9px; padding: 2px; font-size: 12px; font-weight: 600; text-align: center; }
+.mn .seg span { padding: 6px; border-radius: 7px; color: var(--sub); }
+.mn .seg .on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+/* Web frame */
+.browser-wrap { overflow-x: auto; padding-bottom: 6px; }
+.browser { width: 940px; border-radius: 12px; overflow: hidden; border: 1px solid #c9cdd8; box-shadow: 0 18px 40px -22px rgba(10, 14, 30, 0.45); }
+.chrome { background: #e9ebf0; padding: 9px 12px; display: flex; gap: 6px; align-items: center; }
+.chrome i { width: 10px; height: 10px; border-radius: 50%; background: #c4c8d2; }
+.chrome .url { margin-left: 12px; background: #fff; border-radius: 6px; padding: 3px 12px; font-size: 11px; color: #5d6474; font-family: "Inter", sans-serif; }
+.web { display: grid; grid-template-columns: 190px 1fr 280px; min-height: 520px; }
+.web .side { background: #f7f8fb; border-right: 1px solid var(--line); padding: 18px 12px; display: grid; gap: 4px; align-content: start; font-size: 13px; }
+.web .side .brand { font-weight: 700; font-size: 15px; margin: 0 8px 14px; display: flex; align-items: center; gap: 8px; }
+.web .side .brand svg { width: 22px; height: 22px; }
+.web .side a { color: var(--sub); text-decoration: none; padding: 7px 10px; border-radius: 7px; display: flex; justify-content: space-between; }
+.web .side a.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.web .side .count { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.web .main { padding: 24px 28px; display: grid; gap: 14px; align-content: start; }
+.web .main h3 { font-size: 24px; letter-spacing: -0.02em; margin: 0; }
+.web .marg { border-left: 1px solid var(--line); background: #fbfbfd; padding: 24px 18px; display: grid; gap: 14px; align-content: start; }
+.web .marg h4 { margin: 0; font-size: 12px; font-weight: 600; color: var(--sub); }
+
+footer.end { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--rule); max-width: 70ch; }
+footer.end h2 { font-family: var(--font-head); font-size: 22px; margin: 0 0 8px; }
+footer.end p { color: var(--muted); margin: 0 0 8px; }
+
+/* Watching options: chat-list rows and an activity inbox, in the Margin Notes specimen tokens. */
+.grid4 { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 8px; }
+.opt-col { display: grid; gap: 12px; width: 300px; max-width: 100%; align-content: start; }
+.opt-col h2 { font-family: var(--font-head); font-size: 22px; line-height: 1.2; margin: 0; }
+.opt-col .rec { font-size: 12px; font-weight: 600; color: var(--accent); }
+.opt-col p { margin: 0; font-size: 14px; color: var(--muted); }
+.opt-col ul { margin: 0; padding-left: 18px; font-size: 14px; color: var(--muted); display: grid; gap: 4px; }
+.mn .topbar { display: flex; justify-content: space-between; align-items: center; }
+.mn .bell { position: relative; width: 30px; height: 30px; display: grid; place-items: center; color: var(--ink); }
+.mn .bell svg { width: 22px; height: 22px; }
+.mn .bell b { position: absolute; top: 0; right: -2px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--blue); color: #fff; font-size: 10px; display: grid; place-items: center; padding: 0 4px; }
+.mn .chats { display: grid; }
+.mn .chat { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.mn .chat:first-child { border-top: 0; }
+.mn .chat .av { width: 40px; height: 40px; font-size: 14px; }
+.mn .chat .t { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn .chat .t span { font-weight: 400; color: var(--sub); }
+.mn .chat .p { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn .chat .p.unread { color: var(--ink); font-weight: 500; }
+.mn .chat .r { display: grid; justify-items: end; gap: 4px; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.mn .dot-u { width: 9px; height: 9px; border-radius: 50%; background: var(--blue); }
+.mn .mini-bar { height: 3px; border-radius: 2px; background: var(--line); margin-top: 5px; overflow: hidden; }
+.mn .mini-bar i { display: block; height: 100%; background: var(--royal); }
+.mn .quiet-tag { font-size: 10px; font-weight: 600; color: var(--warn); background: var(--warn-soft); border-radius: 4px; padding: 1px 6px; }
+.mn .goalchips { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.mn .goalchips span { font-size: 10px; color: var(--sub); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.mn .needs { background: #f7f8fb; border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; }
+.mn .needs-h { font-size: 12px; font-weight: 600; color: var(--sub); padding: 8px 0 2px; }
+.mn .need { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 12px; }
+.mn .need:first-of-type { border-top: 0; }
+.mn .need .av { width: 28px; height: 28px; font-size: 11px; }
+.mn .need .go { font-size: 12px; font-weight: 600; color: var(--blue); }
+.mn .act { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.mn .act:first-of-type { border-top: 0; }
+.mn .act .av { width: 32px; height: 32px; font-size: 12px; }
+.mn .act .when { display: block; font-size: 11px; color: var(--faint); margin-top: 2px; }
+.mn .act.new { background: linear-gradient(90deg, var(--tint), transparent 85%); margin-inline: -16px; padding-inline: 16px; }
+.mn .grp-h { font-size: 12px; font-weight: 600; color: var(--sub); margin-top: 4px; }
+.mn .tabbar5 { grid-template-columns: repeat(5, 1fr); }
+.mn .sugg { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 0 9px 36px; }
+.mn .sugg span { font-size: 11px; font-weight: 600; color: var(--blue); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+.mn .needs .need + .sugg + .need { border-top: 1px solid var(--line); }
+.mn .sugg-bar { display: flex; gap: 6px; overflow-x: auto; padding: 8px 12px 0; border-top: 1px solid var(--line); background: #fff; }
+.mn .sugg-bar span { flex: none; font-size: 12px; font-weight: 600; color: var(--blue); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; background: #fff; }
+.mn .sugg-bar + .compose { border-top: 0; }
+</style>
+<style>
+/* Spaces additions */
+.phones-pair { align-items: flex-start; }
+.mn .sp-h { display: flex; justify-content: space-between; align-items: center; margin: 6px 0 -2px; }
+.mn .sp-name { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 650; }
+.mn .sp-ico { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 700; }
+.mn .sp-who { font-size: 11px; color: var(--sub); display: flex; align-items: center; gap: 4px; }
+.mn .sp-who svg { width: 11px; height: 11px; }
+.mn .kind { font-size: 10px; font-weight: 600; color: var(--sub); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+.mn .rollup { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; font-size: 13px; }
+.mn .rollup-ico { width: 22px; height: 22px; border-radius: 6px; background: #f1f2f6; display: grid; place-items: center; justify-self: center; color: var(--sub); font-size: 11px; font-weight: 700; }
+.mn .rollup .items { color: var(--sub); font-size: 12px; margin-top: 2px; }
+.mn .split-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 650; color: var(--sub); margin-top: 2px; }
+.mn .split-h a { color: var(--blue); font-weight: 600; text-decoration: none; }
+.mn .listbox { border: 1px solid var(--line); border-radius: 12px; padding: 2px 12px; }
+.mn .listbox .todo { padding: 8px 0; }
+.mn .habit-dots { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.mn .habit-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.mn .habit-dots i.d { background: var(--royal); }
+.mn .collapsed { font-size: 12px; color: var(--sub); padding: 8px 0; border-top: 1px solid var(--line); }
+.mn .divider { text-align: center; font-size: 11px; color: var(--faint); position: relative; margin: 2px 0; }
+.mn .place { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.mn .place:first-of-type { border-top: 0; }
+.mn .member { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.mn .member:first-of-type { border-top: 0; }
+.mn .member .av { width: 32px; height: 32px; font-size: 12px; }
+.mn .role { font-size: 11px; color: var(--sub); }
+.web .side .grp { font-size: 11px; font-weight: 600; color: var(--faint); margin: 14px 10px 4px; }
+.web .side a .sp-ico { margin-right: 8px; }
+.web .side a span.l { display: flex; align-items: center; }
+.mn .box { box-sizing: border-box; width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid #b4bac8; display: grid; place-items: center; margin-top: 1px; }
+.mn .box.on { background: var(--blue); border-color: var(--blue); }
+.mn .box.on::after { content: ""; width: 9px; height: 5px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
+.mn .dots-row { grid-template-columns: 20px 1fr auto; }
+.mn .more { font-size: 11px; letter-spacing: 1px; color: var(--faint); padding: 2px 6px; border-radius: 6px; align-self: center; }
+.mn .more.on { background: #eceef3; color: var(--ink); }
+.mn .menu { position: absolute; right: 22px; top: 172px; width: 196px; background: #fff; border-radius: 12px; box-shadow: 0 12px 32px -8px rgba(15, 20, 40, 0.28), 0 0 0 1px rgba(15, 20, 40, 0.06); padding: 4px 0; z-index: 2; }
+.mn .mi { display: flex; align-items: center; gap: 10px; padding: 9px 14px; font-size: 14px; }
+.mn .mi svg { width: 17px; height: 17px; color: var(--sub); }
+.mn .mi.sep { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 11px; }
+.mn .toast-bar { margin-top: 150px; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #1b2131; color: #fff; border-radius: 12px; padding: 11px 14px; font-size: 13px; }
+.mn .toast-bar b { color: #a9beff; font-weight: 600; }
+.mn .who-pop { position: absolute; left: 0; top: 26px; background: #fff; border-radius: 10px; box-shadow: 0 10px 28px -8px rgba(15, 20, 40, 0.3), 0 0 0 1px rgba(15, 20, 40, 0.06); padding: 8px 12px; font-size: 12px; display: grid; gap: 3px; z-index: 3; min-width: 120px; }
+.mn .who-pop .wp-h { font-weight: 650; padding-bottom: 4px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
+.mn .chev { width: 12px; height: 12px; color: var(--faint); flex: none; }
+.mn .cl { display: inline-flex; align-items: center; gap: 5px; }
+.mn .needs-h.cl { display: flex; }
+.mn .newsp { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px dashed #c3c9d8; border-radius: 10px; color: var(--blue); font-weight: 600; font-size: 14px; }
+.mn .newsp .plus { width: 22px; height: 22px; border-radius: 6px; background: var(--tint); display: grid; place-items: center; font-size: 16px; line-height: 1; }
+.mn .sp-ico.big { width: 44px; height: 44px; border-radius: 12px; font-size: 18px; flex: none; }
+.mn .swatches { display: flex; gap: 10px; }
+.mn .swatches i { width: 26px; height: 26px; border-radius: 50%; display: block; }
+.mn .swatches i.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #151a26; }
+.mn .navrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.mn .nr-r { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--sub); font-size: 13px; }
+.mn .nr-r .chev { width: 14px; height: 14px; }
+.mn .sp-ico.edit { position: relative; }
+.mn .sp-ico.edit em { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 9px; font-weight: 600; color: var(--sub); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 0 5px; }
+.mn .gear { color: var(--ink); width: 26px; height: 26px; display: grid; place-items: center; }
+.mn .gear svg { width: 22px; height: 22px; }
+.mn .sgrp-h { font-size: 11px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: 0.04em; margin: 6px 0 -2px 12px; }
+.mn .sgrp { background: #fff; border-radius: 12px; padding: 0 12px; }
+.mn .srow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.mn .srow:first-child { border-top: 0; }
+.mn .srow span { color: var(--sub); font-size: 13px; }
+.mn .srow .ok-t { color: var(--ok); font-weight: 600; }
+.mn .srow .pro { font-size: 10px; font-weight: 700; color: var(--blue); background: var(--tint); border-radius: 4px; padding: 1px 6px; }
+.mn .srow.danger { color: #c0392b; }
+.mn .switch { width: 42px; height: 26px; border-radius: 13px; background: #d9dce4; position: relative; flex: none; }
+.mn .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.mn .switch.on { background: var(--blue); }
+.mn .switch.on::after { left: 18px; }
+.mn .trow { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; }
+.mn .goal-l { display: grid; grid-template-columns: 16px 1fr; gap: 4px 8px; align-items: center; font-size: 12px; }
+.mn .goal-l .ck { width: 6px; height: 6px; border: 0; background: var(--royal); justify-self: center; margin: 0; }
+.mn .plusbtn { width: 30px; height: 30px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; }
+.mn .plusbtn svg { width: 16px; height: 16px; }
+.mn .addrow { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
+.mn .addrow:first-child { border-top: 0; }
+.mn .ai { width: 32px; height: 32px; border-radius: 9px; background: var(--tint); color: var(--blue); display: grid; place-items: center; }
+.mn .ai svg { width: 17px; height: 17px; }
+.mn .sprow { grid-template-columns: 40px 1fr auto; }
+.mn .req-tag { font-size: 10px; font-weight: 700; color: #fff; background: var(--blue); border-radius: 4px; padding: 1px 6px; }
+.mn .disc-tag { font-size: 10px; font-weight: 600; color: var(--sub); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.mn .addinline { color: var(--blue); font-weight: 600; font-size: 13px; padding: 9px 0; border-top: 1px solid var(--line); }
+.mn.screen, .screen.mn { position: relative; }
+.mn .fab { position: absolute; right: 16px; bottom: 76px; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; box-shadow: 0 8px 18px -6px rgba(53, 87, 214, 0.6), 0 2px 4px rgba(15, 20, 40, 0.15); z-index: 4; }
+.mn .fab svg { width: 22px; height: 22px; }
+.mn .qa-input { border: 1.5px solid var(--blue); border-radius: 10px; padding: 11px 12px; font-size: 15px; display: flex; align-items: center; }
+.mn .caret { width: 1.5px; height: 18px; background: var(--blue); margin-left: 2px; }
+.mn .kbd { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; background: #d3d6dd; margin: 4px -16px -16px; padding: 8px 6px 14px; }
+.mn .kbd span { background: #fff; border-radius: 5px; text-align: center; font-size: 13px; padding: 8px 0; box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+.mn .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.mn .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #1d2c66; background: var(--tint); border-radius: 999px; padding: 4px 10px 4px 5px; }
+.mn .badge .bi { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; }
+.mn .badge .bi svg { width: 11px; height: 11px; }
+.mn .badges.sm .badge { font-size: 11px; padding: 2px 8px 2px 3px; }
+.mn .badges.sm .badge:not(:has(.bi)) { padding-left: 8px; background: #f3f4f8; color: var(--sub); }
+.mn .badges.sm .bi { width: 15px; height: 15px; }
+.mn .compl { display: flex; flex-wrap: wrap; gap: 6px; }
+.mn .compl span { font-size: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; }
+.mn .compl b { color: var(--blue); margin-left: 3px; }
+.mn .todo.sel { background: var(--tint); margin-inline: -12px; padding-inline: 12px; }
+.mn .ck.selck { border: 2px solid var(--blue); background: #fff; position: relative; }
+.mn .ck.selck::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--blue); }
+.mn .actionbar { display: grid; grid-template-columns: repeat(4, 1fr) 40px; align-items: center; border-top: 1px solid var(--line); background: #fff; padding: 8px 6px 14px; font-size: 10px; color: var(--ink); text-align: center; }
+.mn .actionbar span { display: grid; justify-items: center; gap: 3px; }
+.mn .actionbar svg { width: 20px; height: 20px; color: var(--blue); }
+.mn .actionbar .adots svg { color: var(--sub); }
+.mn .actionbar .adots.on { background: #eceef3; border-radius: 8px; padding: 6px 0; }
+.mn .mrow { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.mn .mrow:first-child { border-top: 0; }
+.mn .mrow svg { width: 18px; height: 18px; color: var(--sub); }
+.mn .mrow.danger { color: #c0392b; }
+.mn .mrow.danger svg { color: #c0392b; }
+.mn .rowplus { width: 20px; height: 20px; color: var(--blue); display: grid; place-items: center; font-size: 24px; font-weight: 400; line-height: 1; }
+.mn .addfield { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; font-size: 14px; color: var(--faint); background: #fff; }
+.mn .rolesel { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: var(--sub); }
+.mn .dd { width: 14px; height: 14px; }
+.mn .dd-wrap { display: inline-flex; vertical-align: middle; color: var(--sub); margin-left: 2px; }
+.mn .access { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; }
+.mn .acc-ic { width: 32px; height: 32px; border-radius: 50%; background: #eef0f4; color: var(--sub); display: grid; place-items: center; }
+.mn .acc-ic svg { width: 16px; height: 16px; }
+.mn .copylink { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 8px; margin: 2px 0 10px; color: var(--blue); font-weight: 600; font-size: 13px; }
+.mn .copylink svg, .mn .copy-sm svg { width: 15px; height: 15px; }
+.mn .copy-sm { display: inline-flex; align-items: center; gap: 5px; color: var(--blue); font-weight: 600; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
+.mn .addfield.typing { color: var(--ink); border-color: var(--blue); border-width: 1.5px; display: flex; align-items: center; }
+.mn .suggest { background: #fff; border-radius: 12px; box-shadow: 0 10px 28px -8px rgba(15, 20, 40, 0.28), 0 0 0 1px rgba(15, 20, 40, 0.06); padding: 4px 12px; margin-top: -6px; }
+.mn .sg-h { font-size: 11px; font-weight: 600; color: var(--sub); padding: 8px 0 2px; }
+.mn .sg-row { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: center; padding: 7px 0; font-size: 13px; }
+.mn .sg-row .av { width: 32px; height: 32px; font-size: 11px; }
+.mn .idic { width: 32px; height: 32px; border-radius: 50%; background: var(--tint); color: var(--blue); display: grid; place-items: center; font-weight: 700; }
+.mn .idchip { display: inline-block; margin-top: 4px; font-size: 11px; color: var(--sub); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.mn .invrow { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; }
+.mn .acc-ic.inv { background: var(--tint); color: var(--blue); }
+.mn .qa-line { font-size: 17px; display: flex; align-items: center; padding: 2px 0; }
+.mn .qa-tools { display: flex; align-items: center; gap: 8px; }
+.mn .qt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--sub); background: #f1f2f6; border-radius: 8px; padding: 6px 9px; }
+.mn .qt svg { width: 15px; height: 15px; }
+.mn .qt.on { color: var(--blue); background: var(--tint); font-weight: 600; }
+.mn .qa-send { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; }
+.mn .qa-send svg { width: 17px; height: 17px; }
+.mn .minical { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.mn .mc-h { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; color: var(--sub); }
+.mn .mc-h b { color: var(--ink); }
+.mn .mc-g { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; row-gap: 4px; font-variant-numeric: tabular-nums; }
+.mn .mc-g i { font-style: normal; padding: 4px 0; border-radius: 50%; width: 26px; justify-self: center; }
+.mn .mc-g.dow i { color: var(--faint); font-size: 10px; font-weight: 600; }
+.mn .mc-g i.o { color: var(--faint); }
+.mn .mc-g i.t { color: var(--blue); font-weight: 700; }
+.mn .mc-g i.s { background: var(--blue); color: #fff; font-weight: 600; }
+.mn .stepper { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 14px; }
+.mn .stepper span { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--blue); font-weight: 600; }
+.mn .stepper em { font-style: normal; color: var(--sub); font-size: 13px; }
+.mn .dim { position: absolute; inset: 0; background: rgba(15, 20, 40, 0.38); z-index: 5; }
+.mn .float-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; }
+.mn .float-sheet > .scr-body { box-shadow: 0 -8px 24px -10px rgba(15, 20, 40, 0.35); }
+.brandboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.bb-card { background: #ffffff; border: 1px solid #dfe2ea; border-radius: 16px; padding: 22px; display: grid; gap: 14px; align-content: start; justify-items: start; color: #151a26; }
+.bb-l { font-size: 13px; color: #5b6272; line-height: 1.45; }
+.bp-mark { width: 72px; height: 72px; }
+.bp-lockup { display: flex; align-items: center; gap: 10px; }
+.bp-lockup svg { width: 44px; height: 44px; }
+.bp-lockup span { font-family: "Schibsted Grotesk", "Inter", sans-serif; font-weight: 700; font-size: 34px; letter-spacing: -0.03em; color: #151a26; }
+.bp-lockup.sm svg { width: 30px; height: 30px; }
+.bp-lockup.sm span { font-size: 22px; }
+.icons { display: flex; align-items: center; gap: 14px; }
+.appicon { width: 64px; height: 64px; border-radius: 15px; background: #4169e1; display: grid; place-items: center; box-shadow: 0 6px 14px -6px rgba(53, 87, 214, 0.6); }
+.appicon svg { width: 46px; height: 46px; }
+.appicon.round { border-radius: 50%; }
+.favicon { width: 28px; height: 28px; border-radius: 6px; background: #fff; border: 1px solid #dfe2ea; display: grid; place-items: center; }
+.favicon svg { width: 22px; height: 22px; }
+.mn .welcome-h { font-family: "Schibsted Grotesk", "Inter", sans-serif; font-size: 32px; line-height: 1.05; letter-spacing: -0.03em; margin: 0; }
+.screen.lock { background: linear-gradient(180deg, #2c3c74 0%, #4a5f9e 55%, #8b98c4 100%); color: #fff; display: flex; flex-direction: column; align-items: center; padding: 34px 12px 12px; gap: 6px; font-family: -apple-system, "Inter", system-ui, sans-serif; }
+.lk-time { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.lk-date { font-size: 15px; opacity: 0.85; margin-bottom: 18px; }
+.notif { width: 100%; background: rgba(255,255,255,0.78); color: #151a26; border-radius: 16px; padding: 10px 12px; display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; font-size: 13px; }
+.nt-ic { width: 32px; height: 32px; border-radius: 8px; background: #4169e1; display: grid; place-items: center; }
+.nt-ic svg { width: 24px; height: 24px; }
+.nt-top { display: flex; justify-content: space-between; font-size: 11px; color: #5b6272; }
+.nt-top b { font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+.nt-t { font-weight: 600; margin-top: 1px; }
+.nt-b { color: #2b3140; }
+.screen.msg { background: #fff; font-family: -apple-system, "Inter", system-ui, sans-serif; color: #151a26; }
+.msg-h { display: grid; justify-items: center; gap: 4px; padding: 6px 0 12px; border-bottom: 1px solid #e6e8ef; font-size: 12px; }
+.msg-body { padding: 16px 14px; display: grid; gap: 8px; justify-items: start; }
+.bubble { background: #e9e9eb; border-radius: 18px; padding: 8px 12px; font-size: 14px; max-width: 80%; }
+.linkcard { width: 78%; border-radius: 16px; overflow: hidden; background: #e9e9eb; }
+.lc-top { background: #4169e1; display: grid; place-items: center; height: 96px; }
+.lc-top svg { width: 54px; height: 54px; }
+.lc-b { padding: 9px 12px; display: grid; gap: 2px; font-size: 13px; }
+.lc-b span { color: #3c4252; font-size: 12px; }
+.lc-b em { font-style: normal; color: #6b7280; font-size: 11px; }
+.web .side .brand .wm { font-family: "Schibsted Grotesk", "Inter", sans-serif; font-weight: 700; letter-spacing: -0.03em; font-size: 17px; }
+</style>
+<style>
+/* Desktop web additions. Same Margin Notes specimen tokens (.mn); frames are fixed-light like the phone specimens. */
+.browser.xl { width: 1120px; }
+.browser-wrap.scaled { overflow: hidden; }
+.browser.md { width: 760px; }
+.mn.app { display: grid; grid-template-columns: 224px minmax(0, 1fr) 336px; height: 660px; position: relative; overflow: hidden; font-size: 13px; }
+.mn.app.c2 { grid-template-columns: 224px minmax(0, 1fr); }
+.mn.app.sup { grid-template-columns: 224px 340px minmax(0, 1fr); }
+.mn.app.tall { height: 720px; }
+
+/* Sidebar */
+.mn .sb { background: #f7f8fb; border-right: 1px solid var(--line); padding: 14px 10px 0; display: flex; flex-direction: column; gap: 1px; min-height: 0; overflow: hidden; }
+.mn .sb .brand { display: flex; align-items: center; gap: 8px; padding: 0 8px 12px; }
+.mn .sb .brand svg { width: 22px; height: 22px; }
+.mn .sb .brand .wm { font-family: "Schibsted Grotesk", "Inter", sans-serif; font-weight: 700; letter-spacing: -0.03em; font-size: 17px; }
+.mn .sb .find { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6px 8px; color: var(--faint); margin-bottom: 8px; font-size: 12px; }
+.mn .sb .find svg { width: 14px; height: 14px; flex: none; }
+.mn .sb .find .k { margin-left: auto; }
+.mn .sb .nv { display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: 7px; color: var(--sub); white-space: nowrap; }
+.mn .sb .nv svg { width: 16px; height: 16px; flex: none; }
+.mn .sb .nv .n { margin-left: auto; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.mn .sb .nv .n.b { color: #fff; background: var(--blue); border-radius: 999px; padding: 0 6px; font-weight: 700; }
+.mn .sb .nv .dot-u { margin-left: auto; width: 7px; height: 7px; }
+.mn .sb .nv.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.mn .sb .nv .sp-ico { width: 16px; height: 16px; font-size: 9px; border-radius: 4px; }
+.mn .sb .nv .av { width: 18px; height: 18px; font-size: 8px; }
+.mn .sb .gh { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 600; color: var(--faint); padding: 12px 8px 4px; }
+.mn .sb .gh .p { font-size: 16px; font-weight: 400; color: var(--sub); line-height: 1; }
+.mn .sb .me { margin-top: auto; display: flex; align-items: center; gap: 9px; padding: 10px 8px; border-top: 1px solid var(--line); margin-inline: -10px; padding-inline: 18px; }
+.mn .sb .me .av { width: 26px; height: 26px; font-size: 11px; }
+.mn .sb .me svg { margin-left: auto; width: 17px; height: 17px; color: var(--sub); }
+
+/* Keys, buttons, segmented views */
+.mn .k, .kk { display: inline-grid; place-items: center; min-width: 17px; height: 18px; padding: 0 4px; border: 1px solid #d5d9e3; border-bottom-width: 2px; border-radius: 4px; font: 600 10px/1 "Inter", system-ui, sans-serif; color: var(--sub, #5d6474); background: #fff; box-sizing: border-box; white-space: nowrap; }
+.mn .tbtn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink); border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; background: #fff; white-space: nowrap; }
+.mn .tbtn.pri { background: var(--blue); color: #fff; border-color: var(--blue); }
+.mn .tbtn.ghost { border-color: transparent; color: var(--sub); }
+.mn .tbtn svg { width: 14px; height: 14px; }
+.mn .vseg { display: inline-flex; background: #eceef3; border-radius: 7px; padding: 2px; font-size: 12px; font-weight: 600; }
+.mn .vseg span { padding: 4px 10px; border-radius: 5px; color: var(--sub); }
+.mn .vseg .on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+
+/* Main pane */
+.mn .pane { padding: 18px 24px 0; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; position: relative; }
+.mn .ph { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mn .ph h3 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin: 0; line-height: 1.15; }
+.mn .ph .tools { display: flex; align-items: center; gap: 8px; flex: none; }
+.mn .addbar { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; color: var(--faint); background: #fff; font-size: 13px; }
+.mn .addbar > svg { width: 16px; height: 16px; color: var(--blue); flex: none; }
+.mn .addbar .k { margin-left: auto; }
+.mn .addbar.focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--tint); color: var(--ink); font-size: 14px; }
+.mn .tok { color: var(--blue); background: var(--tint); border-radius: 4px; padding: 0 3px; font-weight: 600; }
+.mn .ptabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--sub); }
+.mn .ptabs span { padding: 0 0 8px; display: inline-flex; gap: 6px; align-items: center; }
+.mn .ptabs .on { color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--blue); }
+.mn .ptabs .c { font-size: 11px; color: var(--faint); }
+.mn .todo.w { grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; }
+.mn .todo.w .ck { margin-top: 0; }
+.mn .todo.hov { background: #f3f5fa; margin-inline: -10px; padding-inline: 10px; border-radius: 8px; border-top-color: transparent; }
+.mn .todo.hov + .todo { border-top-color: transparent; }
+.mn .todo.open { background: var(--tint); margin-inline: -10px; padding-inline: 10px; border-radius: 8px; border-top-color: transparent; box-shadow: inset 2px 0 0 var(--blue); }
+.mn .todo.open + .todo { border-top-color: transparent; }
+.mn .todo.sel { border-radius: 8px; border-top-color: transparent; }
+.mn .todo.sel + .todo { border-top-color: transparent; }
+.mn .todo.step { padding-left: 30px; }
+.mn .rowtools { display: flex; gap: 2px; }
+.mn .rowtools span { width: 26px; height: 24px; border-radius: 6px; display: grid; place-items: center; color: var(--sub); }
+.mn .rowtools span:hover { background: #e6e9f1; }
+.mn .rowtools svg { width: 15px; height: 15px; }
+.mn .due { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mn .due.late { color: #b3261e; }
+.mn .sp-h .meta { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.mn .goalbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; margin: 4px 0 2px; }
+.mn .goalbar .bar { height: 4px; }
+
+/* Right pane (the margin) */
+.mn .rp { border-left: 1px solid var(--line); background: #fbfbfd; display: flex; flex-direction: column; min-height: 0; min-width: 0; position: relative; }
+.mn .rp .rh { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 16px 0; }
+.mn .rp .rh b { font-size: 13px; }
+.mn .rp .ptabs { padding: 12px 16px 0; }
+.mn .rp .rb { padding: 14px 16px; display: grid; gap: 12px; align-content: start; flex: 1; overflow: hidden; min-height: 0; }
+.mn .rp .compose { background: #fbfbfd; padding-bottom: 12px; }
+.mn .compose .tool { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; color: var(--sub); }
+.mn .compose .tool svg { width: 16px; height: 16px; }
+.mn .msgwrap { position: relative; }
+.mn .msg-tools { position: absolute; right: 0; top: -14px; display: flex; gap: 1px; background: #fff; border-radius: 8px; box-shadow: 0 6px 18px -6px rgba(15, 20, 40, 0.28), 0 0 0 1px rgba(15, 20, 40, 0.07); padding: 2px; z-index: 2; }
+.mn .msg-tools span { width: 26px; height: 24px; display: grid; place-items: center; border-radius: 6px; font-size: 13px; color: var(--sub); }
+.mn .msg-tools svg { width: 14px; height: 14px; }
+.mn .reacts .add { color: var(--faint); border-style: dashed; }
+.mn .who-pop.web { top: auto; bottom: 26px; left: 0; }
+.mn .who-pop.web::after { content: ""; position: absolute; left: 16px; bottom: -5px; width: 9px; height: 9px; background: #fff; transform: rotate(45deg); box-shadow: 2px 2px 2px -1px rgba(15, 20, 40, 0.08); }
+
+/* Floating layers */
+.mn .pop { background: #fff; border-radius: 12px; box-shadow: 0 16px 40px -12px rgba(15, 20, 40, 0.32), 0 0 0 1px rgba(15, 20, 40, 0.07); padding: 12px; display: grid; gap: 10px; align-content: start; position: absolute; z-index: 6; }
+.mn .pop.static { position: static; }
+.mn .pop .ph3 { font-size: 15px; font-weight: 650; }
+.mn .cmenu { padding: 4px; gap: 0; min-width: 232px; }
+.mn .cmenu .mi { display: flex; align-items: center; gap: 10px; padding: 6px 10px; font-size: 13px; border-radius: 6px; }
+.mn .cmenu .mi svg { width: 15px; height: 15px; color: var(--sub); flex: none; }
+.mn .cmenu .mi .k, .mn .cmenu .mi .sk { margin-left: auto; }
+.mn .cmenu .mi .sk { color: var(--faint); font-size: 12px; }
+.mn .cmenu .mi.hl { background: var(--tint); color: var(--note-ink); }
+.mn .cmenu .mi.sep { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 9px; border-radius: 0 0 6px 6px; }
+.mn .cmenu .mi.danger, .mn .cmenu .mi.danger svg { color: #b3261e; }
+.mn .cmenu .mh { font-size: 11px; font-weight: 600; color: var(--faint); padding: 6px 10px 2px; }
+.mn .selbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: 18px; display: flex; align-items: center; gap: 2px; background: #1b2131; color: #fff; border-radius: 12px; padding: 5px; font-size: 12px; box-shadow: 0 14px 30px -10px rgba(15, 20, 40, 0.55); white-space: nowrap; z-index: 4; }
+.mn .selbar .cnt { padding: 6px 10px; color: #c9d3ec; border-right: 1px solid #343c52; margin-right: 2px; }
+.mn .selbar .a { display: inline-flex; gap: 6px; align-items: center; padding: 6px 9px; border-radius: 8px; }
+.mn .selbar .a:hover { background: #2a3248; }
+.mn .selbar svg { width: 15px; height: 15px; color: #a9beff; }
+.mn .selbar .k { background: transparent; color: #9aa4bd; border-color: #3a4256; }
+.mn .toastw { position: absolute; left: 20px; bottom: 18px; display: flex; align-items: center; gap: 12px; background: #1b2131; color: #fff; border-radius: 10px; padding: 9px 12px; font-size: 12px; box-shadow: 0 14px 30px -10px rgba(15, 20, 40, 0.55); z-index: 4; }
+.mn .toastw b { color: #a9beff; font-weight: 600; }
+.mn .toastw .k { background: transparent; color: #9aa4bd; border-color: #3a4256; }
+.mn .scrim { position: absolute; inset: 0; background: rgba(15, 20, 40, 0.36); z-index: 5; }
+.mn .dialog { position: absolute; z-index: 6; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #fff; border-radius: 16px; box-shadow: 0 30px 70px -20px rgba(15, 20, 40, 0.5); display: grid; }
+.mn .dlg-h { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.mn .dlg-h b { font-size: 16px; }
+.mn .dlg-f { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--line); }
+.mn .dlg-f .sub { margin-right: auto; }
+.mn .x { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; color: var(--sub); }
+.mn .x svg { width: 15px; height: 15px; }
+
+/* Command palette */
+.mn .cmdk { position: absolute; z-index: 6; left: 50%; top: 92px; transform: translateX(-50%); width: 560px; background: #fff; border-radius: 14px; box-shadow: 0 30px 70px -20px rgba(15, 20, 40, 0.55), 0 0 0 1px rgba(15, 20, 40, 0.08); overflow: hidden; }
+.mn .cmdk .in { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); font-size: 16px; }
+.mn .cmdk .in svg { width: 18px; height: 18px; color: var(--sub); }
+.mn .cmdk .ctx { font-size: 11px; font-weight: 600; color: var(--note-ink); background: var(--tint); border-radius: 6px; padding: 2px 7px; }
+.mn .cmdk .res { padding: 6px; display: grid; }
+.mn .cmdk .mh { font-size: 11px; font-weight: 600; color: var(--faint); padding: 8px 10px 4px; }
+.mn .cmdk .ci { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+.mn .cmdk .ci svg { width: 16px; height: 16px; color: var(--sub); flex: none; }
+.mn .cmdk .ci .sk { margin-left: auto; display: inline-flex; gap: 3px; color: var(--faint); font-size: 12px; }
+.mn .cmdk .ci.hl { background: var(--tint); color: var(--note-ink); }
+.mn .cmdk .ci .sp-ico { width: 16px; height: 16px; font-size: 9px; border-radius: 4px; }
+.mn .cmdk .ci .av { width: 18px; height: 18px; font-size: 8px; }
+.mn .cmdk .ft { display: flex; gap: 16px; padding: 9px 16px; border-top: 1px solid var(--line); background: #fafbfc; font-size: 11px; color: var(--sub); }
+.mn .cmdk .ft span { display: inline-flex; gap: 5px; align-items: center; }
+
+/* Habit detail */
+.mn .wkdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 10px; color: var(--faint); font-weight: 600; }
+.mn .wkdays i { display: grid; place-items: center; height: 28px; border-radius: 8px; background: #fff; border: 1px solid var(--line); font-style: normal; font-size: 12px; color: var(--sub); }
+.mn .wkdays i.d { background: var(--royal); border-color: var(--royal); color: #fff; }
+.mn .wkdays i.s { border-style: dashed; color: var(--faint); }
+.mn .wkdays i.t { border-color: var(--blue); color: var(--blue); font-weight: 700; }
+.mn .heat { display: grid; grid-template-rows: repeat(7, 11px); grid-auto-flow: column; grid-auto-columns: 11px; gap: 3px; }
+.mn .heat i { border-radius: 3px; background: #eceef3; display: block; }
+.mn .heat i.d { background: var(--royal); }
+.mn .heat i.s { background: #fff; box-shadow: inset 0 0 0 1px #c3c9d8; }
+.mn .heat-l { display: flex; gap: 10px; font-size: 11px; color: var(--sub); align-items: center; }
+.mn .heat-l i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; vertical-align: -1px; margin-right: 4px; }
+.mn .kv { display: grid; grid-template-columns: 96px 1fr; gap: 8px 10px; font-size: 12px; }
+.mn .kv dt { color: var(--sub); margin: 0; }
+.mn .kv dd { margin: 0; font-weight: 500; }
+
+/* Week view */
+.mn .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto 1fr; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; flex: 1; min-height: 0; margin-bottom: 18px; }
+.mn .wcol { border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; padding: 8px 7px; min-width: 0; position: relative; }
+.mn .wcol:first-child { border-left: 0; }
+.mn .wcol.today { background: #f7f9ff; }
+.mn .wcol.drop { background: var(--tint); box-shadow: inset 0 0 0 2px var(--blue); }
+.mn .wd { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; color: var(--sub); font-weight: 600; padding: 0 2px 4px; }
+.mn .wd b { font-size: 16px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mn .wcol.today .wd b { color: #fff; background: var(--blue); border-radius: 999px; padding: 0 7px; }
+.mn .wi { border-radius: 7px; padding: 6px 7px; font-size: 11px; line-height: 1.3; background: #fff; border: 1px solid var(--line); display: grid; gap: 2px; box-shadow: inset 3px 0 0 var(--c, var(--royal)); padding-left: 10px; }
+.mn .wi .t { color: var(--sub); font-size: 10px; font-variant-numeric: tabular-nums; }
+.mn .wi.done { color: var(--faint); text-decoration: line-through; }
+.mn .wi.ghost { opacity: 0.35; border-style: dashed; }
+.mn .wi.drag { position: absolute; z-index: 3; transform: rotate(-2deg); box-shadow: inset 3px 0 0 var(--c), 0 12px 24px -8px rgba(15, 20, 40, 0.35); width: calc(100% - 14px); }
+.mn .hlane { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--line); background: #fafbfd; grid-column: 1 / -1; }
+.mn .hlane span { display: flex; justify-content: center; gap: 4px; padding: 6px 0; border-left: 1px solid var(--line); font-size: 10px; color: var(--sub); align-items: center; }
+.mn .hlane span:first-child { border-left: 0; }
+.mn .hlane i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: inline-block; }
+.mn .hlane i.d { background: var(--royal); }
+
+/* Weekly review */
+.mn .rv { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 22px; flex: 1; min-height: 0; }
+.mn .rv-steps { display: grid; gap: 4px; align-content: start; }
+.mn .rv-steps div { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+.mn .rv-steps div.on { background: #fff; box-shadow: 0 0 0 1px var(--line); font-weight: 600; }
+.mn .rv-steps .st { margin-left: auto; font-size: 11px; color: var(--faint); }
+.mn .rv-steps .st.ok { color: var(--ok); font-weight: 600; }
+.mn .stat3 { display: flex; gap: 18px; font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+.mn .stat3 b { color: var(--ink); font-size: 15px; margin-right: 3px; }
+.mn .status3 { display: flex; gap: 6px; }
+.mn .status3 span { border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 600; color: var(--sub); display: inline-flex; gap: 6px; align-items: center; }
+.mn .status3 span i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.mn .status3 span.on { border-color: var(--warn); background: var(--warn-soft); color: var(--warn); }
+.mn .ta { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; display: grid; gap: 3px; background: #fff; }
+.mn .ta .lbl { color: var(--sub); }
+
+/* Discover grid, profile, settings */
+.mn .dgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.mn .dgrid .card { align-content: start; }
+.mn .fchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.mn .fchips span { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--sub); background: #fff; }
+.mn .fchips span.on { border-color: var(--blue); color: var(--note-ink); background: var(--tint); font-weight: 600; }
+.mn .fchips .dd { width: 12px; height: 12px; }
+.mn .prof { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; padding-bottom: 20px; }
+.mn .prof-l { display: grid; gap: 12px; align-content: start; }
+.mn .prof-r { display: grid; gap: 14px; align-content: start; }
+.mn .setg { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; }
+.mn .setnav { display: grid; gap: 2px; align-content: start; font-size: 13px; }
+.mn .setnav span { padding: 6px 10px; border-radius: 7px; color: var(--sub); }
+.mn .setnav span.on { background: var(--tint); color: var(--note-ink); font-weight: 600; }
+.mn .setbox { border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; }
+.mn .setbox .srow { font-size: 13px; }
+.mn .setbox .srow > div .sub { display: block; margin-top: 1px; }
+.mn .setbox .switch { width: 36px; height: 22px; }
+.mn .setbox .switch::after { width: 18px; height: 18px; }
+.mn .setbox .switch.on::after { left: 16px; }
+.mn .selectish { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px; font-size: 12px; color: var(--ink); background: #fff; white-space: nowrap; }
+.mn .selectish .dd { width: 12px; height: 12px; color: var(--sub); }
+
+/* Activity panel */
+.mn .actp { width: 360px; padding: 0; gap: 0; }
+.mn .actp .ah { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 10px; }
+.mn .actp .ah b { font-size: 15px; }
+.mn .actp .fchips { padding: 0 16px 10px; border-bottom: 1px solid var(--line); }
+.mn .actp .ab { padding: 4px 16px 12px; }
+.mn .act .go2 { display: inline-flex; gap: 6px; margin-top: 6px; }
+
+/* Specimen surface for stand-alone popovers and dialogs */
+.specimens { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+.spec { background: #e9ecf2; border-radius: 16px; padding: 18px; display: grid; gap: 10px; justify-items: start; max-width: 100%; box-sizing: border-box; overflow-x: auto; }
+.spec > .pop { max-width: none; }
+.spec .cap { font-size: 12px; font-weight: 600; color: #5b6272; font-family: var(--font-ui); }
+
+/* Space: chat is the page */
+.mn.app.space { grid-template-columns: 224px minmax(0, 1fr) 280px; }
+.mn .banner { display: flex; align-items: center; gap: 12px; background: var(--tint); border-radius: 12px; padding: 10px 12px; color: var(--note-ink); }
+.mn .banner b { font-size: 13px; }
+.mn .banner .sub { color: #46548a; }
+.mn .banner .tbtn { margin-left: auto; }
+.mn .bic { width: 32px; height: 32px; border-radius: 9px; background: #fff; color: var(--blue); display: grid; place-items: center; flex: none; }
+.mn .bic svg { width: 17px; height: 17px; }
+.mn .wkcard { display: grid; gap: 7px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.mn .wkcard .g-meta b { color: var(--ink); font-weight: 600; }
+.mn .pins { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px 24px; border-bottom: 1px solid var(--line); background: #fbfbfd; }
+.mn .pin { display: grid; gap: 7px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font-size: 13px; align-content: start; }
+.mn .pin .sub { font-size: 11px; }
+.mn .pillbtn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--blue); border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; white-space: nowrap; }
+.mn .pillbtn svg { width: 15px; height: 15px; }
+.mn .ppl { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 13px; }
+.mn .ppl .av { width: 24px; height: 24px; font-size: 10px; position: relative; }
+.mn .ppl .av i { position: absolute; right: -1px; bottom: -1px; width: 8px; height: 8px; border-radius: 50%; background: #2fb36b; border: 2px solid #fbfbfd; }
+.mn .ppl .sub { font-size: 11px; }
+.mn .rp.slim .lbl { margin-bottom: 2px; }
+.mn .chatpane { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #fff; }
+.mn .cph { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-bottom: 1px solid var(--line); }
+.mn .cph b { font-size: 16px; }
+.mn .cph .tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.mn .cthread { flex: 1; min-height: 0; overflow: hidden; display: grid; gap: 12px; align-content: end; padding: 14px 24px; max-width: 700px; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 28px); mask-image: linear-gradient(to bottom, transparent, #000 28px); width: 100%; box-sizing: border-box; margin-inline: auto; font-size: 14px; }
+.mn .cthread .note, .mn .cthread .update-msg { font-size: 14px; }
+.mn .ccompose { display: flex; gap: 8px; align-items: center; padding: 10px 24px 16px; max-width: 700px; width: 100%; box-sizing: border-box; margin-inline: auto; }
+.mn .ccompose .field { flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; color: var(--faint); font-size: 14px; }
+.mn .ccompose .tool { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--sub); }
+.mn .ccompose .tool svg { width: 17px; height: 17px; }
+.mn .rp.slim .rh { padding-bottom: 6px; }
+.mn .rp.slim .todo { padding: 8px 0; }
+.mn .sb .me .bellb { margin-left: auto; position: relative; color: var(--sub); display: grid; place-items: center; }
+.mn .sb .me .bellb svg { width: 18px; height: 18px; margin: 0; }
+.mn .sb .me .bellb b { position: absolute; top: -5px; right: -6px; min-width: 14px; height: 14px; border-radius: 7px; background: var(--blue); color: #fff; font-size: 9px; display: grid; place-items: center; padding: 0 3px; }
+
+/* Responsive schematics */
+.bps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.bp { display: grid; gap: 8px; align-content: start; }
+.bp .scr { border: 1px solid var(--rule); border-radius: 10px; background: #fff; height: 150px; display: grid; gap: 4px; padding: 6px; box-sizing: border-box; }
+.bp .scr i { display: grid; place-items: center; border-radius: 5px; font-style: normal; font-size: 10px; font-weight: 600; color: #3b4458; text-align: center; padding: 2px; }
+.bp .scr .s1 { background: #edf0f6; }
+.bp .scr .s2 { background: #f6f7fa; border: 1px dashed #c9cfdd; }
+.bp .scr .s3 { background: #eef2fe; color: #1d2c66; }
+.bp b { font-size: 15px; }
+.bp p { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* Parity table (page chrome, follows the viewer's theme) */
+section.step > * { min-width: 0; }
+.tbl-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--rule); border-radius: 12px; }
+table.parity { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; }
+table.parity th, table.parity td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--rule); vertical-align: top; }
+table.parity thead th { border-top: 0; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+table.parity td:first-child { font-weight: 600; width: 26%; }
+table.parity td:last-child { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+table.parity a { color: var(--accent); text-decoration: none; }
+table.parity a:hover { text-decoration: underline; }
+table.parity .new { font-size: 11px; font-weight: 700; color: var(--accent); border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; margin-top: 12px; }
+.toc a { color: var(--accent); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+section.step h2 a.anchor { color: inherit; text-decoration: none; }
+.explain .keys { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--muted); }
+.explain .keys span { display: inline-flex; gap: 4px; align-items: center; }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <h1>Buildpair on the desktop</h1>
+  <p>The web version, drawn at laptop size (1120 px wide) in the same Margin Notes style as the phone screens. Many builders will use Buildpair at their desks, so the goal is parity with the phone app plus the things a big screen and a keyboard do better.</p>
+  <p>Three columns: the <b>sidebar</b> (four places and your spaces), <b>the page</b>, and a quiet <b>margin</b> on the right. Each area has one job: Today is for planning, a space is for its chat, Supporting and Discover are for people.</p>
+  <div class="legend"><span><b>Maya</b> is you</span><span>Same made-up people as the phone screens</span><span>Companion to <b>buildpair-screens.html</b> (phone screens 1–10)</span></div>
+  <nav class="toc" aria-label="Screens"><a href="#parity">Parity checklist</a><a href="#w1">1 Today</a><a href="#w2">2 Adding</a><a href="#w3">3 A space</a><a href="#w4">4 Selecting</a><a href="#w5">5 Item details</a><a href="#w6">6 People and sharing</a><a href="#w7">7 Supporting</a><a href="#w8">8 Discover</a><a href="#w9">9 Profile and settings</a><a href="#w10">10 Activity</a><a href="#w11">11 Command palette</a><a href="#w12">12 Week view</a><a href="#w13">13 Weekly review</a><a href="#w14">14 Window sizes</a></nav>
+</header>
+
+<!-- PARITY -->
+<section class="step" id="parity" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:none">
+    <h2>Parity checklist</h2>
+    <p>Every phone screen and where its desktop version is drawn. Rows marked <b>new</b> are web additions.</p>
+  </div>
+  <div class="tbl-wrap">
+  <table class="parity">
+    <thead><tr><th>On the phone</th><th>On the desktop</th><th>Screen</th></tr></thead>
+    <tbody>
+      <tr><td>Today, grouped by space</td><td>The middle column, due items only; hover a row for quick actions.</td><td><a href="#w1">1</a></td></tr>
+      <tr><td>Add bar, natural language, scheduler, space picker</td><td>Add bar at the top of Today (Q from anywhere); sheets become popovers.</td><td><a href="#w2">2</a></td></tr>
+      <tr><td>Spaces tab</td><td>The "Spaces" list in the sidebar.</td><td><a href="#w1">1</a></td></tr>
+      <tr><td>Inside a space</td><td>The chat leads, with the space's goals pinned above it; the list and who's around sit in a side panel.</td><td><a href="#w3">3</a></td></tr>
+      <tr><td>Reactions, update notes, skip reasons</td><td>In the chat. Hover a reaction to see who sent it.</td><td><a href="#w3">3</a></td></tr>
+      <tr><td>Long-press, action bar, ••• menu</td><td>Click to select, a floating action bar, right-click for the full menu.</td><td><a href="#w4">4</a></td></tr>
+      <tr><td>Habit detail <span class="new">new</span></td><td>Opens in Today's margin.</td><td><a href="#w5">5</a></td></tr>
+      <tr><td>New space, people, invite link, Show on Discover</td><td>One dialog.</td><td><a href="#w6">6</a></td></tr>
+      <tr><td>Supporting</td><td>An inbox: who needs you on the left, their space's chat on the right.</td><td><a href="#w7">7</a></td></tr>
+      <tr><td>Discover, Offer support, Requests</td><td>A card grid, a dialog, and offers as a line in the space's chat.</td><td><a href="#w8">8</a></td></tr>
+      <tr><td>Profile, settings, compliments</td><td>A profile page, a settings page and the compliment dialog.</td><td><a href="#w9">9</a></td></tr>
+      <tr><td>Bell</td><td>The bell at the bottom of the sidebar opens the Activity panel.</td><td><a href="#w10">10</a></td></tr>
+      <tr><td>Command palette, Upcoming, weekly review <span class="new">new</span></td><td>⌘K, a seven-day view, and every reflection in one sitting.</td><td><a href="#w11">11–13</a></td></tr>
+      <tr><td>Narrow window</td><td>Falls back to the phone layout.</td><td><a href="#w14">14</a></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- W1 TODAY -->
+<section class="step" id="w1" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>1. Today: your list, your progress, your people</h2>
+    <p>Today is where you plan and tick things off. The margin keeps your people and your progress in view: who needs a check-in, what they just said, and how the week's goals are moving.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/today</span></div>
+    <div class="mn app">
+      <nav class="sb" data-on="today"></nav>
+      <main class="pane">
+        <div class="ph"><div><h3>Today</h3><div class="sub">Saturday, October 10 · 5 left · 1 done</div></div>
+          <div class="tools"><span class="vseg"><span class="on">List</span><span>Week</span></span></div></div>
+        <div class="banner"><span class="bic"><span data-ic="review"></span></span><div style="min-width:0"><b>Your weekly review is ready</b><div class="sub">3 shared spaces · about 5 minutes. Sam and Chloe replied to last week's.</div></div><span class="tbtn pri">Start</span></div>
+        <div class="addbar"><span data-ic="plus"></span>Add a to-do, habit or goal. Try "gym tomorrow 7am #life"<span class="k">Q</span></div>
+        <div>
+          <div class="sp-h"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#3557d6">L</span>Ledgerly</span><span class="sp-who"><span class="faces"><i style="background:#c47f0c">S</i><i style="background:#2f6f6a">C</i><i style="background:#8a5a2b">T</i><i style="background:#b0487a">A</i></span><span class="meta">1 of 3 done</span></span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Send invoice to Northwind</div><div class="for">First 10 paying users</div></div><span class="due late">Yesterday</span></div>
+            <div class="todo w"><span class="ck on"></span><div><div class="done-t">Fix invoice PDF bug<span class="tag">Jira</span></div><div class="for">Launch v1 · 🔥 3</div></div><span class="due">Done 9:12 AM</span></div>
+            <div class="todo w hov"><span class="ck"></span><div><div>Email 3 beta users</div><div class="for">First 10 paying users</div></div><span class="rowtools"><span title="Schedule"><span data-ic="cal"></span></span><span title="Update"><span data-ic="pencil"></span></span><span title="Skip today"><span data-ic="skip"></span></span><span title="More"><span data-ic="dots"></span></span></span></div>
+          </div>
+        </div>
+        <div>
+          <div class="sp-h"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#2f8f5b">L</span>Life</span><span class="sp-who"><span class="faces"><i style="background:#c97a9e">J</i><i style="background:#5d8aa8">K</i><i style="background:#8a5a2b">T</i></span><span class="meta">0 of 2 done</span></span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Pick up kids from daycare</div></div><span class="due">5:30 PM</span></div>
+            <div class="todo w"><span class="ck"></span><div><div>Gym<span class="habit-dots"><i class="d"></i><i class="d"></i><i></i><i></i></span></div><div class="for">Habit · 2 of 4 this week · Jordan's taking the kids</div></div><span class="due">9:00 AM</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="sp-h"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#5d6474">P</span>Private</span><span class="sp-who"><span data-ic="lock"></span>Only me</span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Call the accountant</div></div><span class="due">Any time</span></div>
+          </div>
+        </div>
+      </main>
+      <aside class="rp">
+        <div class="rb" style="padding-top:18px;gap:14px">
+          <div class="needs">
+            <div class="needs-h cl"><span data-ic="chevD" class="chev"></span>Check in on · 2</div>
+            <div class="need"><div class="av" style="background:#c0392b">A</div><span><b>Alex</b> · Marathon training quiet for 9 days</span><span class="go">Check in</span></div>
+            <div class="need"><div class="av" style="background:#7a4fb5">P</div><span><b>Priya</b> wrote her weekly reflection</span><span class="go">Reply</span></div>
+          </div>
+          <div class="grp-h">Latest from your people</div>
+          <div class="margin"><div class="av" style="background:#c97a9e">J</div><div class="note"><div>I can take the kids Saturday morning so you can go.</div><span class="who">Jordan in Life · 20 min ago</span></div></div>
+          <div class="margin"><div class="av" style="background:#c47f0c">S</div><div class="note"><div>That was the bug blocking two of your beta users. Tell them!</div><span class="who">Sam in Ledgerly · 1 hr ago</span></div></div>
+          <div class="grp-h">This week</div>
+          <div class="wkcard">
+            <div class="g-meta"><span><b>Launch v1</b> · Ledgerly</span><span>62%</span></div>
+            <div class="bar"><i style="width:62%"></i></div>
+            <div class="g-meta"><span><b>Plan Lisbon trip</b> · Life</span><span>3 of 7</span></div>
+            <div class="bar"><i style="width:43%"></i></div>
+            <div class="g-meta"><span><b>Gym</b> · Life</span><span class="habit-dots" style="margin:0"><i class="d"></i><i class="d"></i><i></i><i></i></span></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div></div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>Sidebar:</b> Today, Upcoming, Supporting and Discover, then your spaces and the people you support, with unread dots and request counts. The bell and your profile sit at the bottom; <span class="kk">⌘K</span> reaches everything.</li>
+      <li><b>The list</b> keeps the useful detail from the phone: which goal each to-do moves, who's in each space, due times, overdue in red, and reactions on things you finished. Hovering a row shows its quick actions.</li>
+      <li><b>A banner</b> appears for things worth doing now, like the weekly review on Friday or Saturday. Dismiss it and it's gone until next week.</li>
+      <li><b>The margin:</b> people to check in on, the latest notes from your spaces (click one to open that chat), and this week's goals and habits moving.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W2 ADDING -->
+<section class="step" id="w2" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>2. Adding things: type it, check the highlights, press Enter</h2>
+    <p>The add bar works like the phone's: text, a date chip and a space chip. On the desktop the sheets become popovers anchored to their chip, and everything works without the mouse.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/today</span></div>
+    <div class="mn app">
+      <nav class="sb" data-on="today"></nav>
+      <main class="pane">
+        <div class="ph"><div><h3>Today</h3><div class="sub">Saturday, October 10 · 5 left</div></div>
+          <div class="tools"><span class="vseg"><span class="on">List</span><span>Week</span></span></div></div>
+        <div style="position:relative;display:grid;gap:8px">
+          <div class="addbar focus"><span data-ic="plus"></span><span>Dentist <span class="tok">friday 3pm</span> <span class="tok">#life</span></span><span class="caret" style="margin-left:-6px"></span><span class="k">↵</span></div>
+          <div class="qa-tools">
+            <span class="qt on"><span data-ic="cal"></span>Fri, Oct 16 · 3:00 PM</span>
+            <span class="qt"><span class="sp-ico" style="background:#2f8f5b;width:16px;height:16px;font-size:9px;border-radius:4px">L</span>Life<span data-ic="chevD" class="dd"></span></span>
+            <span class="qt"><span data-ic="bell"></span>30 min before</span>
+            <span class="sub" style="margin-left:auto">Tab to move between chips · Esc to close</span>
+          </div>
+          <div class="pop" style="left:0;top:92px;width:310px">
+            <div class="seg"><span class="on">Date</span><span>Repeat</span></div>
+            <div class="people" style="margin-top:0"><span class="person">Today</span><span class="person">Tomorrow</span><span class="person on">Friday</span><span class="person">Next week</span></div>
+            <div class="minical">
+              <div class="mc-h"><b>October 2026</b><span>‹ ›</span></div>
+              <div class="mc-g dow"><i>M</i><i>T</i><i>W</i><i>T</i><i>F</i><i>S</i><i>S</i></div>
+              <div class="mc-g"><i class="o">28</i><i class="o">29</i><i class="o">30</i><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i><i class="t">10</i><i>11</i><i>12</i><i>13</i><i>14</i><i>15</i><i class="s">16</i><i>17</i><i>18</i></div>
+            </div>
+            <div class="listbox" style="padding:0 12px">
+              <div class="srow" style="border-top:0;font-size:13px">Time<span>3:00 PM</span></div>
+              <div class="srow" style="font-size:13px">Reminder<span>30 min before</span></div>
+              <div class="srow" style="font-size:13px">Repeat<span>Never</span></div>
+            </div>
+            <div class="row" style="justify-content:space-between"><span class="tbtn ghost">Clear date</span><span class="tbtn pri">Done <span class="k" style="background:transparent;color:#dfe6ff;border-color:#6d86e6">↵</span></span></div>
+          </div>
+        </div>
+        <div style="opacity:.45">
+          <div class="sp-h"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#3557d6">L</span>Ledgerly</span><span class="sp-who">Sam, Chloe +2</span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Send invoice to Northwind</div><div class="for">First 10 paying users</div></div><span class="due late">Yesterday</span></div>
+            <div class="todo w"><span class="ck on"></span><div><div class="done-t">Fix invoice PDF bug</div><div class="for">Launch v1</div></div><span class="due">Done 9:12 AM</span></div>
+            <div class="todo w"><span class="ck"></span><div><div>Email 3 beta users</div><div class="for">First 10 paying users</div></div><span class="due">Any time</span></div>
+          </div>
+          <div class="sp-h" style="margin-top:12px"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#2f8f5b">L</span>Life</span><span class="sp-who">Jordan + 3</span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Pick up kids from daycare</div></div><span class="due">5:30 PM</span></div>
+            <div class="todo w"><span class="ck"></span><div><div>Gym</div><div class="for">Habit · 2 of 4 this week</div></div><span class="due">Any time</span></div>
+          </div>
+        </div>
+      </main>
+      <aside class="rp" style="opacity:.55">
+        <div class="rh"><b>In your spaces</b><span class="sub">Last 24 hours</span></div>
+        <div class="rb">
+          <div class="needs"><div class="needs-h cl"><span data-ic="chevD" class="chev"></span>Check in on · 2</div>
+            <div class="need"><div class="av" style="background:#c0392b">A</div><span><b>Alex</b> · Marathon training quiet for 9 days</span><span class="go">Check in</span></div></div>
+          <div class="margin"><div class="av" style="background:#c97a9e">J</div><div class="note"><div>I can take the kids Saturday morning so you can go.</div><span class="who">Jordan · 20 min ago</span></div></div>
+        </div>
+      </aside>
+    </div>
+  </div></div>
+  <div class="specimens">
+    <div class="spec mn"><span class="cap">Repeat tab (makes it a habit)</span>
+      <div class="pop static" style="width:290px">
+        <div class="seg"><span>Date</span><span class="on">Repeat</span></div>
+        <div class="listbox" style="padding:0 12px">
+          <div class="opt" style="border-top:0;padding:8px 0"><span class="radio"></span><div class="opt-t" style="font-size:13px">Every day</div></div>
+          <div class="opt" style="padding:8px 0"><span class="radio"></span><div class="opt-t" style="font-size:13px">On certain days</div></div>
+          <div class="opt" style="padding:8px 0"><span class="radio on"></span><div><div class="opt-t" style="font-size:13px">A number of times a week</div><div class="stepper"><span>−</span><b>4</b><span>+</span><em>times a week</em></div></div></div>
+          <div class="opt" style="padding:8px 0"><span class="radio"></span><div class="opt-t" style="font-size:13px">Every month</div></div>
+        </div>
+        <div class="sub">Repeating makes this a habit with its own weekly progress.</div>
+      </div>
+    </div>
+    <div class="spec mn"><span class="cap">Space chip popover</span>
+      <div class="pop static" style="width:290px;gap:6px">
+        <div class="addfield typing" style="padding:7px 10px;font-size:13px">li<span class="caret"></span></div>
+        <div>
+          <div class="place" style="padding:8px 0;border-top:0"><span class="radio on"></span><div><div class="opt-t" style="font-size:13px">Life</div><div class="sub">You, Jordan and 3 friends</div></div><span class="sp-ico" style="background:#2f8f5b">L</span></div>
+          <div class="place" style="padding:8px 0"><span class="radio"></span><div><div class="opt-t" style="font-size:13px">Ledgerly</div><div class="sub">You, Sam, Chloe and 2 others</div></div><span class="sp-ico" style="background:#3557d6">L</span></div>
+          <div class="place" style="padding:8px 0"><span class="rowplus">+</span><div><div class="opt-t" style="font-size:13px;color:#3557d6">New space "li…"</div><div class="sub">Set up a new list with its own people</div></div><span></span></div>
+        </div>
+        <div class="sub">↑ ↓ to choose · ↵ to pick · type # in the add bar to skip this</div>
+      </div>
+    </div>
+    <div class="spec mn"><span class="cap">Q on any other screen</span>
+      <div class="pop static" style="width:330px">
+        <div class="addbar focus" style="font-size:14px"><span data-ic="plus"></span><span>Draft pricing page <span class="tok">tomorrow</span></span><span class="caret" style="margin-left:-6px"></span></div>
+        <div class="qa-tools"><span class="qt on"><span data-ic="cal"></span>Sun, Oct 11</span><span class="qt"><span class="sp-ico" style="background:#3557d6;width:16px;height:16px;font-size:9px;border-radius:4px">L</span>Ledgerly</span></div>
+        <div class="sub">Opens as a small box at the top of the screen. Inside a space it defaults to that space; elsewhere to the last one you used.</div>
+      </div>
+    </div>
+  </div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>Highlighted words</b> show what was understood ("friday 3pm", "#life"). Backspace on a highlight turns it back into plain text.</li>
+      <li><b>Chips</b> open the scheduler and space popovers, with the same content as the phone sheets. Tab moves between them.</li>
+      <li><b>Q works on every screen</b>; inside a space it adds to that space.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W3 A SPACE -->
+<section class="step" id="w3" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>3. Inside a space: the chat leads</h2>
+    <p>A space is where its people talk, so the chat takes the middle of the screen. The space's goals stay pinned above it, and the list and the people sit in a panel beside it.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/spaces/life</span></div>
+    <div class="mn app space">
+      <nav class="sb" data-on="sp-life"></nav>
+      <main class="chatpane">
+        <div class="cph"><span class="sp-ico" style="background:#2f8f5b;width:34px;height:34px;font-size:15px;border-radius:9px">L</span><div style="min-width:0"><b>Life</b><div class="sub">Family, health and the house · 5 people</div></div><span class="tools"><span class="tbtn"><span data-ic="userplus"></span>People</span><span class="tbtn"><span data-ic="dots"></span></span></span></div>
+        <div class="pins">
+          <div class="pin"><div class="row" style="justify-content:space-between"><b>Plan Lisbon trip</b><span class="sub">by Dec 1</span></div><div class="goalbar" style="margin:0"><div class="bar"><i style="width:43%"></i></div><span class="for">3 of 7</span></div></div>
+          <div class="pin"><div class="row" style="justify-content:space-between"><b>Gym 4x a week</b><span class="sub">Habit</span></div><div class="row" style="justify-content:space-between"><span class="habit-dots" style="margin:0"><i class="d"></i><i class="d"></i><i></i><i></i></span><span class="for">2 of 4 this week</span></div></div>
+          <div class="pin"><div class="row" style="justify-content:space-between"><b>This week</b><span class="sub">Life</span></div><div class="for" style="font-size:12px">9 done · 1 skip · 14 messages</div></div>
+        </div>
+        <div class="cthread">
+          <div class="rollup"><span class="rollup-ico">4</span><div>Maya finished 4 things<div class="items">Groceries, Pay rent, Book vet, Upper body</div><div class="reacts"><span class="mine">🔥 5</span><span>👏 2</span><span class="add">+ 🙂</span></div></div></div>
+          <div class="ev"><span class="ev-mark skip"></span><div class="ev-text">Maya skipped <b>Gym</b><span class="when">Thu</span><div class="update-msg" style="margin-top:4px">Car broke down. Going Saturday instead.</div></div></div>
+          <div class="margin msgwrap"><div class="av" style="background:#c97a9e">J</div><div class="note"><div>I can take the kids Saturday morning so you can go.</div><span class="who">Jordan · 20 min ago</span></div>
+            <div class="msg-tools"><span>🔥</span><span>👏</span><span><span data-ic="smile"></span></span><span><span data-ic="reply"></span></span><span><span data-ic="dots"></span></span></div></div>
+          <div class="sys">Today</div>
+          <div class="ev"><span class="ev-mark"></span><div class="ev-text">Maya completed <b>Book flights</b> in Plan Lisbon trip<span class="when">9:40</span><div class="update-msg" style="margin-top:4px">Flights booked! Apartments next.</div><div class="reacts"><span>🎉 3</span><span>✈️ 1</span></div></div></div>
+          <div class="margin"><div class="av" style="background:#5d8aa8">K</div><div class="note"><div>I have a list of day trips from when we went. Sending it tonight.</div><span class="who">Kim · 5 min ago</span></div></div>
+        </div>
+        <div class="ccompose"><span class="field">Message Life…</span><span class="tool"><span data-ic="smile"></span></span></div>
+      </main>
+      <aside class="rp slim">
+        <div class="rh"><b>In this space</b><span class="x"><span data-ic="chevR"></span></span></div>
+        <div class="rb" style="gap:10px">
+          <div>
+            <div class="lbl">Habits and goals</div>
+            <div class="todo w"><span class="ck"></span><div><div>Gym<span class="habit-dots"><i class="d"></i><i class="d"></i><i></i><i></i></span></div><div class="for">2 of 4 this week</div></div><span class="due">9 AM</span></div>
+            <div class="todo w"><span class="ck"></span><div><div>Plan Lisbon trip</div><div class="for">3 of 7 · by Dec 1</div></div><span class="due"></span></div>
+          </div>
+          <div>
+            <div class="lbl">To-dos</div>
+            <div class="todo w"><span class="ck"></span><div>Pick up kids</div><span class="due">5:30 PM</span></div>
+            <div class="todo w"><span class="ck"></span><div>Dentist</div><span class="due">Fri 3 PM</span></div>
+            <div class="todo w"><span class="ck"></span><div>Renew passport <span class="lock"><span data-ic="lock"></span></span></div><span class="due">Oct 20</span></div>
+            <div class="collapsed">Done this week · 6</div>
+            <div class="addinline" style="border-top:0;padding-top:2px">+ Add to Life</div>
+          </div>
+          <div>
+            <div class="lbl">People</div>
+            <div class="ppl"><span class="av" style="background:#c97a9e">J<i class="on"></i></span><span>Jordan</span><span class="sub">Here now</span></div>
+            <div class="ppl"><span class="av" style="background:#8a5a2b">T<i class="on"></i></span><span>Theo</span><span class="sub">Here now</span></div>
+            <div class="ppl"><span class="av" style="background:#5d8aa8">K</span><span>Kim</span><span class="sub">5 min ago</span></div>
+            <div class="ppl"><span class="av" style="background:#b0487a">A</span><span>Ana</span><span class="sub">Yesterday</span></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div></div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>The chat leads:</b> completions, rolled-up to-dos, skips with their reasons, update notes and messages, with stacked reactions. Hover a reaction to see who sent it, or a message to react and reply.</li>
+      <li><b>Pinned above the chat:</b> the space's goals and habits with their progress, and a line for the week, so everyone talking can see what's moving.</li>
+      <li><b>The side panel</b> holds the list (tick things off right here) and who's around now. The arrow folds it away to leave just the chat.</li>
+      <li><b>Updates come from the items themselves</b> (Update in an item's menu or the action bar) and land in the chat as notes, so the message box is only for talking. Join requests and Discover offers appear as a line at the top of the chat with a Review button.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W4 SELECTING -->
+<section class="step" id="w4" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>4. Selecting and acting: click, Shift-click, right-click</h2>
+    <p>The phone's long-press, action bar and ••• menu, on Today where planning happens.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/today</span></div>
+    <div class="mn app">
+      <nav class="sb" data-on="today"></nav>
+      <main class="pane">
+        <div class="ph"><div><h3>Today</h3><div class="sub">Saturday, October 10 · 5 left · 1 done</div></div>
+          <div class="tools"><span class="sub">2 selected</span><span class="tbtn ghost">Clear <span class="k">Esc</span></span></div></div>
+        <div>
+          <div class="sp-h"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#3557d6">L</span>Ledgerly</span><span class="sp-who"><span class="meta">1 of 3 done</span></span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Send invoice to Northwind</div><div class="for">First 10 paying users</div></div><span class="due late">Yesterday</span></div>
+            <div class="todo w sel"><span class="ck selck"></span><div><div>Email 3 beta users</div><div class="for">First 10 paying users</div></div><span class="due">Any time</span></div>
+          </div>
+        </div>
+        <div style="position:relative">
+          <div class="sp-h"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#2f8f5b">L</span>Life</span><span class="sp-who"><span class="meta">0 of 2 done</span></span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Pick up kids from daycare</div></div><span class="due">5:30 PM</span></div>
+            <div class="todo w sel"><span class="ck selck"></span><div><div>Gym<span class="habit-dots"><i class="d"></i><i class="d"></i><i></i><i></i></span></div><div class="for">Habit · 2 of 4 this week</div></div><span class="due">9:00 AM</span></div>
+          </div>
+          <div class="pop cmenu" style="left:130px;top:104px">
+            <div class="mh">2 items</div>
+            <div class="mi"><span data-ic="skip"></span>Skip today<span class="k">S</span></div>
+            <div class="mi"><span data-ic="wont"></span>Won't do<span class="k">W</span></div>
+            <div class="mi"><span data-ic="pencil"></span>Update…<span class="k">U</span></div>
+            <div class="mi hl"><span data-ic="move"></span>Move to<span class="sk">›</span></div>
+            <div class="mi sep"><span data-ic="cal"></span>Change schedule…<span class="k">D</span></div>
+            <div class="mi"><span data-ic="bell"></span>Reminder…<span class="k">R</span></div>
+            <div class="mi"><span data-ic="lock"></span>Only visible to me<span class="k">L</span></div>
+            <div class="mi"><span data-ic="dup"></span>Duplicate<span class="sk">⌘D</span></div>
+            <div class="mi sep danger"><span data-ic="trash"></span>Delete<span class="sk">⌫</span></div>
+          </div>
+          <div class="pop cmenu" style="left:368px;top:210px;min-width:180px">
+            <div class="mi"><span class="sp-ico" style="background:#3557d6;width:16px;height:16px;font-size:9px;border-radius:4px">L</span>Ledgerly</div>
+            <div class="mi"><span class="sp-ico" style="background:#c0392b;width:16px;height:16px;font-size:9px;border-radius:4px">R</span>Running</div>
+            <div class="mi"><span class="sp-ico" style="background:#5d6474;width:16px;height:16px;font-size:9px;border-radius:4px">P</span>Private</div>
+            <div class="mi sep" style="color:#3557d6"><span data-ic="plus" style="color:#3557d6"></span>New space…</div>
+          </div>
+        </div>
+        <div class="selbar"><span class="cnt">2 selected</span><span class="a"><span data-ic="skip"></span>Skip today <span class="k">S</span></span><span class="a"><span data-ic="wont"></span>Won't do <span class="k">W</span></span><span class="a"><span data-ic="pencil"></span>Update <span class="k">U</span></span><span class="a"><span data-ic="move"></span>Move <span class="k">M</span></span><span class="a"><span data-ic="dots"></span></span></div>
+      </main>
+      <aside class="rp">
+        <div class="rh"><b style="font-size:15px">2 items selected</b></div>
+        <div class="rb">
+          <div class="listbox" style="padding:0 12px;background:#fff">
+            <div class="todo w" style="grid-template-columns:20px 1fr auto"><span class="sp-ico" style="background:#3557d6">L</span><div>Email 3 beta users<div class="for">To-do · Ledgerly</div></div><span class="due">Any time</span></div>
+            <div class="todo w" style="grid-template-columns:20px 1fr auto"><span class="sp-ico" style="background:#2f8f5b">L</span><div>Gym<div class="for">Habit · Life</div></div><span class="due">9:00 AM</span></div>
+          </div>
+          <div class="lbl">Change for both</div>
+          <dl class="kv"><dt>Date</dt><dd><span class="selectish">Mixed<span data-ic="chevD" class="dd"></span></span></dd><dt>Reminder</dt><dd><span class="selectish">None<span data-ic="chevD" class="dd"></span></span></dd><dt>Visible to</dt><dd><span class="selectish">Everyone in the space<span data-ic="chevD" class="dd"></span></span></dd></dl>
+        </div>
+        <div class="toastw" style="left:16px;right:16px;justify-content:space-between">Skipped "Call the accountant" today<b>Add a reason <span class="k">R</span></b></div>
+      </aside>
+    </div>
+  </div></div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>Select</b> by clicking a row's edge or pressing <span class="kk">X</span>; Shift-click selects a range, Cmd-click adds one. The circle still means done. Selection works across spaces.</li>
+      <li><b>The action bar</b> has the phone's five actions with their keys: Skip today <span class="kk">S</span>, Won't do <span class="kk">W</span>, Update <span class="kk">U</span>, Move <span class="kk">M</span>, and •••.</li>
+      <li><b>Right-click</b> opens the full menu, with a Move to submenu and each shortcut listed. The margin lets you change date, reminder or visibility for everything selected.</li>
+      <li><b>Skip and Won't do apply instantly</b>; the toast offers "Add a reason", which goes to the space's chat. <span class="kk">⌘Z</span> undoes.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W5 DETAILS -->
+<section class="step" id="w5" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>5. Item details in the margin</h2>
+    <p>Clicking an item on Today opens its details beside the list. Shown for a habit, which the phone screens hadn't drawn yet.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/today/gym</span></div>
+    <div class="mn app">
+      <nav class="sb" data-on="today"></nav>
+      <main class="pane">
+        <div class="ph"><div><h3>Today</h3><div class="sub">Saturday, October 10 · 5 left · 1 done</div></div>
+          <div class="tools"><span class="vseg"><span class="on">List</span><span>Week</span></span></div></div>
+        <div class="addbar"><span data-ic="plus"></span>Add a to-do, habit or goal<span class="k">Q</span></div>
+        <div>
+          <div class="sp-h"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#3557d6">L</span>Ledgerly</span><span class="sp-who"><span class="meta">1 of 3 done</span></span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Send invoice to Northwind</div><div class="for">First 10 paying users</div></div><span class="due late">Yesterday</span></div>
+            <div class="todo w"><span class="ck on"></span><div><div class="done-t">Fix invoice PDF bug</div><div class="for">Launch v1 · 🔥 3</div></div><span class="due">Done 9:12 AM</span></div>
+            <div class="todo w"><span class="ck"></span><div><div>Email 3 beta users</div><div class="for">First 10 paying users</div></div><span class="due">Any time</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="sp-h"><span class="sp-name"><span data-ic="chevD" class="chev"></span><span class="sp-ico" style="background:#2f8f5b">L</span>Life</span><span class="sp-who"><span class="meta">0 of 2 done</span></span></div>
+          <div style="margin-top:6px">
+            <div class="todo w"><span class="ck"></span><div><div>Pick up kids from daycare</div></div><span class="due">5:30 PM</span></div>
+            <div class="todo w open"><span class="ck"></span><div><div>Gym<span class="habit-dots"><i class="d"></i><i class="d"></i><i></i><i></i></span></div><div class="for">Habit · 2 of 4 this week</div></div><span class="due">9:00 AM</span></div>
+          </div>
+        </div>
+      </main>
+      <aside class="rp">
+        <div class="rh"><b style="font-size:17px">Gym</b><span class="row" style="gap:6px"><span class="kind" style="margin:0">Habit · Life</span><span class="x"><span data-ic="x"></span></span></span></div>
+        <div class="rb" style="gap:14px">
+          <div style="display:grid;gap:6px">
+            <div class="lbl">This week · 2 of 4</div>
+            <div class="wkdays"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+            <div class="wkdays"><i class="d">✓</i><i></i><i class="d">✓</i><i class="s">–</i><i></i><i class="t">10</i><i></i></div>
+          </div>
+          <div style="display:grid;gap:8px">
+            <div class="row" style="justify-content:space-between"><span class="lbl">Last 12 weeks</span><span class="sub">On target 8 of the last 11</span></div>
+            <div class="heat" data-heat="dd.d.d.|d.d.dd.|.d.dd.d|d.d.d..|d.dd.d.|.......|d.d..s.|dd.d.d.|d.d.d.d|.d.ddd.|d.dd.d.|d.ds..."></div>
+          </div>
+          <dl class="kv"><dt>Repeat</dt><dd>4 times a week</dd><dt>Reminder</dt><dd>7:00 AM, if not done</dd><dt>Visible to</dt><dd>Everyone in Life</dd></dl>
+          <div style="display:grid;gap:8px">
+            <div class="lbl">Skips and notes</div>
+            <div class="ev"><span class="ev-mark skip"></span><div class="ev-text" style="font-size:12px">Thu · Car broke down. Going Saturday instead.</div></div>
+            <div class="margin"><div class="av" style="background:#8a5a2b">T</div><div class="note" style="padding:7px 9px"><div style="font-size:12px">Saturday gym crew? I'm going at 9.</div><span class="who">Theo · from the chat</span></div></div>
+          </div>
+          <div class="row" style="gap:6px"><span class="tbtn"><span data-ic="skip"></span>Skip today</span><span class="tbtn"><span data-ic="pencil"></span>Update</span><span class="tbtn"><span data-ic="dots"></span></span></div>
+        </div>
+      </aside>
+    </div>
+  </div></div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>Habit details:</b> this week's days, a 12-week history and "On target 8 of the last 11". It counts weeks rather than a daily streak, so one bad week doesn't wipe anything out.</li>
+      <li><b>Skips and notes</b> collects your reasons and the chat replies about this habit, handy for the weekly review.</li>
+      <li>Schedule, reminder and visibility edit in place. A <b>goal</b> opens the same panel with its deadline, progress, steps and linked Jira project.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W6 PEOPLE AND SHARING -->
+<section class="step" id="w6" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>6. People and sharing: one dialog for new and existing spaces</h2>
+    <p>Phone screens 4 and 5 (New space setup and the people screen) share their controls already. On the desktop they're one dialog with two modes.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/spaces/ledgerly/people</span></div>
+    <div class="mn app">
+      <nav class="sb" data-on="sp-ledgerly"></nav>
+      <main class="pane">
+        <div class="ph"><div class="row" style="gap:12px;align-items:flex-start"><span class="sp-ico big" style="background:#3557d6">L</span><div><h3>Ledgerly</h3><div class="sub">Invoicing for freelancers · You, Sam, Chloe and 2 others</div></div></div></div>
+        <div class="ptabs"><span>List</span><span>Week</span><span class="on">People <span class="c">5</span></span><span>Requests</span></div>
+        <div class="todo w"><span class="ck"></span><div>Email 3 beta users</div><span class="due">Today</span></div>
+        <div class="todo w"><span class="ck"></span><div>Launch v1</div><span class="due">by Nov 21</span></div>
+      </main>
+      <aside class="rp">
+        <div class="ptabs" style="padding-top:16px"><span class="on">Chat</span><span>Details</span></div>
+        <div class="rb">
+          <div class="sys">Today</div>
+          <div class="ev"><span class="ev-mark"></span><div class="ev-text">You completed <b>Fix invoice PDF bug</b><span class="when">9:12 AM</span><div class="reacts"><span>🔥 3</span></div></div></div>
+          <div class="margin"><div class="av" style="background:#c47f0c">S</div><div class="note"><div>That was the bug blocking two of your beta users. Tell them!</div><span class="who">Sam · 1 hr ago</span></div></div>
+        </div>
+        <div class="compose"><span class="field">Message Ledgerly…</span></div>
+      </aside>
+      <div class="scrim"></div>
+      <div class="dialog" style="width:760px">
+        <div class="dlg-h"><b>People and sharing · Ledgerly</b><span class="x"><span data-ic="x"></span></span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:18px 20px">
+          <div style="display:grid;gap:12px;align-content:start">
+            <div class="row" style="gap:12px"><span class="sp-ico big edit" style="background:#3557d6">L<em>Edit</em></span><div class="card" style="flex:1;padding:8px 12px;gap:2px"><span class="lbl">Name</span><span style="font-size:14px;font-weight:600">Ledgerly</span></div></div>
+            <div class="card" style="gap:2px;padding:8px 12px"><span class="lbl">What it's for</span><span>Invoicing for freelancers. Launch v1 by Nov 21 and get the first 10 paying users.</span></div>
+            <div class="listbox" style="padding:2px 12px">
+              <div class="trow"><div><div class="opt-t" style="font-size:13px">Show on Discover</div><div class="sub">People can offer to support this space.</div></div><span class="switch on"></span></div>
+            </div>
+            <div class="listbox" style="padding:2px 12px">
+              <div class="invrow"><span class="acc-ic inv"><span data-ic="link"></span></span><div><div class="opt-t" style="font-size:13px">Invite link</div><div class="sub" style="font-variant-numeric:tabular-nums">buildpair.app/j/ledgerly-7kq2</div></div><span class="row" style="gap:6px"><span class="copy-sm"><span data-ic="dup"></span>Copy</span><span class="copy-sm" style="color:#5d6474">Reset</span></span></div>
+            </div>
+          </div>
+          <div style="display:grid;gap:10px;align-content:start;position:relative">
+            <div class="lbl">Who's in it</div>
+            <div class="addfield typing" style="padding:8px 11px;font-size:13px">ch<span class="caret"></span></div>
+            <div class="suggest" style="position:absolute;left:0;right:0;top:58px;z-index:2">
+              <div class="sg-h">People you share spaces with</div>
+              <div class="sg-row"><div class="av" style="background:#5d8aa8">CK</div><div><div style="font-weight:600">Chris Kowalski</div><div class="role">@chrisk · in Running</div></div></div>
+              <div class="sg-h">Everyone</div>
+              <div class="sg-row"><div class="av" style="background:#7a6bd1">CH</div><div><div style="font-weight:600">Charlie Hart</div><div class="role">@charliebuilds · Fast responder</div></div></div>
+              <div class="sg-row"><span class="idic">#</span><div><div style="font-weight:600">Add by Buildpair ID</div><div class="role">Like BP-4821-KQ, shown on their profile</div></div></div>
+            </div>
+            <div class="listbox" style="padding:2px 12px;margin-top:4px">
+              <div class="member" style="border-top:0"><div class="av" style="background:#3557d6">M</div><div><div style="font-weight:600">Maya (you)</div><div class="role">@maya</div></div><span class="role">Owner</span></div>
+              <div class="member"><div class="av" style="background:#c47f0c">S</div><div><div style="font-weight:600">Sam</div><div class="role">Joined from Discover · March</div></div><span class="rolesel">Supporter<span data-ic="chevD" class="dd"></span></span></div>
+              <div class="member"><div class="av" style="background:#2f6f6a">C</div><div><div style="font-weight:600">Chloe</div><div class="role">Invited friend</div></div><span class="rolesel">Supporter<span data-ic="chevD" class="dd"></span></span></div>
+              <div class="member"><div class="av" style="background:#8a5a2b">T</div><div><div style="font-weight:600">Theo</div><div class="role">Invited friend</div></div><span class="rolesel">Supporter<span data-ic="chevD" class="dd"></span></span></div>
+              <div class="member"><div class="av" style="background:#b0487a">A</div><div><div style="font-weight:600">Ana</div><div class="role">Joined from Discover · May</div></div><span class="rolesel">Supporter<span data-ic="chevD" class="dd"></span></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dlg-f"><span class="sub">Changes save as you go</span><span class="tbtn pri">Done</span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>Left:</b> the space's name, what it's for, Show on Discover and the invite link (Copy and Reset).</li>
+      <li><b>Right:</b> add people by name, username or Buildpair ID, and set each person's role.</li>
+      <li>The same dialog creates a <b>new space</b> ("+" next to Spaces in the sidebar).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W7 SUPPORTING -->
+<section class="step" id="w7" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>7. Supporting: an inbox for the people you back</h2>
+    <p>Phone screen 6 as two panes: what needs you on the left, the open space on the right, so you can work down the list without going back and forth.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/supporting/marathon-training</span></div>
+    <div class="mn app sup">
+      <nav class="sb" data-on="supporting"></nav>
+      <section class="pane" style="border-right:1px solid var(--line);padding-inline:16px;gap:10px">
+        <div class="ph"><h3>Supporting</h3><span class="tbtn ghost"><span data-ic="filter"></span></span></div>
+        <div class="needs">
+          <div class="needs-h cl"><span data-ic="chevD" class="chev"></span>Check in on · 2</div>
+          <div class="need"><div class="av" style="background:#c0392b">A</div><span><b>Alex</b> · quiet for 9 days</span><span class="go">Open</span></div>
+          <div class="need"><div class="av" style="background:#7a4fb5">P</div><span><b>Priya</b> wrote her weekly reflection</span><span class="go">Reply</span></div>
+        </div>
+        <div class="chats">
+          <div class="chat"><div class="av" style="background:#c97a9e">J</div><div style="min-width:0"><div class="t">Get fit for summer <span>· Jordan</span></div><div class="p unread">Jordan finished 3 things today</div></div><div class="r">9:30<span class="dot-u"></span></div></div>
+          <div class="chat"><div class="av" style="background:#c47f0c">S</div><div style="min-width:0"><div class="t">Shipnote <span>· Sam</span></div><div class="p unread">Sam completed Invite flow</div><div class="mini-bar"><i style="width:60%"></i></div></div><div class="r">8:40<span class="dot-u"></span></div></div>
+          <div class="chat" style="background:var(--tint);margin-inline:-16px;padding-inline:16px;box-shadow:inset 2px 0 0 var(--blue)"><div class="av" style="background:#c0392b">A</div><div style="min-width:0"><div class="t">Marathon training <span>· Alex</span></div><div class="p">Alex skipped Long run: knee is sore</div><div class="mini-bar"><i style="width:42%"></i></div></div><div class="r">Oct 1</div></div>
+          <div class="chat"><div class="av" style="background:#2f6f6a">C</div><div style="min-width:0"><div class="t">Novel draft <span>· Chloe + 3</span></div><div class="p">Chloe: Writing sprint Thursday?</div><div class="mini-bar"><i style="width:35%"></i></div></div><div class="r">Sun</div></div>
+        </div>
+      </section>
+      <section class="rp" style="background:#fff;border-left:0">
+        <div class="rh" style="padding:16px 20px 12px;border-bottom:1px solid var(--line)"><div><b style="font-size:17px">Marathon training</b><div class="sub">Alex's space · you're supporting · Alex, you and Leo</div></div><span class="row" style="gap:6px"><span class="tbtn">View list</span><span class="tbtn"><span data-ic="dots"></span></span></span></div>
+        <div class="rb" style="padding:14px 20px;gap:12px">
+          <div class="listbox">
+            <div class="todo w"><span class="ck"></span><div><div>Half marathon<span class="kind">Goal</span></div><div class="for">Week 5 of 12 · <span class="quiet-tag">Quiet 9 days</span></div></div><span class="due">Apr 12</span></div>
+            <div class="todo w"><span class="ck"></span><div><div>Run 4x a week<span class="kind">Habit</span><span class="habit-dots"><i></i><i></i><i></i><i></i></span></div><div class="for">0 of 4 this week</div></div><span class="due"></span></div>
+          </div>
+          <div class="thread">
+            <div class="ev"><span class="ev-mark"></span><div class="ev-text">Alex completed <b>Tempo run</b><span class="when">Sep 26</span><div class="reacts"><span class="mine">🔥 You</span><span>👏 Leo</span></div></div></div>
+            <div class="ev"><span class="ev-mark skip"></span><div class="ev-text">Alex skipped <b>Long run</b><span class="when">Oct 1</span><div class="update-msg" style="margin-top:4px">Knee is sore, taking a few days off.</div></div></div>
+            <div class="margin"><div class="av" style="background:#7a6bd1">L</div><div class="note"><div>Rest is training too. Ice it!</div><span class="who">Leo · Oct 1</span></div></div>
+          </div>
+        </div>
+        <div class="sugg-bar" style="padding-inline:20px"><span>How's the knee?</span><span>Walk instead this week?</span><span>Want to do a short run together?</span><span>Send a nudge</span></div>
+        <div class="compose" style="padding-inline:20px"><span class="field">Message Alex…</span><span class="tool"><span data-ic="smile"></span></span></div>
+      </section>
+    </div>
+  </div></div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>Left:</b> "Check in on" (only supporters see it), then one row per space shared with you.</li>
+      <li><b>Right:</b> that space's chat, with suggested replies above the message box. Nothing sends until you press Enter.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W8 DISCOVER -->
+<section class="step" id="w8" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>8. Discover, offering support and Requests</h2>
+    <p>Phone screen 7 with room for filters and two cards side by side. Offers and requests become dialogs and a tab.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/discover</span></div>
+    <div class="mn app">
+      <nav class="sb" data-on="discover"></nav>
+      <main class="pane">
+        <div class="ph"><div><h3>Discover</h3><div class="sub">Spaces that want support</div></div><span class="vseg"><span class="on">For you</span><span>Browse</span></span></div>
+        <div class="fchips"><span class="on">Similar to your spaces</span><span>Launching something</span><span>Same time zone</span><span>Wants<span data-ic="chevD" class="dd"></span></span></div>
+        <div class="dgrid">
+          <div class="card">
+            <div class="row"><div class="av" style="background:#1f7a8c">DK</div><div style="min-width:0"><div style="font-weight:650;font-size:14px">Spring half · Dana</div><div class="sub">First half marathon in May</div></div></div>
+            <div class="goal-l"><span class="ck"></span>Run a half marathon · May 18<span class="ck"></span>Run 4x a week · habit</div>
+            <div class="badges sm"><span class="badge"><span class="bi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>Fast responder</span><span class="badge">Honest takes 8</span></div>
+            <div class="reasons"><span>Like your Running space</span><span>2 hrs overlap</span></div>
+            <div class="row" style="gap:8px"><div class="btn sec" style="flex:1;padding:8px;font-size:13px">Offer support</div></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="av" style="background:#8a5a2b">TO</div><div style="min-width:0"><div style="font-weight:650;font-size:14px">Pottery shop launch · Tomás</div><div class="sub">Opening an online store by December</div></div></div>
+            <div class="goal-l"><span class="ck"></span>Launch the shop · Dec 1<span class="ck"></span>First 20 orders</div>
+            <div class="badges sm"><span class="badge">Keeps me going 5</span></div>
+            <div class="reasons"><span>Also launching something</span><span>Same time zone</span></div>
+            <div class="row" style="gap:8px"><div class="btn sec" style="flex:1;padding:8px;font-size:13px">Offer support</div></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="av" style="background:#4f7a28">RN</div><div style="min-width:0"><div style="font-weight:650;font-size:14px">10k by spring · Rina</div><div class="sub">Back to running after a year off</div></div></div>
+            <div class="goal-l"><span class="ck"></span>Run 10k without stopping · Mar 1</div>
+            <div class="reasons"><span>Like your Running space</span><span>Mornings, like you</span></div>
+            <div class="row" style="gap:8px"><div class="btn sec" style="flex:1;padding:8px;font-size:13px">Offer support</div></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="av" style="background:#9a4e1c">OB</div><div style="min-width:0"><div style="font-weight:650;font-size:14px">Invoicing app · Omar</div><div class="sub">Shipping a Stripe-based invoicer, solo</div></div></div>
+            <div class="goal-l"><span class="ck"></span>Public beta · Nov 30</div>
+            <div class="reasons"><span>Like your Ledgerly space</span></div>
+            <div class="row" style="gap:8px"><div class="btn sec" style="flex:1;padding:8px;font-size:13px">Offer support</div></div>
+          </div>
+        </div>
+      </main>
+      <aside class="rp">
+        <div class="rh"><b>Your spaces on Discover</b></div>
+        <div class="rb">
+          <div class="card" style="background:#fff;gap:8px">
+            <div class="row" style="justify-content:space-between"><span class="sp-name"><span class="sp-ico" style="background:#c0392b">R</span>Running</span><span class="req-tag">2 requests</span></div>
+            <div class="sub">Shown to people training for races</div>
+            <div class="row" style="gap:6px"><span class="tbtn pri">Review requests</span><span class="tbtn">Edit</span></div>
+          </div>
+          <div class="grp-h">Offers you sent · 1 of 3</div>
+          <div class="listbox" style="background:#fff">
+            <div class="todo w" style="grid-template-columns:28px 1fr auto"><div class="av" style="background:#1f7a8c;width:26px;height:26px;font-size:10px">DK</div><div><div>Spring half · Dana</div><div class="for">Support each other · sent today</div></div><span class="due">6 days left</span></div>
+          </div>
+          <div class="sub">You can have 3 open offers. Unanswered offers expire after a week.</div>
+        </div>
+      </aside>
+    </div>
+  </div></div>
+  <div class="specimens">
+    <div class="spec mn"><span class="cap">Offer support dialog</span>
+      <div class="pop static" style="width:380px;padding:16px">
+        <div class="row" style="justify-content:space-between"><span class="ph3">Offer support to Dana</span><span class="x"><span data-ic="x"></span></span></div>
+        <div class="opt" style="border-top:0;padding-top:0"><span class="radio"></span><div><div class="opt-t" style="font-size:13px">Support Dana's space</div><div class="sub">You join "Spring half" as a supporter.</div></div></div>
+        <div class="opt"><span class="radio on"></span><div><div class="opt-t" style="font-size:13px">Support each other</div><div class="sub">Suggest spaces Dana could support back; she picks one.</div>
+          <div class="people"><span class="person on"><i style="background:#c0392b">R</i>Running</span><span class="person on"><i style="background:#3557d6">L</i>Ledgerly</span><span class="person"><i style="background:#2f8f5b">L</i>Life</span></div></div></div>
+        <div class="card" style="gap:4px;padding:9px 12px"><span class="lbl">Note</span><span>Also training for a spring half! Happy to check in, and I'd love the same.</span></div>
+        <div class="row" style="justify-content:flex-end;gap:8px"><span class="tbtn ghost">Cancel</span><span class="tbtn pri">Send offer <span class="k" style="background:transparent;color:#dfe6ff;border-color:#6d86e6">⌘↵</span></span></div>
+      </div>
+    </div>
+    <div class="spec mn"><span class="cap">Reviewing offers (from the line in the chat)</span>
+      <div class="pop static" style="width:520px;padding:16px;gap:12px">
+        <div class="row" style="justify-content:space-between"><span class="ph3">Requests · Running</span><span class="req-tag">2</span></div>
+        <div class="card">
+          <div class="row"><div class="av lg" style="background:#1f7a8c">DK</div><div style="flex:1"><div style="font-weight:650;font-size:14px">Dana Kim <span class="sub" style="font-weight:400">· support each other</span></div><div class="sub">"Training for a spring half too. Want to keep each other going?"</div></div></div>
+          <div class="lbl">In return, pick one of Dana's spaces to support</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="listbox" style="padding:6px 10px;border-color:#3557d6;background:var(--tint)"><div class="opt" style="border-top:0;padding:4px 0"><span class="radio on"></span><div><div class="opt-t" style="font-size:13px">Spring half</div><div class="sub">Wants check-ins when quiet</div></div></div></div>
+            <div class="listbox" style="padding:6px 10px"><div class="opt" style="border-top:0;padding:4px 0"><span class="radio"></span><div><div class="opt-t" style="font-size:13px">Learn Spanish</div><div class="sub">Wants honest takes</div></div></div></div>
+          </div>
+          <div class="row" style="gap:8px;justify-content:flex-end"><span class="tbtn ghost">View Dana's profile</span><span class="tbtn">Decline</span><span class="tbtn pri">Accept</span></div>
+        </div>
+        <div class="card">
+          <div class="row"><div class="av lg" style="background:#7a6bd1">LM</div><div style="flex:1"><div style="font-weight:650;font-size:14px">Leo Martins <span class="sub" style="font-weight:400">· via invite link</span></div><div class="sub">"Ran my first half last year. Happy to keep you honest."</div></div></div>
+          <div class="row" style="gap:8px;justify-content:flex-end"><span class="tbtn">Decline</span><span class="tbtn pri">Accept</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>For you</b> lists spaces that fit, with the reasons. Browse adds search.</li>
+      <li><b>Offer support</b> opens a dialog with the phone's two choices and a note.</li>
+      <li>Offers arrive as one line at the top of the space's chat; Review opens the same accept-or-decline card as phone screen 7.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W9 PROFILE AND SETTINGS -->
+<section class="step" id="w9" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>9. Profile and settings</h2>
+    <p>Phone screen 8 at desktop width. Open your profile from your name at the bottom of the sidebar; the gear beside it opens settings.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/maya</span></div>
+    <div class="mn app c2">
+      <nav class="sb" data-on="me"></nav>
+      <main class="pane" style="padding-inline:32px">
+        <div class="prof" style="margin-top:6px">
+          <div class="prof-l">
+            <div class="av" style="background:#3557d6;width:84px;height:84px;font-size:30px">M</div>
+            <div><div style="font-size:22px;font-weight:700;letter-spacing:-0.01em">Maya Chen</div><div class="sub">@maya · Lisbon · UTC+0 · 4:12 PM there</div><div class="idchip">ID BP-4821-KQ · Copy</div></div>
+            <div>Building Ledgerly, invoicing for freelancers. Training for my first half marathon.</div>
+            <div class="sub">Supporting 4 people · supported by 6 · 12 goals finished</div>
+            <div class="badges"><span class="badge"><span class="bi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>Fast responder</span><span class="badge"><span class="bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span>Reliable supporter</span><span class="badge"><span class="bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span>Finisher</span></div>
+            <div class="row" style="gap:8px"><span class="tbtn">Edit profile</span><span class="tbtn"><span data-ic="gear"></span>Settings</span></div>
+          </div>
+          <div class="prof-r">
+            <div class="split-h"><span>Compliments</span><span class="sub" style="font-weight:400">From 9 people</span></div>
+            <div class="compl"><span>Honest takes <b>12</b></span><span>Keeps me going <b>9</b></span><span>Friendly <b>7</b></span><span>Great advice <b>4</b></span></div>
+            <div class="margin"><div class="av" style="background:#1f7a8c">DK</div><div class="note"><div>The "walk instead" idea saved my week.</div><span class="who">Dana · Keeps me going · September</span></div></div>
+            <div class="split-h"><span>On Discover</span></div>
+            <div class="listbox" style="padding:2px 12px"><div class="todo w" style="grid-template-columns:22px 1fr auto"><span class="sp-ico" style="background:#c0392b">R</span><div><div>Running</div><div class="for">Training for my first half marathon, April 12</div></div><span class="due">2 offers</span></div></div>
+            <div class="split-h"><span>Finished goals</span><span class="sub" style="font-weight:400">Public</span></div>
+            <div class="listbox" style="padding:2px 12px">
+              <div class="todo w"><span class="ck on"></span><div><div>Launch Ledgerly beta</div><div class="for">Ledgerly</div></div><span class="due">September</span></div>
+              <div class="todo w"><span class="ck on"></span><div><div>Run 10k under 55 minutes</div><div class="for">Running</div></div><span class="due">August</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div></div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/settings/notifications</span></div>
+    <div class="mn app c2" style="height:600px">
+      <nav class="sb" data-on="me"></nav>
+      <main class="pane" style="padding-inline:32px">
+        <div class="ph"><h3>Settings</h3></div>
+        <div class="setg">
+          <div class="setnav"><span class="on">Notifications</span><span>Privacy</span><span>Connected tools</span><span>Appearance</span><span>Keyboard shortcuts</span><span>Account and plan</span></div>
+          <div style="display:grid;gap:14px;align-content:start;max-width:560px">
+            <div class="lbl">On this computer</div>
+            <div class="setbox">
+              <div class="srow"><div>Browser notifications<span class="sub">Replies, check-ins and requests while Buildpair is open in a tab</span></div><span class="switch on"></span></div>
+              <div class="srow"><div>Show unread count in the tab title<span class="sub">"(3) Buildpair"</span></div><span class="switch on"></span></div>
+            </div>
+            <div class="lbl">Email</div>
+            <div class="setbox">
+              <div class="srow"><div>Daily summary<span class="sub">What's due and what your people said</span></div><span class="selectish">8:00 AM<span data-ic="chevD" class="dd"></span></span></div>
+              <div class="srow"><div>Weekly reflection reminder</div><span class="selectish">Fridays<span data-ic="chevD" class="dd"></span></span></div>
+              <div class="srow"><div>Requests and offers<span class="sub">Right away, so offers don't expire unseen</span></div><span class="switch on"></span></div>
+            </div>
+            <div class="lbl">Everywhere</div>
+            <div class="setbox">
+              <div class="srow"><div>Quiet hours<span class="sub">No notifications on any device</span></div><span class="selectish">10 PM – 7 AM<span data-ic="chevD" class="dd"></span></span></div>
+              <div class="srow"><div>Phone push when this tab is open</div><span class="selectish">Send to the computer only<span data-ic="chevD" class="dd"></span></span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div></div>
+  <div class="specimens">
+    <div class="spec mn"><span class="cap">Giving a compliment</span>
+      <div class="pop static" style="width:400px;padding:16px">
+        <div class="row" style="gap:12px"><div class="av lg" style="background:#1f7a8c">DK</div><div><div class="ph3">How's Dana as a supporter?</div><div class="sub">4 weeks supporting your Running space</div></div></div>
+        <div class="people" style="margin-top:0"><span class="person on">Honest takes</span><span class="person on">Keeps me going</span><span class="person">Friendly</span><span class="person">Great advice</span><span class="person">Always checks in</span><span class="person">Funny</span></div>
+        <div class="card" style="padding:9px 12px;gap:2px"><span class="lbl">Add a note (optional)</span><span>The "walk instead" idea saved my week.</span></div>
+        <div class="row" style="justify-content:space-between"><span class="sub" style="color:#3557d6;font-weight:600">Not a good fit · Report</span><span class="row" style="gap:8px"><span class="tbtn ghost">Later</span><span class="tbtn pri">Send compliment</span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li><b>Profile:</b> who you are on the left, what others have said on the right.</li>
+      <li><b>Settings</b> add browser notifications and an email summary, since the web has no lock screen.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W10 ACTIVITY -->
+<section class="step" id="w10">
+  <div class="spec mn order" style="justify-items:stretch"><span class="cap">Activity panel (opens over the margin)</span>
+    <div class="pop static actp">
+      <div class="ah"><b>Activity</b><span class="row" style="gap:10px"><span class="sub" style="color:#3557d6;font-weight:600">Mark all read</span><span class="x"><span data-ic="x"></span></span></span></div>
+      <div class="fchips"><span class="on">All</span><span>Replies</span><span>Requests <b style="color:#3557d6">2</b></span><span>Reactions</span></div>
+      <div class="ab">
+        <div class="grp-h" style="margin-top:10px">New</div>
+        <div class="act new"><div class="av" style="background:#1f7a8c">DK</div><div><b>Dana</b> offered to support <b>Running</b>, support each other<span class="when">12 min ago</span><span class="go2"><span class="tbtn pri">Review</span></span></div></div>
+        <div class="act new"><div class="av" style="background:#c97a9e">J</div><div><b>Jordan</b> replied in <b>Life</b>: "I can take the kids Saturday morning…"<span class="when">20 min ago</span></div></div>
+        <div class="act new"><div class="av" style="background:#c47f0c">S</div><div><b>Sam and 2 others</b> reacted 🔥 to <b>Fix invoice PDF bug</b><span class="when">1 hr ago</span></div></div>
+        <div class="grp-h">Earlier this week</div>
+        <div class="act"><div class="av" style="background:#7a6bd1">LM</div><div><b>Leo</b> asked to join <b>Running</b> with your invite link<span class="when">Thu</span></div></div>
+        <div class="act"><div class="av" style="background:#2f6f6a">C</div><div><b>Chloe</b> gave you a compliment: Keeps me going<span class="when">Wed</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="explain">
+    <h2>10. Activity: the bell, as a panel</h2>
+    <p>The bell at the bottom of the sidebar opens Activity as a panel over the margin, so the page you're on stays put.</p>
+    <ul>
+      <li>Only things aimed at you: replies, reactions to your items, requests and compliments, grouped like phone notifications.</li>
+      <li>Requests carry their button inline, so they can be handled right there.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W11 COMMAND PALETTE -->
+<section class="step" id="w11" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>11. Command palette and keyboard shortcuts</h2>
+    <p>A desktop addition. <span class="kk">⌘K</span> (Ctrl K on Windows) works from anywhere and runs real actions on what you're looking at, not only page links.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/spaces/life</span></div>
+    <div class="mn app">
+      <nav class="sb" data-on="sp-life"></nav>
+      <main class="pane">
+        <div class="ph"><div class="row" style="gap:12px;align-items:flex-start"><span class="sp-ico big" style="background:#2f8f5b">L</span><div><h3>Life</h3><div class="sub">Family, health and the house · You, Jordan and 3 friends</div></div></div></div>
+        <div class="ptabs"><span class="on">List</span><span>Week</span><span>People <span class="c">5</span></span><span>Requests</span></div>
+        <div class="todo w open"><span class="ck"></span><div>Gym 4x a week<span class="kind">Habit</span></div><span class="due">Any time</span></div>
+        <div class="todo w"><span class="ck"></span><div>Plan Lisbon trip<span class="kind">Goal</span></div><span class="due">by Dec 1</span></div>
+        <div class="todo w"><span class="ck"></span><div>Pick up kids from daycare</div><span class="due">Today 5:30 PM</span></div>
+        <div class="todo w"><span class="ck"></span><div>Dentist</div><span class="due">Fri 3:00 PM</span></div>
+      </main>
+      <aside class="rp"><div class="ptabs" style="padding-top:16px"><span class="on">Chat</span><span>Details</span></div><div class="rb"><div class="sys">Thursday</div><div class="ev"><span class="ev-mark skip"></span><div class="ev-text">Maya skipped <b>Gym</b></div></div></div></aside>
+      <div class="scrim"></div>
+      <div class="cmdk">
+        <div class="in"><span data-ic="search"></span><span class="ctx">Gym 4x a week</span><span>mov<span class="caret" style="display:inline-block;vertical-align:-3px"></span></span></div>
+        <div class="res">
+          <div class="mh">Actions on "Gym 4x a week"</div>
+          <div class="ci hl"><span data-ic="move"></span>Move to Running<span class="sk"><span class="k">M</span></span></div>
+          <div class="ci"><span data-ic="move"></span>Move to Ledgerly</div>
+          <div class="ci"><span data-ic="move"></span>Move to another space…</div>
+          <div class="mh">Everywhere</div>
+          <div class="ci"><span data-ic="plus"></span>New space…<span class="sk"><span class="k">N</span><span class="k">S</span></span></div>
+          <div class="ci"><span data-ic="review"></span>Start weekly review<span class="sk"><span class="k">G</span><span class="k">R</span></span></div>
+          <div class="ci"><span data-ic="dup"></span>Copy this week's update as Markdown</div>
+          <div class="mh">Go to</div>
+          <div class="ci"><span class="av" style="background:#2f6f6a">C</span>Chloe Park · Novel draft</div>
+        </div>
+        <div class="ft"><span><span class="k">↑</span><span class="k">↓</span>choose</span><span><span class="k">↵</span>run</span><span><span class="k">⌫</span>clear "Gym" to act on everything</span><span style="margin-left:auto"><span class="k">?</span>all shortcuts</span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="specimens">
+    <div class="spec mn" style="justify-items:stretch"><span class="cap">Shortcuts sheet (press ?)</span>
+      <div class="pop static" style="width:640px;max-width:100%;padding:18px;box-sizing:border-box">
+        <div class="row" style="justify-content:space-between"><span class="ph3">Keyboard shortcuts</span><span class="x"><span data-ic="x"></span></span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;font-size:12px">
+          <div style="display:grid;gap:7px;align-content:start"><div class="lbl">Anywhere</div>
+            <div class="row" style="justify-content:space-between">Command palette<span class="k">⌘K</span></div>
+            <div class="row" style="justify-content:space-between">Add something<span class="k">Q</span></div>
+            <div class="row" style="justify-content:space-between">New space<span><span class="k">N</span> <span class="k">S</span></span></div>
+            <div class="row" style="justify-content:space-between">Search<span class="k">/</span></div>
+            <div class="row" style="justify-content:space-between">Show this sheet<span class="k">?</span></div></div>
+          <div style="display:grid;gap:7px;align-content:start"><div class="lbl">Go to</div>
+            <div class="row" style="justify-content:space-between">Today<span><span class="k">G</span> <span class="k">T</span></span></div>
+            <div class="row" style="justify-content:space-between">Upcoming<span><span class="k">G</span> <span class="k">U</span></span></div>
+            <div class="row" style="justify-content:space-between">Supporting<span><span class="k">G</span> <span class="k">S</span></span></div>
+            <div class="row" style="justify-content:space-between">Discover<span><span class="k">G</span> <span class="k">D</span></span></div>
+            <div class="row" style="justify-content:space-between">Activity<span><span class="k">G</span> <span class="k">A</span></span></div>
+            <div class="row" style="justify-content:space-between">Space 1–9<span><span class="k">⌘1</span>–<span class="k">⌘9</span></span></div></div>
+          <div style="display:grid;gap:7px;align-content:start"><div class="lbl">On items</div>
+            <div class="row" style="justify-content:space-between">Next / previous<span><span class="k">J</span> <span class="k">K</span></span></div>
+            <div class="row" style="justify-content:space-between">Done<span class="k">Space</span></div>
+            <div class="row" style="justify-content:space-between">Select<span class="k">X</span></div>
+            <div class="row" style="justify-content:space-between">Skip today / Won't do<span><span class="k">S</span> <span class="k">W</span></span></div>
+            <div class="row" style="justify-content:space-between">Update / Move<span><span class="k">U</span> <span class="k">M</span></span></div>
+            <div class="row" style="justify-content:space-between">Schedule / Reminder<span><span class="k">D</span> <span class="k">R</span></span></div>
+            <div class="row" style="justify-content:space-between">Open details<span class="k">↵</span></div>
+            <div class="row" style="justify-content:space-between">Undo<span class="k">⌘Z</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li>Starts with what you're looking at ("Gym 4x a week"), so typing "mov" offers moves for that item.</li>
+      <li><span class="kk">?</span> shows all shortcuts. Single-letter keys can be turned off in settings.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W12 WEEK VIEW -->
+<section class="step" id="w12" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>12. Upcoming: the next seven days, drag to reschedule</h2>
+    <p>A desktop addition that covers the "Today and calendar views" basic from the product record. Each day is a column; habits get their own lane on top.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/upcoming</span></div>
+    <div class="mn app c2">
+      <nav class="sb" data-on="upcoming"></nav>
+      <main class="pane">
+        <div class="ph"><div><h3>Upcoming</h3><div class="sub">Sat, Oct 10 – Fri, Oct 16 · all spaces</div></div>
+          <div class="tools"><span class="fchips"><span class="on">All spaces</span><span>Hide done</span></span><span class="tbtn">‹</span><span class="tbtn">Today</span><span class="tbtn">›</span><span class="vseg"><span>List</span><span class="on">Week</span></span></div></div>
+        <div class="week">
+          <div class="hlane"><span>Gym <i class="d"></i></span><span><i></i></span><span><i class="d"></i></span><span><i></i></span><span><i class="d"></i></span><span><i></i></span><span><i></i></span></div>
+          <div class="wcol today"><div class="wd">SAT<b>10</b></div>
+            <div class="wi" style="--c:#3557d6">Send invoice to Northwind<span class="t" style="color:#b3261e">from yesterday</span></div>
+            <div class="wi" style="--c:#3557d6">Email 3 beta users</div>
+            <div class="wi" style="--c:#2f8f5b">Pick up kids<span class="t">5:30 PM</span></div>
+            <div class="wi" style="--c:#5d6474">Call the accountant</div>
+            <div class="wi done" style="--c:#3557d6">Fix invoice PDF bug</div></div>
+          <div class="wcol"><div class="wd">SUN<b>11</b></div>
+            <div class="wi" style="--c:#c0392b">Long run, 8 km<span class="t">8:00 AM</span></div>
+            <div class="wi" style="--c:#3557d6">Draft pricing page</div></div>
+          <div class="wcol"><div class="wd">MON<b>12</b></div>
+            <div class="wi" style="--c:#3557d6">Weekly user calls<span class="t">10:00 AM</span></div>
+            <div class="wi" style="--c:#2f8f5b">Pay daycare</div></div>
+          <div class="wcol"><div class="wd">TUE<b>13</b></div>
+            <div class="wi" style="--c:#3557d6">Ship onboarding emails<span class="t">Launch v1</span></div></div>
+          <div class="wcol"><div class="wd">WED<b>14</b></div>
+            <div class="wi" style="--c:#c0392b">Intervals 6×400<span class="t">7:00 AM</span></div>
+            <div class="wi" style="--c:#5d6474">Book car service</div></div>
+          <div class="wcol drop"><div class="wd">THU<b>15</b></div>
+            <div class="wi" style="--c:#3557d6">Investor coffee<span class="t">9:30 AM</span></div>
+            <div class="wi drag" style="--c:#2f8f5b;top:96px;left:7px">Dentist<span class="t">Thu · 3:00 PM</span></div></div>
+          <div class="wcol"><div class="wd">FRI<b>16</b></div>
+            <div class="wi ghost" style="--c:#2f8f5b">Dentist<span class="t">3:00 PM</span></div>
+            <div class="wi" style="--c:#2f8f5b">Weekly reflection<span class="t">Life, Ledgerly</span></div></div>
+        </div>
+      </main>
+    </div>
+  </div></div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li>Seven days across all spaces; each card's edge shows its space color. Habits get one lane on top.</li>
+      <li>Drag to reschedule: "Dentist" moves from Friday to Thursday and keeps its time.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W13 WEEKLY REVIEW -->
+<section class="step" id="w13" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>13. Weekly review on one screen</h2>
+    <p>A desktop addition: every shared space's reflection in one sitting. On Fridays a "Weekly review" row appears at the top of Today; it's also on ⌘K.</p>
+  </div>
+  <div class="browser-wrap"><div class="browser xl">
+    <div class="chrome"><i></i><i></i><i></i><span class="url">buildpair.app/review</span></div>
+    <div class="mn app c2 tall">
+      <nav class="sb" data-on="review"></nav>
+      <main class="pane" style="padding-inline:28px">
+        <div class="ph"><div><h3>Weekly review</h3><div class="sub">Oct 5 – 11 · 3 shared spaces</div></div><span class="tbtn ghost">Skip this week</span></div>
+        <div class="rv">
+          <div class="rv-steps">
+            <div class="on"><span class="sp-ico" style="background:#3557d6">L</span>Ledgerly<span class="st">Writing</span></div>
+            <div><span class="sp-ico" style="background:#2f8f5b">L</span>Life<span class="st">Next</span></div>
+            <div><span class="sp-ico" style="background:#c0392b">R</span>Running<span class="st">Next</span></div>
+            <div style="margin-top:8px;color:#5d6474;font-size:12px;display:block">Private spaces aren't part of the review.</div>
+          </div>
+          <div style="display:grid;gap:12px;align-content:start;min-width:0">
+            <div class="stat3"><span><b>7</b>done</span><span><b>1</b>skipped</span><span><b>62%</b>Launch v1 (up from 50%)</span><span><b>2</b>of 10 paying users</span></div>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px">
+              <div style="display:grid;gap:10px;align-content:start">
+                <div><div class="lbl" style="margin-bottom:6px">How's it going overall?</div>
+                  <div class="status3"><span><i style="background:#1f8a4c"></i>On track</span><span class="on"><i style="background:#a35b00"></i>At risk</span><span><i style="background:#b3261e"></i>Off track</span></div></div>
+                <div class="ta"><span class="lbl">How did the week go?</span><span>Fixed the invoice bug that was blocking two beta users. Both are back and one asked about pricing.</span></div>
+                <div class="ta"><span class="lbl">Where are you stuck?</span><span>Pricing. I keep rewriting the page instead of just picking a number.</span></div>
+                <div class="ta"><span class="lbl">One thing for next week</span><span>Put a price on the site by Wednesday<span class="caret" style="display:inline-block;vertical-align:-3px"></span></span></div>
+                <div class="row" style="justify-content:space-between"><span class="sub">Posts to Ledgerly's chat. Sam, Chloe, Theo and Ana can reply.</span><span class="row" style="gap:8px"><span class="tbtn">Back</span><span class="tbtn pri">Post and go to Life <span class="k" style="background:transparent;color:#dfe6ff;border-color:#6d86e6">⌘↵</span></span></span></div>
+              </div>
+              <div style="display:grid;gap:10px;align-content:start">
+                <div class="lbl">Last week, your supporters said</div>
+                <div class="margin"><div class="av" style="background:#c47f0c">S</div><div class="note"><b>I'd focus on</b><div>Talking to the two users who stalled. Skip new features for a week.</div><span class="who">Sam</span></div></div>
+                <div class="margin"><div class="av" style="background:#2f6f6a">C</div><div class="note"><b>Honest take</b><div>Launch v1 by Nov 21 looks tight but doable if pricing doesn't eat another week.</div><span class="who">Chloe</span></div></div>
+                <div class="lbl" style="margin-top:4px">This week's skips</div>
+                <div class="ev"><span class="ev-mark skip"></span><div class="ev-text" style="font-size:12px">Tue · Weekly user calls: "Nobody booked"</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div></div>
+  <div class="explain" style="max-width:72ch">
+    <ul>
+      <li>Numbers first, then On track / At risk / Off track and three short prompts, with last week's supporter reply beside them.</li>
+      <li>Each reflection posts to that space's chat, where supporters answer it as usual.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- W14 WINDOW SIZES -->
+<section class="step" id="w14" style="grid-template-columns:1fr">
+  <div class="explain" style="max-width:72ch">
+    <h2>14. Window sizes: from a wide monitor down to phone width</h2>
+    <p>The layout gives up panes in a fixed order as the window narrows: first the margin, then the sidebar's labels, then the sidebar itself.</p>
+  </div>
+  <div class="bps">
+    <div class="bp"><div class="scr" style="grid-template-columns:22% 1fr 30%"><i class="s1">Sidebar</i><i class="s2">Page</i><i class="s3">Margin</i></div><b>1280 px and wider</b><p>Sidebar, page and margin, as drawn above. On very wide screens the page column stops at a readable width and the margin grows.</p></div>
+    <div class="bp"><div class="scr" style="grid-template-columns:24% 1fr"><i class="s1">Sidebar</i><i class="s2">Page<br>(chat button in the header)</i></div><b>1024 – 1279 px</b><p>The margin becomes a drawer: a Chat button in the page header slides it in over the page. Today's margin content moves below the list.</p></div>
+    <div class="bp"><div class="scr" style="grid-template-columns:12% 1fr"><i class="s1">Icons</i><i class="s2">Page</i></div><b>720 – 1023 px</b><p>The sidebar shrinks to an icon rail with space initials; hovering shows names. Dialogs become full-height sheets from the right.</p></div>
+    <div class="bp"><div class="scr" style="grid-template-rows:1fr 18%;max-width:120px"><i class="s2">Phone layout<br>+ floating +</i><i class="s1">Tabs</i></div><b>Under 720 px</b><p>The phone app: bottom tabs (Today, Spaces, Supporting, Discover), the floating +, sheets instead of popovers, and long-press on touch screens.</p></div>
+  </div>
+</section>
+
+<footer class="end">
+  <h2>What this adds up to</h2>
+  <p>Every phone screen has a desktop version. Each area keeps a clear focus: Today for planning, spaces for their chat, Supporting and Discover for people. The desktop adds item details, the command palette, the Upcoming week view and the one-screen weekly review.</p>
+  <p>Still to draw: dark mode versions of these screens, onboarding at desktop size, empty states (no spaces, no supporters, empty Discover), the focus timer, and the Pro upgrade screen. The browser frames and phone frames are drawn in the light theme only.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  var S = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  var P = {
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    today: '<path d="M5 12l4 4 10-10"/>',
+    grid: '<rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="4" width="8" height="7" rx="2"/><rect x="3" y="13" width="8" height="7" rx="2"/><rect x="13" y="13" width="8" height="7" rx="2"/>',
+    people: '<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5"/>',
+    search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    cal: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+    review: '<path d="M6 4h9l3 3v13H6z"/><path d="M9 11h6M9 15h4"/>',
+    pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+    dots: '<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',
+    skip: '<circle cx="12" cy="12" r="8"/><path d="M8 12h8"/>',
+    wont: '<circle cx="12" cy="12" r="8"/><path d="M9 9l6 6M15 9l-6 6"/>',
+    move: '<path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/>',
+    lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    dup: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    smile: '<circle cx="12" cy="12" r="8"/><path d="M9 14c1.5 1.5 4.5 1.5 6 0"/><path d="M9.5 9.5h.01M14.5 9.5h.01" stroke-width="2.4"/>',
+    reply: '<path d="M10 8L5 12l5 4"/><path d="M5 12h9a5 5 0 0 1 5 5v1"/>',
+    chevR: '<path d="M9 6l6 6-6 6"/>',
+    chevD: '<path d="M6 9l6 6 6-6"/>',
+    userplus: '<circle cx="9" cy="8" r="3"/><path d="M3 19c0-3 2.5-5 6-5s6 2 6 5M18 8v6M15 11h6"/>',
+    filter: '<path d="M4 6h16M7 12h10M10 18h4"/>'
+  };
+  function svg(name, cls) { return S + (cls ? ' class="' + cls + '"' : '') + '>' + (P[name] || '') + '</svg>'; }
+
+  var spaces = [
+    ['sp-ledgerly', 'Ledgerly', '#3557d6', 'L', '<span class="dot-u"></span>'],
+    ['sp-life', 'Life', '#2f8f5b', 'L', ''],
+    ['sp-running', 'Running', '#c0392b', 'R', '<span class="n b">2</span>'],
+    ['sp-private', 'Private', '#5d6474', 'P', '']
+  ];
+  var supporting = [
+    ['su-alex', 'Alex · Marathon', '#c0392b', 'A', ''],
+    ['su-sam', 'Sam · Shipnote', '#c47f0c', 'S', '<span class="dot-u"></span>'],
+    ['su-jordan', 'Jordan · Get fit', '#c97a9e', 'J', '<span class="dot-u"></span>']
+  ];
+  function nav(key, on, icon, label, extra) {
+    return '<a class="nv' + (key === on ? ' on' : '') + '">' + svg(icon) + label + (extra || '') + '</a>';
+  }
+  function sidebar(on) {
+    var h = '<div class="brand"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="10" width="24" height="28" rx="7" fill="#4169e1"/><rect x="20" y="10" width="24" height="28" rx="7" fill="none" stroke="#151a26" stroke-width="4"/></svg><span class="wm">Buildpair</span></div>';
+    h += '<div class="find">' + svg('search') + 'Search<span class="k">⌘K</span></div>';
+    h += nav('today', on, 'today', 'Today', '<span class="n">5</span>');
+    h += nav('upcoming', on, 'cal', 'Upcoming');
+    h += nav('supporting', on, 'people', 'Supporting', '<span class="n b">2</span>');
+    h += nav('discover', on, 'search', 'Discover');
+    h += '<div class="gh">Spaces<span class="p">+</span></div>';
+    spaces.forEach(function (s) {
+      h += '<a class="nv' + (s[0] === on ? ' on' : '') + '"><span class="sp-ico" style="background:' + s[2] + '">' + s[3] + '</span>' + s[1] + s[4] + '</a>';
+    });
+    h += '<div class="gh">Supporting</div>';
+    supporting.forEach(function (s) {
+      h += '<a class="nv' + (s[0] === on ? ' on' : '') + '"><span class="av" style="background:' + s[2] + '">' + s[3] + '</span>' + s[1] + s[4] + '</a>';
+    });
+    h += '<div class="me"><span class="av" style="background:#3557d6">M</span><span style="font-weight:600;font-size:13px">Maya Chen</span><span class="bellb">' + svg('bell') + '<b>3</b></span></div>';
+    return h;
+  }
+  document.querySelectorAll('nav.sb').forEach(function (n) { n.innerHTML = sidebar(n.getAttribute('data-on')); });
+  document.querySelectorAll('[data-ic]').forEach(function (el) {
+    el.outerHTML = svg(el.getAttribute('data-ic'), el.getAttribute('class'));
+  });
+  document.querySelectorAll('[data-heat]').forEach(function (el) {
+    var weeks = el.getAttribute('data-heat').split('|'), h = '';
+    weeks.forEach(function (w) {
+      for (var i = 0; i < 7; i++) {
+        var c = w.charAt(i);
+        h += '<i' + (c === 'd' ? ' class="d"' : c === 's' ? ' class="s"' : '') + '></i>';
+      }
+    });
+    el.innerHTML = h;
+  });
+
+  // Frames are drawn at real laptop size. In a narrower window, scale each one down to fit
+  // so the whole layout (sidebar, page and margin) stays visible; below half size, scroll instead.
+  function fit() {
+    document.querySelectorAll('.browser-wrap').forEach(function (w) {
+      var b = w.firstElementChild;
+      b.style.transform = '';
+      w.style.height = '';
+      var s = w.clientWidth / b.offsetWidth;
+      if (s < 1 && s >= 0.5) {
+        b.style.transformOrigin = 'top left';
+        b.style.transform = 'scale(' + s + ')';
+        w.style.height = Math.ceil(b.offsetHeight * s) + 8 + 'px';
+        w.classList.add('scaled');
+      } else {
+        w.classList.remove('scaled');
+      }
+    });
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+</script>
+</html>

@@ -1,0 +1,55 @@
+import { z } from "zod";
+import { LocalDate, Timestamp, Ulid } from "./ids";
+import { ItemKind, Visibility } from "./model";
+
+const cmd = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
+  z.object({ id: Ulid, type: z.literal(type), at: Timestamp, payload });
+
+export const CreateItem = cmd(
+  "item.create",
+  z.object({
+    itemId: Ulid,
+    kind: ItemKind,
+    title: z.string().trim().min(1).max(500),
+    parentId: Ulid.nullable().default(null),
+    visibility: Visibility.default("space"),
+    dueOn: LocalDate.nullable().default(null),
+    timesPerWeek: z.number().int().min(1).max(7).nullable().default(null),
+  }),
+);
+
+export const CompleteItem = cmd("item.complete", z.object({ itemId: Ulid, on: LocalDate }));
+export const SkipItem = cmd(
+  "item.skip",
+  z.object({ itemId: Ulid, on: LocalDate, reason: z.string().trim().max(500).nullable().default(null) }),
+);
+export const WontDoItem = cmd(
+  "item.wont",
+  z.object({ itemId: Ulid, reason: z.string().trim().max(500).nullable().default(null) }),
+);
+/** "Update" on an item: a note about it that lands in the chat. */
+export const PostUpdate = cmd(
+  "item.update",
+  z.object({ itemId: Ulid, body: z.string().trim().min(1).max(4000) }),
+);
+export const SendMessage = cmd(
+  "message.send",
+  z.object({ messageId: Ulid, body: z.string().trim().min(1).max(4000) }),
+);
+export const ToggleReaction = cmd(
+  "reaction.toggle",
+  z.object({ messageId: Ulid, emoji: z.string().min(1).max(16) }),
+);
+
+export const Command = z.discriminatedUnion("type", [
+  CreateItem,
+  CompleteItem,
+  SkipItem,
+  WontDoItem,
+  PostUpdate,
+  SendMessage,
+  ToggleReaction,
+]);
+export type Command = z.infer<typeof Command>;
+export type CommandInput = z.input<typeof Command>;
+export type CommandType = Command["type"];

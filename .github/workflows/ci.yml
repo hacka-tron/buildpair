@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Build the web app
+        run: pnpm --filter @buildpair/app build:web
+
+  secrets-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  e2e:
+    name: End-to-end (two people, live chat)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @buildpair/e2e exec playwright install --with-deps chromium
+      - name: Start the API and the web app locally
+        run: |
+          cd apps/edge
+          printf 'BETTER_AUTH_SECRET=ci-only-%s\nTICKET_SECRET=ci-only-%s\n' "$RANDOM$RANDOM$RANDOM" "$RANDOM$RANDOM$RANDOM" > .dev.vars
+          pnpm exec wrangler d1 migrations apply DB --local
+          nohup pnpm exec wrangler dev --port 8787 --var EMAIL_PROVIDER:test --var ENVIRONMENT:test > ../../wrangler-api.log 2>&1 &
+          cd ../app
+          EXPO_PUBLIC_API_URL=http://localhost:8787 pnpm build:web
+          nohup pnpm exec wrangler dev --port 8081 > ../../wrangler-web.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:8787/health && curl -sf -o /dev/null localhost:8081 && exit 0; sleep 2; done
+          cat ../../wrangler-api.log ../../wrangler-web.log; exit 1
+      - run: pnpm --filter @buildpair/e2e smoke
+      - if: failure()
+        run: cat wrangler-api.log wrangler-web.log

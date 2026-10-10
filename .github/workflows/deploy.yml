@@ -1,0 +1,72 @@
+# Staging on every merge to main; production on a published release, after approval.
+# Enabled once the repository variable DEPLOY_ENABLED is "true" (see docs/SETUP.md).
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+concurrency:
+  group: deploy-${{ github.event_name == 'release' && 'production' || 'staging' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    # Production requires a reviewer's approval (set on the "production" environment in GitHub).
+    environment: ${{ github.event_name == 'release' && 'production' || 'staging' }}
+    env:
+      TARGET: ${{ github.event_name == 'release' && 'production' || 'staging' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      HAS_EXPO_TOKEN: ${{ secrets.EXPO_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck && pnpm test
+
+      # Migrations must be backward compatible (add first, remove in a later release),
+      # because the old Worker version keeps serving until the new one is live.
+      - name: Apply database migrations
+        working-directory: apps/edge
+        run: pnpm exec wrangler d1 migrations apply DB --remote --env "$TARGET"
+
+      - name: Deploy the API
+        working-directory: apps/edge
+        run: pnpm exec wrangler deploy --env "$TARGET"
+
+      - name: Smoke test the API
+        run: |
+          host=$([ "$TARGET" = production ] && echo api.buildpair.app || echo api-staging.buildpair.app)
+          for i in 1 2 3 4 5; do curl --fail --silent "https://$host/health" && exit 0; sleep 5; done
+          echo "Health check failed; roll back with: pnpm --filter @buildpair/edge exec wrangler rollback --env $TARGET"
+          exit 1
+
+      - name: Deploy the web app
+        working-directory: apps/app
+        env:
+          EXPO_PUBLIC_API_URL: ${{ env.TARGET == 'production' && 'https://api.buildpair.app' || 'https://api-staging.buildpair.app' }}
+        run: pnpm build:web && pnpm exec wrangler deploy --env "$TARGET"
+
+      - uses: expo/expo-github-action@v8
+        if: env.HAS_EXPO_TOKEN == 'true'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Publish the app update (JS-only changes reach phones without a store release)
+        if: env.HAS_EXPO_TOKEN == 'true'
+        working-directory: apps/app
+        env:
+          EXPO_PUBLIC_API_URL: ${{ env.TARGET == 'production' && 'https://api.buildpair.app' || 'https://api-staging.buildpair.app' }}
+        run: eas update --branch "$TARGET" --message "${{ github.event.release.tag_name || github.sha }}" --non-interactive

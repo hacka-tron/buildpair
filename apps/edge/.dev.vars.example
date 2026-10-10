@@ -1,0 +1,6 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+BETTER_AUTH_SECRET=change-me-to-a-long-random-string
+TICKET_SECRET=change-me-to-another-long-random-string
+# Optional: Google sign-in
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=

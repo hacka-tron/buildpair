@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      expo:
+        patterns: ["expo", "expo-*", "react-native", "react-native-*", "@expo/*", "react", "react-dom"]
+      cloudflare:
+        patterns: ["wrangler", "@cloudflare/*"]
+      everything-else:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

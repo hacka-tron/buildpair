@@ -1,0 +1,79 @@
+# A full preview of every pull request: its own API Worker, Durable Objects and D1 database,
+# the web app on a preview URL, and an app update on a PR channel for phones.
+# Enabled once the repository variable DEPLOY_ENABLED is "true" (see docs/SETUP.md).
+name: Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    # Forks don't get secrets, so previews run only for branches in this repository.
+    if: vars.DEPLOY_ENABLED == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: preview
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      HAS_EXPO_TOKEN: ${{ secrets.EXPO_TOKEN != '' }}
+      PR: ${{ github.event.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Deploy the preview API (own Worker, Durable Objects and D1)
+        id: api
+        working-directory: apps/edge
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          TICKET_SECRET: ${{ secrets.TICKET_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          WORKERS_SUBDOMAIN: ${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}
+        run: node scripts/deploy-preview.mjs "$PR"
+
+      - name: Build and upload the web app to a preview URL
+        id: web
+        working-directory: apps/app
+        env:
+          EXPO_PUBLIC_API_URL: ${{ steps.api.outputs.url }}
+        run: |
+          pnpm build:web
+          out=$(pnpm exec wrangler versions upload --preview-alias "pr-$PR" 2>&1 | tee /dev/stderr)
+          echo "url=$(echo "$out" | grep -oE 'https://pr-[^ ]+\.workers\.dev' | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish an app update on the PR channel
+        if: env.HAS_EXPO_TOKEN == 'true'
+        uses: expo/expo-github-action/preview@v8
+        with:
+          working-directory: apps/app
+          command: eas update --auto --branch pr-${{ github.event.number }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_API_URL: ${{ steps.api.outputs.url }}
+
+      - name: Smoke test
+        run: curl --fail --silent "${{ steps.api.outputs.url }}/health"
+
+      - name: Comment the preview links
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: preview
+          message: |
+            **Preview for this pull request**
+            - Web app: ${{ steps.web.outputs.url }}
+            - API: ${{ steps.api.outputs.url }}
+            - Phones: scan the QR code in the Expo comment (needs the Expo Go or development build).

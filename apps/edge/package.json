@@ -1,0 +1,31 @@
+{
+  "name": "@buildpair/edge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types --env-interface Env src/worker-configuration.gen.d.ts"
+  },
+  "dependencies": {
+    "@better-auth/expo": "1.7.7",
+    "@buildpair/domain": "workspace:*",
+    "@buildpair/protocol": "workspace:*",
+    "better-auth": "1.7.7",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.13",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.4.0",
+    "@cloudflare/workers-types": "5.20260925.1",
+    "drizzle-kit": "0.31.11",
+    "vitest": "4.1.11",
+    "wrangler": "4.149.0"
+  }
+}

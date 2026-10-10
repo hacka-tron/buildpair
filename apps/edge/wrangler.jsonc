@@ -1,0 +1,85 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "buildpair-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [
+      { "name": "SPACE_ROOM", "class_name": "SpaceRoom" },
+      { "name": "USER_HUB", "class_name": "UserHub" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SpaceRoom", "UserHub"] }],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "buildpair-dev",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Secrets (BETTER_AUTH_SECRET, TICKET_SECRET, RESEND_API_KEY, GOOGLE_CLIENT_SECRET) come from
+  // .dev.vars locally and `wrangler secret put` (via CI) in deployed environments.
+  "vars": {
+    "ENVIRONMENT": "development",
+    "APP_ORIGINS": "http://localhost:8081,http://localhost:19006",
+    "BETTER_AUTH_URL": "http://localhost:8787",
+    "EMAIL_PROVIDER": "console",
+    "EMAIL_FROM": "Buildpair <hello@buildpair.app>"
+  },
+  "env": {
+    "staging": {
+      "name": "buildpair-api-staging",
+      "routes": [{ "pattern": "api-staging.buildpair.app", "custom_domain": true }],
+      "durable_objects": {
+        "bindings": [
+          { "name": "SPACE_ROOM", "class_name": "SpaceRoom" },
+          { "name": "USER_HUB", "class_name": "UserHub" }
+        ]
+      },
+      // Fill in database_id after `wrangler d1 create buildpair-staging` (see docs/SETUP.md).
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "buildpair-staging",
+          "database_id": "REPLACE_WITH_STAGING_D1_ID",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "APP_ORIGINS": "https://staging.buildpair.app",
+        "BETTER_AUTH_URL": "https://api-staging.buildpair.app",
+        "EMAIL_PROVIDER": "resend",
+        "EMAIL_FROM": "Buildpair <hello@buildpair.app>"
+      }
+    },
+    "production": {
+      "name": "buildpair-api-production",
+      "routes": [{ "pattern": "api.buildpair.app", "custom_domain": true }],
+      "durable_objects": {
+        "bindings": [
+          { "name": "SPACE_ROOM", "class_name": "SpaceRoom" },
+          { "name": "USER_HUB", "class_name": "UserHub" }
+        ]
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "buildpair-production",
+          "database_id": "REPLACE_WITH_PRODUCTION_D1_ID",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "APP_ORIGINS": "https://buildpair.app",
+        "BETTER_AUTH_URL": "https://api.buildpair.app",
+        "EMAIL_PROVIDER": "resend",
+        "EMAIL_FROM": "Buildpair <hello@buildpair.app>"
+      }
+    }
+  }
+}

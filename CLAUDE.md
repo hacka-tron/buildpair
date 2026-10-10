@@ -1,0 +1,32 @@
+# Buildpair: working notes for agents
+
+Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing structure, and [docs/PRODUCT.md](docs/PRODUCT.md) for what the product is. Design mockups: `docs/design/`.
+
+## Map
+
+| Path | Owns |
+|---|---|
+| `packages/protocol` | Zod schemas for commands, events, socket messages. Version changes with `PROTOCOL_VERSION`; the server accepts the current and previous version. |
+| `packages/domain` | `decide(state, command, actor)` and `applyEvent(state, event)`: the rules, pure functions, used by both app and server. All rule changes go here, with tests. |
+| `packages/sync` | `SpaceSync`: optimistic updates, persisted pending queue, sequence cursor, gap catch-up. |
+| `apps/edge/src/space-room.ts` | One Durable Object per space: the only writer, numbers every event, stores the log in its SQLite, runs sockets. |
+| `apps/edge/src/user-hub.ts` | One Durable Object per person: inbox socket, pokes from spaces. |
+| `apps/edge/src/app.ts` | Hono routes: auth, spaces, tickets, commands, invites. |
+| `apps/edge/src/db/schema.ts` | D1 schema (Drizzle). Change it, then `pnpm --filter @buildpair/edge db:generate`. |
+| `apps/app/src/app` | Expo Router screens. `apps/app/src/lib` holds the API client, auth, socket transport, local storage. |
+
+## Rules
+
+- Every change to a space is a command handled by `decide`; never write space data any other way.
+- Durable Objects: no `setTimeout`/`setInterval` (use alarms) so rooms can hibernate; schema changes bump `SCHEMA_VERSION` in `space-room.ts` and migrate on wake.
+- D1 migrations must be backward compatible (add now, remove in a later release).
+- Events about "only visible to me" items go to their owner only (`canSee`). Test privacy for every new event type.
+- Never log message text, item titles or emails in production code paths.
+- Errors shown to people say what happened and what to do, in plain words.
+- Expo: read `apps/app/AGENTS.md`; use `npx expo install` for Expo packages.
+
+## Commands
+
+- `pnpm check`: lint, typecheck, all tests. Run before every commit.
+- `pnpm format`: apply Biome formatting.
+- Workers tests run in the real runtime (`@cloudflare/vitest-plugin`).
