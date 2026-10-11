@@ -57,7 +57,7 @@ jobs:
 
       - name: Publish an app update on the PR channel
         if: env.HAS_EXPO_TOKEN == 'true'
-        uses: expo/expo-github-action/preview@v8
+        uses: expo/expo-github-action/preview@v9
         with:
           working-directory: apps/app
           command: eas update --auto --branch pr-${{ github.event.number }}
