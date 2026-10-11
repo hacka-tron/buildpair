@@ -13,7 +13,12 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing structure, and
 | `apps/edge/src/user-hub.ts` | One Durable Object per person: inbox socket, pokes from spaces. |
 | `apps/edge/src/app.ts` | Hono routes: auth, spaces, tickets, commands, invites. |
 | `apps/edge/src/db/schema.ts` | D1 schema (Drizzle). Change it, then `pnpm --filter @buildpair/edge db:generate`. |
+| `apps/site` | Landing page and sign-up (`public/`), plus a Worker for per-environment config and invite redirects. |
 | `apps/app/src/app` | Expo Router screens. `apps/app/src/lib` holds the API client, auth, socket transport, local storage. |
+
+## Domains
+
+`buildpair.app` landing and sign-up, `app.buildpair.app` the web app, `api.buildpair.app` the API (staging: `staging.`, `app-staging.`, `api-staging.`). Sessions are cookies shared across `buildpair.app` subdomains. Invite links are `buildpair.app/join/<token>`.
 
 ## Rules
 

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buildpair · Set goals. Bring people along.</title>
+<meta name="description" content="Buildpair is a to-do and goals app you share with a few people you trust. They see your goals move, notice when one goes quiet, and tell you how it looks from the outside.">
+<meta property="og:title" content="Buildpair">
+<meta property="og:description" content="Set goals. Bring people along. A to-do and goals app you share with the people in your corner.">
+<meta property="og:url" content="https://buildpair.app/">
+<meta name="theme-color" content="#4169E1">
+<link rel="icon" href="/mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,500&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<script src="/config.js"></script>
+<script src="/signup.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#signup">Skip to sign-up</a>
+
+<header class="nav">
+  <a class="brand" href="/" aria-label="Buildpair home">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="10" width="24" height="28" rx="7" class="mark-fill"/><rect x="20" y="10" width="24" height="28" rx="7" class="mark-line" fill="none" stroke-width="4"/></svg>
+    <span>Buildpair</span>
+  </a>
+  <nav aria-label="Main">
+    <a href="#how">How it works</a>
+    <a href="#builders">For builders</a>
+    <a class="signin" data-app-link href="/sign-in">Sign in</a>
+    <a class="btn btn-small" href="#signup" data-focus-signup>Create account</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">For builders and the people in their corner</p>
+      <h1>Set goals.<br>Bring people along.</h1>
+      <p class="lede">Buildpair is a to-do and goals app you share with a few people you trust. They see your goals move, notice when one goes quiet, and tell you how it looks from the outside.</p>
+
+      <div class="signup" id="signup">
+        <form id="signup-form" novalidate>
+          <div data-step="details">
+            <h2 class="signup-title">Create your account</h2>
+            <p class="signup-sub">Free. No password: we email you a code.</p>
+            <div class="fields">
+              <label for="name">Your name</label>
+              <input id="name" name="name" autocomplete="name" placeholder="Maya Chen" maxlength="80" required>
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required>
+            </div>
+            <button class="btn" type="submit" data-label="Email me a code">Email me a code</button>
+            <div class="or" data-google hidden><span>or</span></div>
+            <button class="btn btn-google" type="button" id="google" data-google hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.5c2.1-1.9 3.3-4.7 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.2-2.7l-3.5-2.7c-1 .7-2.2 1-3.7 1-2.9 0-5.3-1.9-6.2-4.5H2.2v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7.1H2.2a11 11 0 0 0 0 9.8l3.6-2.8z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.1-3.1A11 11 0 0 0 2.2 7.1l3.6 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg>
+              Continue with Google
+            </button>
+          </div>
+          <div data-step="code" hidden>
+            <h2 class="signup-title">Check your email</h2>
+            <p class="signup-sub">We sent a 6-digit code to <b data-email></b>. It expires in 10 minutes.</p>
+            <div class="fields">
+              <label for="code">Code</label>
+              <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="123456">
+            </div>
+            <button class="btn" type="submit" data-label="Create account">Create account</button>
+            <p class="signup-links"><button type="button" class="link" id="resend">Send a new code</button> · <button type="button" class="link" id="back">Use a different email</button></p>
+          </div>
+          <p class="form-error" role="alert" aria-live="assertive"></p>
+          <p class="fine">Already have an account? Enter the same email and we'll sign you in.</p>
+        </form>
+      </div>
+    </div>
+
+    <div class="hero-visual" role="img" aria-label="Example: a goal page with supporters' notes in the margin">
+      <div class="page">
+        <div class="page-head">
+          <span class="sp-ico" style="--c:#3557D6">L</span>
+          <div><b>Ledgerly</b><span>Invoicing for freelancers</span></div>
+          <span class="faces" aria-hidden="true"><i style="--c:#C47F0C">S</i><i style="--c:#2F6F6A">C</i><i style="--c:#B0487A">A</i></span>
+        </div>
+        <div class="goal">
+          <div class="goal-top"><b>Launch v1</b><span>by Nov 21</span></div>
+          <div class="bar"><i style="width:62%"></i></div>
+          <span class="goal-meta">5 of 8 steps</span>
+        </div>
+        <ul class="todos">
+          <li class="done"><span class="ck"></span>Fix invoice PDF bug</li>
+          <li><span class="ck"></span>Email 3 beta users</li>
+          <li><span class="ck"></span>Put a price on the site</li>
+        </ul>
+        <div class="chatline"><span class="tick"></span><span>You completed <b>Fix invoice PDF bug</b></span><span class="reacts"><span>🔥 3</span><span>👏 1</span></span></div>
+      </div>
+      <aside class="notes" aria-hidden="true">
+        <div class="note n1"><i style="--c:#C47F0C">S</i><p>That was the bug blocking two of your beta users. Tell them!</p><span>Sam</span></div>
+        <div class="note n2"><i style="--c:#2F6F6A">C</i><p>Pricing has been on the list for three weeks. Pick a number by Wednesday?</p><span>Chloe</span></div>
+        <div class="note n3 quiet"><p>Ana noticed "Running" has been quiet for 9 days.</p><span>Only supporters see this</span></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <h2 class="section-title">How it works</h2>
+    <ol class="steps">
+      <li>
+        <span class="num">1</span>
+        <h3>Make a space</h3>
+        <p>A space is a list and one chat: "Ledgerly" for the product you're shipping, "Life" for the family, "Running" for the half marathon. Add to-dos, habits and goals in plain words, like "gym 4 times a week".</p>
+      </li>
+      <li>
+        <span class="num">2</span>
+        <h3>Invite your people</h3>
+        <p>Share a link with the friends, partners or fellow builders you want in your corner. Each space has its own people, and anything can stay visible only to you.</p>
+      </li>
+      <li>
+        <span class="num">3</span>
+        <h3>Keep it moving</h3>
+        <p>Tick things off and the space's chat shows it. Skip a day and say why. When something goes quiet, your supporters get a nudge to check in, so it reads like a friend reaching out.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="chat-first">
+    <div class="chat-copy">
+      <h2 class="section-title">The chat is where it happens</h2>
+      <p>Every space has one conversation. Finished items post themselves, small to-dos roll up into one line a day, and reactions stack so the chat stays readable. Updates on a goal land right next to the replies they get.</p>
+      <ul class="checks">
+        <li>Messages arrive instantly and in order, even after a bad connection</li>
+        <li>Write offline; it sends when you're back</li>
+        <li>No feeds, no followers, no like counts</li>
+      </ul>
+    </div>
+    <div class="chat-demo" role="img" aria-label="Example chat in a space called Life">
+      <div class="chat-head"><span class="sp-ico" style="--c:#2F8F5B">L</span><b>Life</b><span class="online">3 here now</span></div>
+      <div class="msg sys"><span class="roll">4</span><div><span>Maya finished 4 things</span><small>Groceries, Pay rent, Book vet, Upper body</small><span class="reacts"><span class="mine">🔥 5</span><span>👏 2</span></span></div></div>
+      <div class="msg sys"><span class="skip"></span><div><span>Maya skipped <b>Gym</b></span><span class="bubble plain">Car broke down. Going Saturday instead.</span></div></div>
+      <div class="msg"><i style="--c:#C97A9E">J</i><div><span class="bubble">I can take the kids Saturday morning so you can go.</span><small>Jordan · 20 min ago</small></div></div>
+      <div class="msg"><i style="--c:#8A5A2B">T</i><div><span class="bubble">Saturday gym crew? I'm going at 9.</span><small>Theo · just now</small></div></div>
+    </div>
+  </section>
+
+  <section class="builders" id="builders">
+    <h2 class="section-title">For what you're building, and the life around it</h2>
+    <p class="section-sub">Founders, indie hackers, people shipping apps made with AI, creators, small-business owners. Most of us work alone. Buildpair makes sure someone has eyes on it.</p>
+    <div class="spaces">
+      <div class="space-card"><span class="sp-ico" style="--c:#3557D6">L</span><b>Ledgerly</b><span>Launch v1 · first 10 paying users</span><em>Shared with 4 fellow builders</em></div>
+      <div class="space-card"><span class="sp-ico" style="--c:#2F8F5B">L</span><b>Life</b><span>Gym 4x a week · plan the Lisbon trip</span><em>Shared with Jordan and 3 friends</em></div>
+      <div class="space-card"><span class="sp-ico" style="--c:#C0392B">R</span><b>Running</b><span>First half marathon · April 12</span><em>Shared with a running friend</em></div>
+      <div class="space-card"><span class="sp-ico" style="--c:#5D6474">P</span><b>Private</b><span>Call the accountant · renew passport</span><em>Only you</em></div>
+    </div>
+  </section>
+
+  <section class="principles">
+    <div><h3>Private by default</h3><p>Nothing is shared until you choose who's in a space. Any single item can stay visible only to you.</p></div>
+    <div><h3>Small audiences</h3><p>Accountability comes from a few people who know you, not from followers.</p></div>
+    <div><h3>Room for bad weeks</h3><p>Habits count weeks on target, not fragile streaks. A quiet goal gets noticed, never shamed.</p></div>
+    <div><h3>No ads</h3><p>The core app is free and sharing is always free. We don't sell your data or show ads.</p></div>
+  </section>
+
+  <section class="final">
+    <h2>Someone in your corner, starting today.</h2>
+    <p>Works in your browser now. iPhone and Android apps are on the way.</p>
+    <a class="btn" href="#signup" data-focus-signup>Create your free account</a>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>© 2026 Buildpair</span>
+  <a href="/privacy">Privacy</a>
+  <span>hello@buildpair.app</span>
+</footer>
+</body>
+</html>

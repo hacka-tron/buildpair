@@ -7,11 +7,11 @@
   "env": {
     "staging": {
       "name": "buildpair-web-staging",
-      "routes": [{ "pattern": "staging.buildpair.app", "custom_domain": true }]
+      "routes": [{ "pattern": "app-staging.buildpair.app", "custom_domain": true }]
     },
     "production": {
       "name": "buildpair-web-production",
-      "routes": [{ "pattern": "buildpair.app", "custom_domain": true }]
+      "routes": [{ "pattern": "app.buildpair.app", "custom_domain": true }]
     }
   }
 }

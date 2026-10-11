@@ -24,7 +24,7 @@
   // .dev.vars locally and `wrangler secret put` (via CI) in deployed environments.
   "vars": {
     "ENVIRONMENT": "development",
-    "APP_ORIGINS": "http://localhost:8081,http://localhost:19006",
+    "APP_ORIGINS": "http://localhost:8081,http://localhost:8788,http://localhost:19006",
     "BETTER_AUTH_URL": "http://localhost:8787",
     "EMAIL_PROVIDER": "console",
     "EMAIL_FROM": "Buildpair <hello@buildpair.app>"
@@ -50,7 +50,7 @@
       ],
       "vars": {
         "ENVIRONMENT": "staging",
-        "APP_ORIGINS": "https://staging.buildpair.app",
+        "APP_ORIGINS": "https://app-staging.buildpair.app,https://staging.buildpair.app",
         "BETTER_AUTH_URL": "https://api-staging.buildpair.app",
         "EMAIL_PROVIDER": "resend",
         "EMAIL_FROM": "Buildpair <hello@buildpair.app>"
@@ -75,7 +75,7 @@
       ],
       "vars": {
         "ENVIRONMENT": "production",
-        "APP_ORIGINS": "https://buildpair.app",
+        "APP_ORIGINS": "https://app.buildpair.app,https://buildpair.app",
         "BETTER_AUTH_URL": "https://api.buildpair.app",
         "EMAIL_PROVIDER": "resend",
         "EMAIL_FROM": "Buildpair <hello@buildpair.app>"

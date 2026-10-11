@@ -59,6 +59,10 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ env.TARGET == 'production' && 'https://api.buildpair.app' || 'https://api-staging.buildpair.app' }}
         run: pnpm build:web && pnpm exec wrangler deploy --env "$TARGET"
 
+      - name: Deploy the landing site
+        working-directory: apps/site
+        run: pnpm exec wrangler deploy --env "$TARGET"
+
       - uses: expo/expo-github-action@v8
         if: env.HAS_EXPO_TOKEN == 'true'
         with:

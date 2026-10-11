@@ -43,7 +43,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   e2e:
-    name: End-to-end (two people, live chat)
+    name: End-to-end (sign-up, two people, live chat)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -63,9 +63,12 @@ jobs:
           nohup pnpm exec wrangler dev --port 8787 --var EMAIL_PROVIDER:test --var ENVIRONMENT:test > ../../wrangler-api.log 2>&1 &
           cd ../app
           EXPO_PUBLIC_API_URL=http://localhost:8787 pnpm build:web
-          nohup pnpm exec wrangler dev --port 8081 > ../../wrangler-web.log 2>&1 &
-          for i in $(seq 1 30); do curl -sf localhost:8787/health && curl -sf -o /dev/null localhost:8081 && exit 0; sleep 2; done
-          cat ../../wrangler-api.log ../../wrangler-web.log; exit 1
+          nohup pnpm exec wrangler dev --port 8081 --inspector-port 9331 > ../../wrangler-web.log 2>&1 &
+          cd ../site
+          nohup pnpm exec wrangler dev --port 8788 --inspector-port 9332 > ../../wrangler-site.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:8787/health && curl -sf -o /dev/null localhost:8081 && curl -sf -o /dev/null localhost:8788 && exit 0; sleep 2; done
+          cat ../../wrangler-*.log; exit 1
       - run: pnpm --filter @buildpair/e2e smoke
+      - run: pnpm --filter @buildpair/e2e signup
       - if: failure()
-        run: cat wrangler-api.log wrangler-web.log
+        run: cat wrangler-*.log

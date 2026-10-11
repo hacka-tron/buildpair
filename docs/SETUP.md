@@ -13,6 +13,10 @@ Everything below is free at the start except Apple's developer program. CI check
    pnpm --filter @buildpair/edge exec wrangler d1 create buildpair-production
    ```
 
+## Domains
+
+The deploy workflow attaches these custom domains automatically: `buildpair.app` (landing), `app.buildpair.app` (web app), `api.buildpair.app` (API), and the staging equivalents `staging.`, `app-staging.`, `api-staging.`.
+
 ## 2. Email
 
 Sign-in codes go out through [Resend](https://resend.com) at first (free for 3,000 emails a month). Add the `buildpair.app` domain there and create the DNS records it shows (SPF, DKIM; also add a DMARC record `v=DMARC1; p=quarantine`). Create an API key. Cloudflare Email Sending can replace it later by switching `EMAIL_PROVIDER` to `cloudflare`.
