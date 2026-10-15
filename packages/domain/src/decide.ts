@@ -59,7 +59,10 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
     case "item.edit": {
       const item = ownItem(command.payload.itemId);
       if (typeof item === "string") return reject(item);
-      if (item.status !== "open") return reject("This item is closed. Reopen it to change it.");
+      if (item.status !== "open")
+        return reject(
+          "This item is finished or marked won't do, so it can't be changed. Add a new one instead.",
+        );
       const { itemId: _, ...asked } = command.payload;
       const changes: typeof asked = {};
       if (asked.title !== undefined && asked.title !== item.title) changes.title = asked.title;

@@ -36,7 +36,12 @@ describe("quick add: days and times", () => {
     ["party October 31st 8pm", todo("party", "2026-10-31", "20:00")],
     ["dinner 20 nov", todo("dinner", "2026-11-20")],
     ["birthday 3rd of march", todo("birthday", "2027-03-03")],
-    ["dentist 10/20", todo("dentist", "2026-10-20")],
+    ["dentist on 10/20", todo("dentist", "2026-10-20")],
+    ["Sun 2pm brunch", todo("brunch", "2026-10-18", "14:00")],
+    ["pick up kids mon 3pm", todo("pick up kids", "2026-10-19", "15:00")],
+    ["standup at 09:30", todo("standup", "2026-10-15", "09:30")],
+    ["visa nov 3 2027", todo("visa", "2027-11-03")],
+    ["visa 3 nov, 2027", todo("visa", "2027-11-03")],
     ["visa 2026-12-01", todo("visa", "2026-12-01")],
     ["standup at noon", todo("standup", "2026-10-15", "12:00")],
     ["lunch 12pm", todo("lunch", "2026-10-15", "12:00")],
@@ -59,6 +64,7 @@ describe("quick add: repeats make habits", () => {
     ["call grandma once a week", 1],
     ["swim twice a week", 2],
     ["review finances weekly", 1],
+    ["vitamins 7 days a week", 7],
     ["yoga every monday", 1],
     ["climb every tue and thu", 2],
     ["piano every mon, wed and fri", 3],
@@ -75,6 +81,7 @@ describe("quick add: deadlines make goals", () => {
     ["finish thesis by friday", "finish thesis", "2026-10-16"],
     ["ship pricing page before oct 30", "ship pricing page", "2026-10-30"],
     ["first 10 users due by dec 1", "first 10 users", "2026-12-01"],
+    ["pay invoice by 10/30", "pay invoice", "2026-10-30"],
   ])("%s", (text, title, dueOn) =>
     expect(read(text)).toEqual({ title, kind: "goal", dueOn, dueTime: null, timesPerWeek: null }),
   );
@@ -92,6 +99,15 @@ describe("quick add: leaves unclear words alone", () => {
     "order 3 pizzas",
     "watch Friday Night Lights",
     "file Feb 30 report",
+    "read 3/4 of the book",
+    "add 1/2 cup sugar",
+    "check pr 4/5",
+    "write weekly report",
+    "daily standup notes",
+    "update daily log",
+    "plan weekend trip",
+    "meeting at 7:30",
+    "monday.com setup",
   ])("%s", (text) => {
     const r = parseQuickAdd(text, TODAY);
     if (text === "watch Friday Night Lights") {
@@ -106,6 +122,16 @@ describe("quick add: leaves unclear words alone", () => {
       dueTime: null,
       timesPerWeek: null,
       understood: [],
+    });
+  });
+
+  it("keeps a time in a goal's words, since a deadline is a day", () => {
+    expect(read("launch v1 by nov 21 at 5pm")).toEqual({
+      title: "launch v1 at 5pm",
+      kind: "goal",
+      dueOn: "2026-11-21",
+      dueTime: null,
+      timesPerWeek: null,
     });
   });
 

@@ -200,6 +200,14 @@ describe("editing, finish days and skips", () => {
     ).toBe(false);
   });
 
+  it("won't edit a finished item", () => {
+    const { itemId, state } = create(space(), {});
+    const done = run(state, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-10" } })).state;
+    expect(decide(done, cmd({ type: "item.edit", payload: { itemId, title: "New" } }), "maya").ok).toBe(
+      false,
+    );
+  });
+
   it("changes a habit's times per week", () => {
     const { itemId, state } = create(space(), { kind: "habit", timesPerWeek: 3 });
     const edited = run(state, cmd({ type: "item.edit", payload: { itemId, timesPerWeek: 5 } }));

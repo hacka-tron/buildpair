@@ -95,7 +95,11 @@ function nextWeekday(today: string, target: number): string {
 }
 
 /** A month and day, this year or next if it has already passed. Null for days that don't exist. */
-function monthDay(today: string, month: number, day: number): string | null {
+function monthDay(today: string, month: number, day: number, yearText?: string): string | null {
+  if (yearText) {
+    const d = new Date(Date.UTC(Number(yearText), month, day));
+    return d.getUTCMonth() === month ? fmt(d) : null;
+  }
   const year = Number(today.slice(0, 4));
   for (const y of [year, year + 1]) {
     const d = new Date(Date.UTC(y, month, day));
@@ -122,27 +126,31 @@ function time(hourText: string, minuteText: string | undefined, meridiem: string
 type Rule = { re: RegExp; read: (m: RegExpExecArray, today: string) => Partial<QuickAdd> | null };
 
 const B = "(?<![\\w-])"; // start of a word
-const E = "(?![\\w-])"; // end of a word
+const E = "(?![\\w-]|\\.\\w)"; // end of a word ("monday.com" is not "monday")
+const AT_END = "(?=\\s*$)"; // only as the last words, where "daily" means a repeat, not "daily standup notes"
 
 const REPEATS: Rule[] = [
-  { re: new RegExp(`${B}(?:every ?day|daily|each day)${E}`, "i"), read: () => ({ timesPerWeek: 7 }) },
   {
-    re: new RegExp(`${B}(?:every weekday|on weekdays|weekdays)${E}`, "i"),
+    re: new RegExp(`${B}(?:every ?day|each day)${E}|${B}daily${E}${AT_END}`, "i"),
+    read: () => ({ timesPerWeek: 7 }),
+  },
+  {
+    re: new RegExp(`${B}(?:every weekday|on weekdays)${E}|${B}weekdays${E}${AT_END}`, "i"),
     read: () => ({ timesPerWeek: 5 }),
   },
   {
-    re: new RegExp(`${B}(?:every weekend|on weekends|weekends)${E}`, "i"),
+    re: new RegExp(`${B}(?:every weekend|on weekends)${E}|${B}weekends${E}${AT_END}`, "i"),
     read: () => ({ timesPerWeek: 2 }),
   },
   {
-    re: new RegExp(`${B}([1-7]|${NUM_WORD}) ?(?:x|times)(?: (?:a|per|each|every)|/) ?week${E}`, "i"),
+    re: new RegExp(`${B}([1-7]|${NUM_WORD}) ?(?:x|times|days)(?: (?:a|per|each|every)|/) ?week${E}`, "i"),
     read: (m) => ({ timesPerWeek: Number(m[1]) || COUNTS[m[1]!.toLowerCase()]! }),
   },
   {
     re: new RegExp(`${B}(once|twice) (?:a|per|each|every) week${E}`, "i"),
     read: (m) => ({ timesPerWeek: COUNTS[m[1]!.toLowerCase()]! }),
   },
-  { re: new RegExp(`${B}(?:weekly|every week)${E}`, "i"), read: () => ({ timesPerWeek: 1 }) },
+  { re: new RegExp(`${B}every week${E}|${B}weekly${E}${AT_END}`, "i"), read: () => ({ timesPerWeek: 1 }) },
   {
     // "every monday", "every mon and thu", "every tue, thu and sat"
     re: new RegExp(
@@ -181,7 +189,11 @@ const DATES: Rule[] = [
     re: new RegExp(`${B}next week${E}`, "i"),
     read: (_, t) => ({ dueOn: addDays(nextWeekday(t, 1), weekday(t) === 1 ? 7 : 0) }),
   },
-  { re: new RegExp(`${B}(?:this )?weekend${E}`, "i"), read: (_, t) => ({ dueOn: nextWeekday(t, 6) }) },
+  {
+    // "this weekend", not "weekend trip"
+    re: new RegExp(`${B}(?:this|on the|at the) weekend${E}`, "i"),
+    read: (_, t) => ({ dueOn: nextWeekday(t, 6) }),
+  },
   {
     // ISO: 2026-10-20
     re: new RegExp(`${B}(\\d{4})-(\\d{2})-(\\d{2})${E}`),
@@ -191,24 +203,24 @@ const DATES: Rule[] = [
     },
   },
   {
-    // "oct 20", "october 20th"
-    re: new RegExp(`${B}(${MONTH_NAME})\\.? (\\d{1,2})(?:st|nd|rd|th)?${E}`, "i"),
+    // "oct 20", "october 20th", "nov 3 2027"
+    re: new RegExp(`${B}(${MONTH_NAME})\\.? (\\d{1,2})(?:st|nd|rd|th)?(?:,? (\\d{4}))?${E}`, "i"),
     read: (m, t) => {
-      const d = monthDay(t, MONTHS[m[1]!.toLowerCase()]!, Number(m[2]));
+      const d = monthDay(t, MONTHS[m[1]!.toLowerCase()]!, Number(m[2]), m[3]);
       return d ? { dueOn: d } : null;
     },
   },
   {
-    // "20 oct", "20th of october"
-    re: new RegExp(`${B}(\\d{1,2})(?:st|nd|rd|th)?(?: of)? (${MONTH_NAME})${E}`, "i"),
+    // "20 oct", "20th of october", "3 nov 2027"
+    re: new RegExp(`${B}(\\d{1,2})(?:st|nd|rd|th)?(?: of)? (${MONTH_NAME})(?:,? (\\d{4}))?${E}`, "i"),
     read: (m, t) => {
-      const d = monthDay(t, MONTHS[m[2]!.toLowerCase()]!, Number(m[1]));
+      const d = monthDay(t, MONTHS[m[2]!.toLowerCase()]!, Number(m[1]), m[3]);
       return d ? { dueOn: d } : null;
     },
   },
   {
-    // "10/20" (month first)
-    re: new RegExp(`${B}(\\d{1,2})/(\\d{1,2})${E}`),
+    // "on 10/20", "by 10/20" (month first). Needs the cue word, so "read 3/4 of the book" stays.
+    re: new RegExp(`(?:${B}on |(?<=${B}(?:by|due|before) ))(\\d{1,2})/(\\d{1,2})${E}`, "i"),
     read: (m, t) => {
       const month = Number(m[1]) - 1;
       if (month < 0 || month > 11) return null;
@@ -217,15 +229,15 @@ const DATES: Rule[] = [
     },
   },
   {
-    // "friday", "on fri", "this friday", "next friday". Short names only after a cue word, so
-    // "sun cream" or "SAT prep" stay as typed.
+    // "friday", "on fri", "this friday", "next friday", "sun 2pm". Short names only after a cue word
+    // or right before a time, so "sun cream" or "SAT prep" stay as typed.
     re: new RegExp(
-      `${B}(?:(next|this|on) )?(${DAY_NAME})${E}|${B}(next|this|on|by|due) (${SHORT_NAME})\\.?${E}`,
+      `${B}(?:(next|this|on) )?(${DAY_NAME})${E}|${B}(next|this|on|by|due) (${SHORT_NAME})\\.?${E}|${B}(${SHORT_NAME})\\.?(?= (?:at )?\\d{1,2}(?::\\d{2})? ?[ap]\\.?m)`,
       "i",
     ),
     read: (m, t) => {
       const cue = (m[1] ?? m[3])?.toLowerCase();
-      const name = (m[2] ?? m[4])!.toLowerCase();
+      const name = (m[2] ?? m[4] ?? m[5])!.toLowerCase();
       const target = DAYS[name] ?? SHORT_DAYS[name]!;
       let d = nextWeekday(t, target);
       // "next friday" is the one in the coming week, not this week's.
@@ -248,9 +260,10 @@ const TIMES: Rule[] = [
     },
   },
   {
-    // "at 15:00", "at 9:30" (24-hour, needs "at" and minutes so "v1.5" or "2:1" stay)
+    // "at 15:00", "at 09:30": clearly 24-hour only. "at 7:30" could be morning or evening, so it stays.
     re: new RegExp(`${B}at (\\d{1,2}):(\\d{2})${E}`, "i"),
     read: (m) => {
+      if (Number(m[1]) < 13 && !m[1]!.startsWith("0")) return null;
       const t = time(m[1]!, m[2], undefined);
       return t ? { dueTime: t } : null;
     },
@@ -297,9 +310,8 @@ export function parseQuickAdd(text: string, today: string): QuickAdd {
       result.kind = "goal";
       return before.slice(0, cue.index);
     });
-    if (take(TIMES) && !result.dueOn) result.dueOn = today;
-    // A goal's deadline is a day; a time on it would mean nothing.
-    if (result.kind === "goal") result.dueTime = null;
+    // A goal's deadline is a day, so a time stays in a goal's words. A time with no day means today.
+    if (result.kind !== "goal" && take(TIMES) && !result.dueOn) result.dueOn = today;
   }
 
   result.title = rest
