@@ -3,6 +3,7 @@ import type { Item } from "@buildpair/protocol";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ItemSheet } from "../components/item-sheet";
 import {
   Card,
   Chip,
@@ -23,11 +24,18 @@ import { localToday, longDate } from "../lib/format";
 import { applyChange, useSpaces, useSpaceViews } from "../lib/spaces";
 import { colors, radius, space } from "../lib/theme";
 
-/** What's on today: due today or earlier, habits, and anything open without a date. */
+/**
+ * What's on today: anything open that's due today or earlier, habits, top-level things without a
+ * date, and goal steps that are due.
+ */
 function forToday(item: Item, today: string) {
-  if (item.parentId || item.status !== "open") return false;
+  if (item.status !== "open") return false;
+  if (item.parentId) return Boolean(item.dueOn && item.dueOn <= today);
   return !item.dueOn || item.dueOn <= today;
 }
+
+const doneOnDay = (item: Item, today: string) =>
+  item.kind === "habit" ? item.doneOn.includes(today) : item.status === "done" && item.dueOn === today;
 
 export default function Today() {
   const wide = useWide();
@@ -40,12 +48,13 @@ export default function Today() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [adding, setAdding] = useState(false);
   const [problem, setProblem] = useState("");
+  const [opened, setOpened] = useState<{ spaceId: string; item: Item } | null>(null);
 
   const groups = (spaces ?? []).map((s) => {
     const view = views[s.id];
-    const all = Object.values(view?.items ?? {}).filter((i) => !i.parentId);
-    const open = all.filter((i) => forToday(i, today));
-    const doneToday = all.filter((i) => i.status === "done" && i.dueOn === today);
+    const all = Object.values(view?.items ?? {});
+    const open = all.filter((i) => forToday(i, today) && !doneOnDay(i, today));
+    const doneToday = all.filter((i) => doneOnDay(i, today));
     return { space: s, view, open, doneToday };
   });
   const left = groups.reduce((n, g) => n + g.open.length, 0);
@@ -120,6 +129,7 @@ export default function Today() {
                       today={today}
                       last={i === list.length - 1}
                       meta={metaFor(item, today, view)}
+                      onOpen={() => setOpened({ spaceId: s.id, item })}
                       onToggle={() =>
                         setProblem(
                           applyChange(s.id, userId, {
@@ -136,18 +146,25 @@ export default function Today() {
           );
         })}
       </ScrollView>
-      {!wide ? <Fab label="Add a to-do" onPress={() => setAdding(true)} /> : null}
+      {!wide ? <Fab label="Add" onPress={() => setAdding(true)} /> : null}
       <QuickAdd
         visible={adding}
         onClose={() => setAdding(false)}
         spaces={spaces ?? []}
         wide={wide}
-        onAdd={(spaceId, title, dueOn) =>
-          applyChange(spaceId, userId, {
-            type: "item.create",
-            payload: { itemId: newId(), kind: "todo", title, dueOn },
-          })
+        onAdd={(spaceId, draft) =>
+          applyChange(spaceId, userId, { type: "item.create", payload: { itemId: newId(), ...draft } })
         }
+      />
+      <ItemSheet
+        key={opened?.item.id ?? "none"}
+        item={opened?.item ?? null}
+        view={opened ? views[opened.spaceId] : undefined}
+        userId={userId}
+        today={today}
+        wide={wide}
+        onClose={() => setOpened(null)}
+        apply={(change) => (opened ? applyChange(opened.spaceId, userId, change) : null)}
       />
     </Shell>
   );
@@ -159,7 +176,12 @@ function metaFor(item: Item, today: string, view: SpaceState | undefined) {
     return `${p.done} of ${p.target} this week`;
   }
   const parent = item.parentId ? view?.items[item.parentId]?.title : undefined;
-  return parent;
+  if (parent) return `Step of ${parent}`;
+  if (item.kind === "goal") {
+    const steps = Object.values(view?.items ?? {}).filter((i) => i.parentId === item.id);
+    return `${steps.filter((i) => i.status === "done").length} of ${steps.length} steps`;
+  }
+  return undefined;
 }
 
 function FirstRun() {
@@ -180,11 +202,29 @@ function FirstRun() {
   );
 }
 
+type Kind = "todo" | "habit" | "goal";
+type Draft = { kind: Kind; title: string; dueOn: string | null; timesPerWeek: number | null };
+
+const KINDS: { kind: Kind; label: string }[] = [
+  { kind: "todo", label: "To-do" },
+  { kind: "habit", label: "Habit" },
+  { kind: "goal", label: "Goal" },
+];
 const WHEN = [
   { label: "Today", offset: 0 },
   { label: "Tomorrow", offset: 1 },
   { label: "No date", offset: null },
 ] as const;
+const BY = [
+  { label: "In a week", offset: 7 },
+  { label: "In a month", offset: 30 },
+  { label: "No deadline", offset: null },
+] as const;
+const PLACEHOLDER: Record<Kind, string> = {
+  todo: "Email 3 beta users",
+  habit: "Gym",
+  goal: "Launch v1",
+};
 
 function QuickAdd(props: {
   visible: boolean;
@@ -192,35 +232,52 @@ function QuickAdd(props: {
   spaces: SpaceSummary[];
   wide: boolean;
   /** Returns why it couldn't add, or null when it worked. */
-  onAdd: (spaceId: string, title: string, dueOn: string | null) => string | null;
+  onAdd: (spaceId: string, draft: Draft) => string | null;
 }) {
   const [title, setTitle] = useState("");
+  const [kind, setKind] = useState<Kind>("todo");
   const [spaceId, setSpaceId] = useState<string | null>(null);
   const [when, setWhen] = useState<number | null>(0);
+  const [by, setBy] = useState<number | null>(30);
+  const [times, setTimes] = useState(3);
   const [error, setError] = useState("");
   const chosen = spaceId ?? props.spaces[0]?.id ?? null;
+  const day = (offset: number | null) =>
+    offset === null ? null : localToday(new Date(Date.now() + offset * 86400000));
   const add = () => {
     if (!title.trim() || !chosen) return;
-    const due = when === null ? null : localToday(new Date(Date.now() + when * 86400000));
-    const problem = props.onAdd(chosen, title.trim(), due);
+    const problem = props.onAdd(chosen, {
+      kind,
+      title: title.trim(),
+      dueOn: kind === "todo" ? day(when) : kind === "goal" ? day(by) : null,
+      timesPerWeek: kind === "habit" ? times : null,
+    });
     if (problem) return setError(problem);
     setError("");
     setTitle("");
     props.onClose();
   };
   return (
-    <Sheet visible={props.visible} onClose={props.onClose} title="Add to-do" wide={props.wide}>
+    <Sheet visible={props.visible} onClose={props.onClose} title="Add" wide={props.wide}>
       {props.spaces.length === 0 ? (
         <Text style={{ fontSize: 14, color: colors.sub }}>Make a space first, then add things to it.</Text>
       ) : (
         <>
+          <ChipRow label="What">
+            {KINDS.map((k) => (
+              <Chip key={k.kind} on={kind === k.kind} onPress={() => setKind(k.kind)}>
+                {k.label}
+              </Chip>
+            ))}
+          </ChipRow>
           <TextInput
             autoFocus
             value={title}
             onChangeText={setTitle}
             onSubmitEditing={add}
-            placeholder="Email 3 beta users"
+            placeholder={PLACEHOLDER[kind]}
             placeholderTextColor={colors.faint}
+            accessibilityLabel="Title"
             style={{
               fontSize: 17,
               color: colors.ink,
@@ -232,13 +289,33 @@ function QuickAdd(props: {
               outlineColor: colors.royal,
             }}
           />
-          <ChipRow label="When">
-            {WHEN.map((w) => (
-              <Chip key={w.label} on={when === w.offset} onPress={() => setWhen(w.offset)}>
-                {w.label}
-              </Chip>
-            ))}
-          </ChipRow>
+          {kind === "todo" ? (
+            <ChipRow label="When">
+              {WHEN.map((w) => (
+                <Chip key={w.label} on={when === w.offset} onPress={() => setWhen(w.offset)}>
+                  {w.label}
+                </Chip>
+              ))}
+            </ChipRow>
+          ) : null}
+          {kind === "habit" ? (
+            <ChipRow label="Times a week">
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                <Chip key={n} on={times === n} onPress={() => setTimes(n)}>
+                  {n === 7 ? "Every day" : String(n)}
+                </Chip>
+              ))}
+            </ChipRow>
+          ) : null}
+          {kind === "goal" ? (
+            <ChipRow label="Finish by">
+              {BY.map((w) => (
+                <Chip key={w.label} on={by === w.offset} onPress={() => setBy(w.offset)}>
+                  {w.label}
+                </Chip>
+              ))}
+            </ChipRow>
+          ) : null}
           <ChipRow label="Space">
             {props.spaces.map((s) => (
               <Chip

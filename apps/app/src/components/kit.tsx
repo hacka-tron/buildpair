@@ -195,14 +195,19 @@ export function ItemRow({
   meta,
   today,
   last,
+  onOpen,
 }: {
   item: Item;
   onToggle: () => void;
   meta?: string;
   today: string;
   last?: boolean;
+  /** Opens the item's details and actions. */
+  onOpen?: () => void;
 }) {
-  const done = item.status === "done";
+  // A habit counts as done for the day once it's checked off today.
+  const done = item.status === "done" || (item.kind === "habit" && item.doneOn.includes(today));
+  const closed = item.status !== "open";
   const due = item.dueOn ? dueLabel(item.dueOn, today) : null;
   return (
     <View
@@ -217,7 +222,7 @@ export function ItemRow({
     >
       <Pressable
         onPress={onToggle}
-        disabled={done}
+        disabled={done || closed}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
         accessibilityLabel={`Mark ${item.title} done`}
@@ -235,14 +240,20 @@ export function ItemRow({
       >
         {done ? <Icon name="check" size={14} color="#fff" /> : null}
       </Pressable>
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+      <Pressable
+        onPress={onOpen}
+        disabled={!onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${item.title}`}
+        style={{ flex: 1, minWidth: 0, gap: 2 }}
+      >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Text
             numberOfLines={1}
             style={{
               fontSize: 15,
-              color: done ? colors.faint : colors.ink,
-              textDecorationLine: done ? "line-through" : "none",
+              color: done || closed ? colors.faint : colors.ink,
+              textDecorationLine: done || closed ? "line-through" : "none",
               flexShrink: 1,
             }}
           >
@@ -255,13 +266,13 @@ export function ItemRow({
             </View>
           ) : null}
         </View>
-        {meta ? (
+        {meta || item.status === "wont" ? (
           <Text numberOfLines={1} style={{ fontSize: 12, color: colors.sub }}>
-            {meta}
+            {item.status === "wont" ? "Won't do" : meta}
           </Text>
         ) : null}
-      </View>
-      {due ? (
+      </Pressable>
+      {due && !closed ? (
         <Text style={{ fontSize: 13, color: due.late && !done ? colors.danger : colors.sub }}>
           {due.text}
         </Text>

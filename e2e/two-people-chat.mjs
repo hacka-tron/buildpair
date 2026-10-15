@@ -51,13 +51,19 @@ try {
   await jordan.getByLabel("Add a reaction").first().click();
   await jordan.getByLabel("React 🔥").click();
   await maya.getByLabel("🔥 1").waitFor({ timeout: 5000 });
+  // An update from the item itself lands in the chat for supporters.
+  await maya.getByLabel("Open Pick up kids").first().click();
+  await maya.getByText("Update", { exact: true }).click();
+  await maya.getByPlaceholder("How's it going?").fill("Running 10 minutes late");
+  await maya.getByText("Post to the chat").click();
+  await jordan.getByText("Running 10 minutes late").waitFor({ timeout: 5000 });
   await maya.getByLabel("Mark Pick up kids done").click();
   await jordan.getByText("Pick up kids").first().waitFor({ timeout: 5000 });
   if (shots) {
     await maya.screenshot({ path: `${shots}/maya.png` });
     await jordan.screenshot({ path: `${shots}/jordan.png` });
   }
-  console.log("E2E passed: sign-in, space, invite, live chat, reactions and completion lines work.");
+  console.log("E2E passed: sign-in, space, invite, live chat, reactions, completion lines and updates work.");
 } finally {
   await browser.close();
 }
