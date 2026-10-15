@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LocalDate, Timestamp, Ulid, UserId } from "./ids";
+import { LocalDate, TimeOfDay, Timestamp, Ulid, UserId } from "./ids";
 import { Item, Member, Message } from "./model";
 
 const ev = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
@@ -16,6 +16,18 @@ const ev = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
 export const SpaceCreated = ev("space.created", z.object({ name: z.string(), purpose: z.string() }));
 export const MemberJoined = ev("member.joined", z.object({ member: Member }));
 export const ItemCreated = ev("item.created", z.object({ item: Item }));
+export const ItemEdited = ev(
+  "item.edited",
+  z.object({
+    itemId: Ulid,
+    changes: z.object({
+      title: z.string().min(1).max(500).optional(),
+      dueOn: LocalDate.nullable().optional(),
+      dueTime: TimeOfDay.nullable().optional(),
+      timesPerWeek: z.number().int().min(1).max(7).optional(),
+    }),
+  }),
+);
 export const ItemCompleted = ev("item.completed", z.object({ itemId: Ulid, on: LocalDate }));
 export const ItemSkipped = ev("item.skipped", z.object({ itemId: Ulid, on: LocalDate }));
 export const ItemWontDo = ev("item.wont", z.object({ itemId: Ulid }));
@@ -29,6 +41,7 @@ export const SpaceEvent = z.discriminatedUnion("type", [
   SpaceCreated,
   MemberJoined,
   ItemCreated,
+  ItemEdited,
   ItemCompleted,
   ItemSkipped,
   ItemWontDo,

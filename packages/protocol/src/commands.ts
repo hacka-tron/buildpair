@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LocalDate, Timestamp, Ulid } from "./ids";
+import { LocalDate, TimeOfDay, Timestamp, Ulid } from "./ids";
 import { ItemKind, Visibility } from "./model";
 
 const cmd = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
@@ -15,6 +15,19 @@ export const CreateItem = cmd(
     visibility: Visibility.default("space"),
     dueOn: LocalDate.nullable().default(null),
     timesPerWeek: z.number().int().min(1).max(7).nullable().default(null),
+    dueTime: TimeOfDay.nullable().default(null),
+  }),
+);
+
+/** Change an item's details. Only the fields present change; null clears a date or time. */
+export const EditItem = cmd(
+  "item.edit",
+  z.object({
+    itemId: Ulid,
+    title: z.string().trim().min(1).max(500).optional(),
+    dueOn: LocalDate.nullable().optional(),
+    dueTime: TimeOfDay.nullable().optional(),
+    timesPerWeek: z.number().int().min(1).max(7).optional(),
   }),
 );
 
@@ -43,6 +56,7 @@ export const ToggleReaction = cmd(
 
 export const Command = z.discriminatedUnion("type", [
   CreateItem,
+  EditItem,
   CompleteItem,
   SkipItem,
   WontDoItem,

@@ -4,7 +4,7 @@ import { SpaceEvent } from "./events";
 import { Ulid, UserId } from "./ids";
 
 /** Bump when a change would break older clients; the server accepts the current and previous versions. */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export const ClientMessage = z.discriminatedUnion("t", [
   z.object({ t: z.literal("hello"), v: z.number().int(), afterSeq: z.number().int().nonnegative() }),

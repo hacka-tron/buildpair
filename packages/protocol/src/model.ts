@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LocalDate, Timestamp, Ulid, UserId } from "./ids";
+import { LocalDate, TimeOfDay, Timestamp, Ulid, UserId } from "./ids";
 
 export const ItemKind = z.enum(["todo", "habit", "goal"]);
 export type ItemKind = z.infer<typeof ItemKind>;
@@ -21,10 +21,14 @@ export const Item = z.object({
   status: ItemStatus,
   /** To-dos and goals: the day it's due (goals: the deadline). */
   dueOn: LocalDate.nullable(),
+  /** An optional time on the due day, HH:MM. Items saved before this existed read as null. */
+  dueTime: TimeOfDay.nullable().default(null),
   /** Habits: target check-offs per week. */
   timesPerWeek: z.number().int().min(1).max(7).nullable(),
-  /** Habits: days checked off (local dates). */
+  /** Days checked off (local dates). Habits collect many; to-dos and goals record the day they were finished. */
   doneOn: z.array(LocalDate),
+  /** Days skipped (local dates). Items saved before this existed read as empty. */
+  skippedOn: z.array(LocalDate).default([]),
   createdAt: Timestamp,
 });
 export type Item = z.infer<typeof Item>;

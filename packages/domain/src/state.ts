@@ -34,8 +34,13 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
       next.members = { ...state.members, [event.payload.member.userId]: event.payload.member };
       break;
     case "item.created":
-      next.items = { ...state.items, [event.payload.item.id]: event.payload.item };
+      next.items = { ...state.items, [event.payload.item.id]: normalizeItem(event.payload.item) };
       break;
+    case "item.edited": {
+      const item = state.items[event.payload.itemId];
+      if (item) next.items = { ...state.items, [item.id]: { ...item, ...event.payload.changes } };
+      break;
+    }
     case "item.completed": {
       const item = state.items[event.payload.itemId];
       if (!item) break;
@@ -47,13 +52,20 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
                 ? item.doneOn
                 : [...item.doneOn, event.payload.on].sort(),
             }
-          : { ...item, status: "done" };
+          : { ...item, status: "done", doneOn: [event.payload.on] };
       next.items = { ...state.items, [item.id]: updated };
       break;
     }
-    case "item.skipped":
-      // Skips change nothing on the item itself; the reason lives in the chat.
+    case "item.skipped": {
+      // The reason lives in the chat; the item remembers the day so it isn't skipped twice.
+      const item = state.items[event.payload.itemId];
+      if (item && !item.skippedOn.includes(event.payload.on))
+        next.items = {
+          ...state.items,
+          [item.id]: { ...item, skippedOn: [...item.skippedOn, event.payload.on].sort() },
+        };
       break;
+    }
     case "item.wont": {
       const item = state.items[event.payload.itemId];
       if (item) next.items = { ...state.items, [item.id]: { ...item, status: "wont" } };
@@ -74,6 +86,27 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
     }
   }
   return next;
+}
+
+/**
+ * Fill fields added after an item was saved, so older items (in the server's log or a device's copy)
+ * read like new ones.
+ */
+export function normalizeItem(item: Item): Item {
+  return {
+    ...item,
+    dueTime: item.dueTime ?? null,
+    skippedOn: item.skippedOn ?? [],
+    doneOn: item.doneOn ?? [],
+  };
+}
+
+/** The same, for a whole saved space. */
+export function normalizeSpace(state: SpaceState): SpaceState {
+  return {
+    ...state,
+    items: Object.fromEntries(Object.entries(state.items).map(([k, i]) => [k, normalizeItem(i)])),
+  };
 }
 
 export function applyEvents(state: SpaceState, events: readonly SpaceEvent[]): SpaceState {

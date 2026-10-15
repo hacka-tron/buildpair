@@ -19,8 +19,30 @@ export function ago(iso: string, now = Date.now()): string {
   return then.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-/** A due date relative to today: "Today", "Tomorrow", "Yesterday", "Fri", "Oct 20". */
-export function dueLabel(dueOn: string, today = localToday()): { text: string; late: boolean } {
+/** "15:30" as "3:30 PM". */
+export function timeLabel(time: string): string {
+  const [h = 0, m = 0] = time.split(":").map(Number);
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** A due date relative to today: "Today", "Tomorrow", "Yesterday", "Fri", "Oct 20", with the time if set. */
+export function dueLabel(
+  dueOn: string,
+  today = localToday(),
+  dueTime: string | null = null,
+): { text: string; late: boolean } {
+  const day = dayLabel(dueOn, today);
+  return dueTime ? { ...day, text: `${day.text} ${timeLabel(dueTime)}` } : day;
+}
+
+/** Days from `from` to `to`, both YYYY-MM-DD. */
+export function daysBetween(from: string, to: string): number {
+  const day = (d: string) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000;
+  return day(to) - day(from);
+}
+
+function dayLabel(dueOn: string, today: string): { text: string; late: boolean } {
   const day = (d: string) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000;
   const diff = day(dueOn) - day(today);
   const late = diff < 0;

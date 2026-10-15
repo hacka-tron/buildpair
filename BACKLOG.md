@@ -16,6 +16,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Sign-in uses passwords (2026-10-15):** email codes only go out to confirm a new account or reset a password. Shared test account `bagel` / `bagel` works on staging.
 
+**Items, part 2 (2026-10-15):** plain-words adding ("dentist friday 3pm", "gym 4x a week", "launch v1 by nov 21"; the schedule decides to-do, habit or goal, and the add box shows what it read with an undo). A date picker with quick picks, a month calendar, times and a Repeat tab. Editing an item's title and schedule. Items have an optional time. To-dos record the day they were finished and skips are recorded, so both old gaps are fixed. Today has a "Coming up" section (next two weeks, plus goals). Protocol version 2.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
@@ -52,8 +54,9 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, real app icons and splash, owner-approved join requests. Until then, release only the landing page publicly if anything.
 - **Staging is open to anyone.** Anyone can make an account there (one email each) or request password-reset codes, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Still to do: a Cloudflare rate-limiting rule on the auth endpoints and `noindex` on staging pages.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
-- **To-dos don't record when they were finished.** A to-do with no date (or an overdue one) ticked today drops off Today and out of its counts. Add a completed-on date to the item event when the protocol next changes.
-- **Skipping a habit twice in a day posts twice.** Skips change nothing on the item, so the app can't tell it's already skipped. Same fix: record skips on the item.
+- **Plain-words adding reads real weekday names anywhere** ("watch Friday Night Lights" gets a Friday date). The add box shows what it read and one tap keeps the words as typed. Short names (fri, sat, sun) only count after on, next, this, by or due.
+- **"Every monday" becomes 1 time a week**, not specific days. Habits only know times per week for now.
+- **Still to build in milestone 3:** multi-select with the action bar, moving an item to another space, "only visible to me" after creating, reminders and push.
 - **Confirm step polish (review of PR #16, minor):** check the 128-character password maximum in the verify-email wrapper, and hash the password before confirming so a failed database write can't leave the old password in place.
 - **No rate limiting on auth routes yet.** Codes allow 5 guesses each. Add a Cloudflare rate-limiting rule on `/api/auth/*` before production.
 - **The test account `bagel` is shared and public.** Anyone who reads the repo can sign in as it on staging. Fine for test data; keep real things out of it. Remove `TEST_LOGIN` from `wrangler.jsonc` to turn it off.
