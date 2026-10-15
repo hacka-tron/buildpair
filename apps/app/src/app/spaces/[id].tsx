@@ -36,7 +36,7 @@ export default function SpaceScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user.id ?? "";
   const { sync, view, pendingIds, connected, online, error } = useSpace(id, userId);
-  const { spaces } = useSpaces();
+  const { spaces, gone } = useSpaces();
   const summary = spaces?.find((s) => s.id === id);
   const name = view.name || summary?.name || "";
   const purpose = view.purpose || summary?.purpose || "";
@@ -179,6 +179,28 @@ export default function SpaceScreen() {
       ) : null}
     </>
   );
+
+  if (gone.includes(id)) {
+    return (
+      <Shell active={{ spaceId: id }} tabs={false}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            padding: space.xl,
+            gap: space.md,
+          }}
+        >
+          <Text style={{ fontSize: 17, fontWeight: "700", color: colors.ink }}>This space is gone</Text>
+          <Text style={{ fontSize: 14, color: colors.sub, textAlign: "center", maxWidth: 360 }}>
+            Its owner deleted it, or you're no longer in it.
+          </Text>
+          <Button label="Back to your spaces" kind="secondary" onPress={() => router.replace("/spaces")} />
+        </View>
+      </Shell>
+    );
+  }
 
   if (wide) {
     return (

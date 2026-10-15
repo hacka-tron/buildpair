@@ -177,6 +177,52 @@ export class SpaceRoom extends DurableObject<Env> {
     this.publish(events);
   }
 
+  /**
+   * Someone deleted their account. Records that they left (so open devices drop their things), then
+   * deletes every earlier event they made from the log, so nothing of theirs is stored or sent again.
+   * Safe to run twice.
+   */
+  async eraseMember(userId: string): Promise<void> {
+    const sql = this.ctx.storage.sql;
+    const theirs = sql
+      .exec<{ seq: number; command_id: string | null }>(
+        "SELECT seq, command_id FROM events WHERE actor_id = ? AND type != 'member.erased'",
+        userId,
+      )
+      .toArray();
+    // Their other devices may still be connected. They hear nothing more from this space.
+    for (const ws of this.ctx.getWebSockets(userId))
+      closeQuietly(ws, 4003, "You're no longer in this space.");
+    if (!this.load().members[userId] && theirs.length === 0) return;
+    const [left] = this.commit([
+      {
+        type: "member.erased",
+        actorId: userId,
+        commandId: null,
+        at: new Date().toISOString(),
+        payload: { userId },
+      },
+    ]);
+    this.ctx.storage.transactionSync(() => {
+      sql.exec("DELETE FROM events WHERE actor_id = ? AND type != 'member.erased'", userId);
+      // Only their own retry records. Other people's stay, so their retries still get the original answer.
+      for (const { command_id } of theirs)
+        if (command_id) sql.exec("DELETE FROM commands WHERE id = ?", command_id);
+    });
+    // Rebuild from the trimmed log, the same way a new device would.
+    this.state = null;
+    this.publish([left!]);
+  }
+
+  /** The owner deleted their account: close every connection and delete everything the space stored. */
+  async destroy(): Promise<void> {
+    for (const ws of this.ctx.getWebSockets()) closeQuietly(ws, 4004, "This space was deleted.");
+    await this.ctx.storage.deleteAll();
+    this.state = null;
+    // Leave empty tables behind so any late request finds an empty space instead of failing.
+    this.migrate();
+  }
+
   async isMember(userId: string): Promise<boolean> {
     return Boolean(this.load().members[userId]);
   }
@@ -330,6 +376,7 @@ export class SpaceRoom extends DurableObject<Env> {
     const after = events[0]!.seq - 1;
     for (const ws of this.ctx.getWebSockets()) {
       const { userId } = ws.deserializeAttachment() as SocketInfo;
+      if (!state.members[userId]) continue;
       this.send(ws, {
         t: "events",
         after,

@@ -4,6 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { emailOTP } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1";
+import { eraseAccount } from "./account";
 import * as schema from "./db/schema";
 import { sendEmail } from "./email";
 import { type Env, isEmailAllowed, testLogin } from "./env";
@@ -42,6 +43,13 @@ export function createAuth(env: Env) {
       additionalFields: {
         building: { type: "string", required: false, input: true },
         timeZone: { type: "string", required: false, input: true },
+      },
+      // Deleting your account takes your password (app.ts insists on it) and removes everything you made.
+      deleteUser: {
+        enabled: true,
+        async beforeDelete(user) {
+          await eraseAccount(env, user.id);
+        },
       },
     },
     // Passwords, so signing in sends no email. Email goes out only to confirm a new account and to reset a password.

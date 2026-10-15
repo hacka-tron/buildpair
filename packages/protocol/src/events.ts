@@ -25,6 +25,11 @@ export const SpaceEdited = ev(
   }),
 );
 export const MemberJoined = ev("member.joined", z.object({ member: Member }));
+/**
+ * Someone deleted their account. They leave the space, and their items, messages and reactions go with
+ * them. The room also removes their earlier events from its log, so nothing of theirs is sent again.
+ */
+export const MemberErased = ev("member.erased", z.object({ userId: UserId }));
 export const ItemCreated = ev("item.created", z.object({ item: Item }));
 export const ItemEdited = ev(
   "item.edited",
@@ -51,6 +56,7 @@ export const SpaceEvent = z.discriminatedUnion("type", [
   SpaceCreated,
   SpaceEdited,
   MemberJoined,
+  MemberErased,
   ItemCreated,
   ItemEdited,
   ItemCompleted,

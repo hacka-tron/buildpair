@@ -42,6 +42,28 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
     case "member.joined":
       next.members = { ...state.members, [event.payload.member.userId]: event.payload.member };
       break;
+    case "member.erased": {
+      const gone = event.payload.userId;
+      const { [gone]: _, ...members } = state.members;
+      next.members = members;
+      next.items = Object.fromEntries(Object.entries(state.items).filter(([, i]) => i.ownerId !== gone));
+      next.messages = state.messages.filter((m) => m.authorId !== gone);
+      // Their reactions go, and so do reactions on their messages.
+      const kept = new Set(next.messages.map((m) => m.id));
+      next.reactions = Object.fromEntries(
+        Object.entries(state.reactions)
+          .filter(([messageId]) => kept.has(messageId))
+          .map(([messageId, byEmoji]) => [
+            messageId,
+            Object.fromEntries(
+              Object.entries(byEmoji)
+                .map(([emoji, users]) => [emoji, users.filter((u) => u !== gone)] as const)
+                .filter(([, users]) => users.length > 0),
+            ),
+          ]),
+      );
+      break;
+    }
     case "item.created":
       next.items = { ...state.items, [event.payload.item.id]: normalizeItem(event.payload.item) };
       break;

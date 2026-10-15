@@ -28,11 +28,11 @@ export function Button({
 }: {
   label: string;
   onPress: () => void;
-  kind?: "primary" | "secondary";
+  kind?: "primary" | "secondary" | "danger";
   busy?: boolean;
   disabled?: boolean;
 }) {
-  const primary = kind === "primary";
+  const primary = kind !== "secondary";
   return (
     <Pressable
       accessibilityRole="button"
@@ -41,6 +41,7 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         primary ? styles.primary : styles.secondary,
+        kind === "danger" && { backgroundColor: colors.danger },
         (disabled || busy) && { opacity: 0.5 },
         pressed && { opacity: 0.8 },
       ]}
