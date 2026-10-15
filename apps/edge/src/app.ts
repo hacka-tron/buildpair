@@ -1,4 +1,5 @@
 import { newId } from "@buildpair/domain";
+import { APIError } from "better-auth/api";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono, type Next } from "hono";
@@ -64,6 +65,37 @@ async function explainRefusal(c: Context<App>, next: Next) {
   return next();
 }
 
+type AuthContext = Awaited<ReturnType<typeof createAuth>["$context"]>;
+
+/**
+ * Makes the shared test account if it's missing, and puts it back the way TEST_LOGIN says if anyone changed it
+ * (a new password, or someone signing up with its email first). It's shared, so this keeps it usable.
+ */
+async function ensureTestAccount(ctx: AuthContext, login: { name: string; email: string; password: string }) {
+  const found = await ctx.internalAdapter.findUserByEmail(login.email, { includeAccounts: true });
+  const user =
+    found?.user ??
+    (await ctx.internalAdapter.createUser(
+      { name: login.name, email: login.email, emailVerified: true },
+      { method: "email-password" },
+    ));
+  if (!user.emailVerified) await ctx.internalAdapter.updateUser(user.id, { emailVerified: true });
+  const credential = found?.accounts.find((a) => a.providerId === "credential");
+  if (!credential) {
+    await ctx.internalAdapter.linkAccount({
+      userId: user.id,
+      providerId: "credential",
+      accountId: user.id,
+      password: await ctx.password.hash(login.password),
+    });
+  } else if (
+    !credential.password ||
+    !(await ctx.password.verify({ hash: credential.password, password: login.password }))
+  ) {
+    await ctx.internalAdapter.updatePassword(user.id, await ctx.password.hash(login.password));
+  }
+}
+
 // The shared test account signs in by its bare name. It's made the first time someone signs in as it.
 app.post("/api/auth/sign-in/email", async (c, next) => {
   const login = testLogin(c.env);
@@ -71,22 +103,11 @@ app.post("/api/auth/sign-in/email", async (c, next) => {
   if (!login || !body || typeof body.email !== "string" || body.email.trim().toLowerCase() !== login.name)
     return next();
   const auth = createAuth(c.env);
-  const ctx = await auth.$context;
-  if (!(await ctx.internalAdapter.findUserByEmail(login.email))) {
-    const user = await ctx.internalAdapter.createUser(
-      {
-        name: login.name,
-        email: login.email,
-        emailVerified: true,
-      },
-      { method: "email-password" },
-    );
-    await ctx.internalAdapter.linkAccount({
-      userId: user.id,
-      providerId: "credential",
-      accountId: user.id,
-      password: await ctx.password.hash(login.password),
-    });
+  try {
+    await ensureTestAccount(await auth.$context, login);
+  } catch (e) {
+    if (e instanceof APIError) return c.json({ ...e.body, error: e.body?.message }, e.statusCode as 403);
+    throw e;
   }
   const headers = new Headers(c.req.raw.headers);
   headers.delete("content-length");

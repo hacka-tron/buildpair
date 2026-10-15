@@ -75,8 +75,13 @@ export function createAuth(env: Env) {
         overrideDefaultEmailVerification: true,
         // A fixed code only in automated tests; assertConfig forbids this provider in production.
         ...(env.EMAIL_PROVIDER === "test" ? { generateOTP: () => TEST_OTP } : {}),
-        async sendVerificationOTP({ email, otp, type }) {
+        async sendVerificationOTP({ email, otp, type }, ctx) {
           if (type === "sign-in") throw new APIError("BAD_REQUEST", USE_PASSWORD);
+          // A confirmation code also signs you in, so only accounts still waiting to be confirmed get one.
+          if (type === "email-verification") {
+            const found = await ctx?.context.internalAdapter.findUserByEmail(email);
+            if (!found || found.user.emailVerified) return;
+          }
           // Every kind of code goes through here, so strangers can't use staging to send email.
           if (!isEmailAllowed(env, email)) throw new APIError("FORBIDDEN", NOT_INVITED);
           // The shared test account has no inbox.

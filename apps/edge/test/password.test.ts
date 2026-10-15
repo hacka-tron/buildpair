@@ -2,7 +2,7 @@ import { env } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "../src/app";
-import { TEST_OTP } from "../src/auth";
+import { createAuth, TEST_OTP } from "../src/auth";
 import * as email from "../src/email";
 import { testLogin } from "../src/env";
 import { PASSWORD, signIn } from "./helpers";
@@ -73,6 +73,23 @@ describe("password sign-in", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
+  it("won't email a confirmation code to an account that's already confirmed, so codes can't skip the password", async () => {
+    const to = address();
+    await signIn(to);
+    const send = vi.spyOn(email, "sendEmail");
+    await post("/api/auth/email-otp/send-verification-otp", { email: to, type: "email-verification" });
+    // Nothing is sent, so the (random, in real use) code never reaches anyone.
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("sends a new confirmation code to an account that isn't confirmed yet", async () => {
+    const to = address();
+    await post("/api/auth/sign-up/email", { name: "Maya", email: to, password: PASSWORD });
+    const send = vi.spyOn(email, "sendEmail");
+    await post("/api/auth/email-otp/send-verification-otp", { email: to, type: "email-verification" });
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it("won't make an account from a code", async () => {
     const res = await post("/api/auth/sign-in/email-otp", { email: address(), otp: TEST_OTP });
     expect(res.ok).toBe(false);
@@ -106,6 +123,16 @@ describe("shared test account", () => {
       expect(res.status).toBe(200);
       expect(res.headers.getSetCookie().length).toBeGreaterThan(0);
     }
+  });
+
+  it("puts itself back if someone changes its password or takes its email first", async () => {
+    await post("/api/auth/sign-in/email", { email: "bagel", password: "bagel" });
+    const ctx = await createAuth(env).$context;
+    const found = await ctx.internalAdapter.findUserByEmail("bagel@buildpair.app");
+    await ctx.internalAdapter.updatePassword(found!.user.id, await ctx.password.hash("someone else's"));
+    await ctx.internalAdapter.updateUser(found!.user.id, { emailVerified: false });
+    const res = await post("/api/auth/sign-in/email", { email: "bagel", password: "bagel" });
+    expect(res.status).toBe(200);
   });
 
   it("needs its password", async () => {
