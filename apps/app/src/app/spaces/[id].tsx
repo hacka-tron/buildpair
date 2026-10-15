@@ -45,11 +45,12 @@ export default function SpaceScreen() {
   const isOwner = view.members[userId]?.role === "owner";
   // The room is the source of truth; bring the list (sidebar, Spaces tab) in line when it differs.
   useEffect(() => {
-    if (!summary || !view.name) return;
+    // Only once connected: a copy saved on the device can be older than the list.
+    if (!summary || !view.name || !connected) return;
     const color = view.color ?? null;
     if (view.name !== summary.name || view.purpose !== summary.purpose || color !== (summary.color ?? null))
       patchSpace(id, { name: view.name, purpose: view.purpose, color });
-  }, [id, summary, view.name, view.purpose, view.color]);
+  }, [id, summary, connected, view.name, view.purpose, view.color]);
   const [opened, setOpened] = useState<Item | null>(null);
 
   const nameOf = (uid: string) => (uid === userId ? "You" : (view.members[uid]?.name ?? "Someone"));

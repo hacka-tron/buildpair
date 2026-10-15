@@ -1,6 +1,6 @@
 import { SELF } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
-import { PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
+import { MIN_PROTOCOL_VERSION, PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
 import { command, openSocket, signIn } from "./helpers";
 
@@ -101,6 +101,13 @@ describe("API", () => {
     expect(titles).toEqual(["Pick up kids"]);
     const ownerView = (await (await maya.get(`/spaces/${spaceId}/events?after=0`)).json()) as Batch;
     expect(seen.upTo).toBe(ownerView.upTo);
+  });
+
+  it("tells a client that's too old to update instead of sending it events it can't read", async () => {
+    const { maya, spaceId } = await makeSpace();
+    const a = await openSocket(maya, spaceId);
+    a.send({ t: "hello", v: MIN_PROTOCOL_VERSION - 1, afterSeq: 0 });
+    await a.waitFor((m) => m.t === "error" && m.reason.includes("update"));
   });
 
   it("delivers a message live to another member's socket and acknowledges the sender", async () => {

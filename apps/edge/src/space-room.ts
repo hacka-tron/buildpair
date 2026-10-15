@@ -4,6 +4,7 @@ import {
   ClientMessage,
   Command,
   type Member,
+  MIN_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
   type ServerMessage,
   type SpaceEvent,
@@ -192,8 +193,10 @@ export class SpaceRoom extends DurableObject<Env> {
     const decision = decide(this.load(), command, actorId);
     if (!decision.ok) return decision;
     const events = this.commit(decision.events, command.id);
-    this.publish(events);
+    // The list of spaces is updated before anyone hears about the change, so a sidebar that refreshes
+    // on the news already sees it.
     for (const e of events) if (e.type === "space.edited") await this.updateIndex(e.payload.changes);
+    this.publish(events);
     return { ok: true, seq: this.load().seq };
   }
 
@@ -255,7 +258,7 @@ export class SpaceRoom extends DurableObject<Env> {
     }
     switch (msg.t) {
       case "hello": {
-        if (msg.v > PROTOCOL_VERSION || msg.v < PROTOCOL_VERSION - 1) {
+        if (msg.v > PROTOCOL_VERSION || msg.v < MIN_PROTOCOL_VERSION) {
           this.send(ws, { t: "error", reason: "Please update Buildpair to keep syncing." });
           return;
         }

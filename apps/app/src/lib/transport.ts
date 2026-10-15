@@ -1,4 +1,4 @@
-import { ServerMessage } from "@buildpair/protocol";
+import { parseServerMessage } from "@buildpair/protocol";
 import type { Connection, ConnectionHandlers, Transport } from "@buildpair/sync";
 import { WebSocket as ReconnectingWebSocket } from "partysocket";
 import { api } from "./api";
@@ -23,8 +23,8 @@ export const spaceTransport: Transport = {
     ws.addEventListener("open", () => handlers.onOpen());
     ws.addEventListener("close", () => handlers.onClose());
     ws.addEventListener("message", (e: MessageEvent) => {
-      const parsed = ServerMessage.safeParse(JSON.parse(String(e.data)));
-      if (parsed.success) handlers.onMessage(parsed.data);
+      const parsed = parseServerMessage(JSON.parse(String(e.data)));
+      if (parsed) handlers.onMessage(parsed);
     });
     return {
       send: (msg) => {
