@@ -9,7 +9,7 @@ import { stopAllSyncs } from "../lib/use-space";
 import type { HoverState } from "./kit";
 import { Avatar, Icon, type IconName, SpaceTile, Wordmark } from "./kit";
 
-export type Section = "today" | "spaces" | { spaceId: string };
+export type Section = "today" | "spaces" | "profile" | { spaceId: string };
 
 export const TAB_BAR_HEIGHT = 58;
 
@@ -178,10 +178,25 @@ function Sidebar({ active }: { active: Section }) {
           borderColor: colors.line,
         }}
       >
-        <Avatar id={session?.user.id ?? "me"} name={name} size={28} />
-        <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, fontWeight: "600", color: colors.ink }}>
-          {session?.user.name || "You"}
-        </Text>
+        <Pressable
+          onPress={() => router.push("/profile")}
+          accessibilityRole="link"
+          accessibilityLabel="Your profile"
+          style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 10 }}
+        >
+          <Avatar id={session?.user.id ?? "me"} name={name} size={28} />
+          <Text
+            numberOfLines={1}
+            style={{
+              flex: 1,
+              fontSize: 14,
+              fontWeight: active === "profile" ? "700" : "600",
+              color: active === "profile" ? colors.blue : colors.ink,
+            }}
+          >
+            {session?.user.name || "You"}
+          </Text>
+        </Pressable>
         <Pressable onPress={signOut} accessibilityRole="button" hitSlop={8}>
           <Text style={{ fontSize: 13, color: colors.sub }}>Sign out</Text>
         </Pressable>

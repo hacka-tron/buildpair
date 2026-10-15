@@ -37,6 +37,13 @@ export function createAuth(env: Env) {
     database: drizzleAdapter(drizzle(env.DB, { schema }), { provider: "sqlite", schema }),
     trustedOrigins: [...origins, "buildpair://"],
     socialProviders: google,
+    // Profile fields people set themselves. app.ts checks their length and shape before Better Auth sees them.
+    user: {
+      additionalFields: {
+        building: { type: "string", required: false, input: true },
+        timeZone: { type: "string", required: false, input: true },
+      },
+    },
     // Passwords, so signing in sends no email. Email goes out only to confirm a new account and to reset a password.
     emailAndPassword: {
       enabled: true,

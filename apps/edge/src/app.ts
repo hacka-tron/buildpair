@@ -43,6 +43,16 @@ app.use(
 
 app.get("/health", (c) => c.json({ ok: true, environment: c.env.ENVIRONMENT }));
 
+// Our clients always send JSON to the auth routes, and the checks below read JSON. Anything else is
+// refused, so a form-encoded body can't slip past them. OAuth callbacks (Apple posts a form) are exempt.
+app.post("/api/auth/*", async (c, next) => {
+  if (c.req.path.startsWith("/api/auth/callback/")) return next();
+  const type = c.req.header("content-type") ?? "";
+  if (!type.toLowerCase().startsWith("application/json"))
+    return c.json(err("UNSUPPORTED_BODY", "Send this as JSON."), 415);
+  return next();
+});
+
 const jsonBody = (c: { req: { raw: Request } }): Promise<Record<string, unknown> | null> =>
   c.req.raw
     .clone()
@@ -54,7 +64,11 @@ const jsonBody = (c: { req: { raw: Request } }): Promise<Record<string, unknown>
 // which emails have accounts), and the checks in auth.ts are what actually stop the codes.
 // Sign-up gets the same plain answer: Better Auth reports success for a refused account.
 app.post("/api/auth/email-otp/send-verification-otp", (c, next) => explainRefusal(c, next));
-app.post("/api/auth/sign-up/email", (c, next) => explainRefusal(c, next));
+app.post(
+  "/api/auth/sign-up/email",
+  (c, next) => explainRefusal(c, next),
+  (c, next) => checkProfile(c, next),
+);
 
 async function explainRefusal(c: Context<App>, next: Next) {
   const body = await jsonBody(c);
@@ -130,6 +144,47 @@ app.post("/api/auth/email-otp/verify-email", async (c) => {
   }
   return res;
 });
+
+export const PROFILE_LIMITS = { name: 80, building: 140, image: 500 } as const;
+
+/** A valid IANA time zone, or false. */
+function isTimeZone(value: string): boolean {
+  // Named zones only ("America/Chicago", "UTC"), not offsets like "+05:30".
+  if (!value || value.length > 64 || !/^(?:UTC|[A-Z][A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+)$/.test(value))
+    return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Profile fields arrive through Better Auth, which doesn't check their size; these routes do. */
+async function checkProfile(c: Context<App>, next: Next) {
+  const body = await jsonBody(c);
+  const bad = (message: string) => c.json({ code: "INVALID_PROFILE", message, error: message }, 400);
+  if (
+    body &&
+    "name" in body &&
+    (typeof body.name !== "string" || body.name.trim().length > PROFILE_LIMITS.name)
+  )
+    return bad(`Keep your name under ${PROFILE_LIMITS.name} characters.`);
+  if (body && "image" in body && body.image !== null) {
+    if (typeof body.image !== "string" || body.image.length > PROFILE_LIMITS.image)
+      return bad("That picture link is too long.");
+  }
+  if (body && "building" in body && body.building !== null) {
+    if (typeof body.building !== "string" || body.building.length > PROFILE_LIMITS.building)
+      return bad(`Keep "what you're building" under ${PROFILE_LIMITS.building} characters.`);
+  }
+  if (body && "timeZone" in body && body.timeZone !== null) {
+    if (typeof body.timeZone !== "string" || !isTimeZone(body.timeZone))
+      return bad("That time zone isn't one we know.");
+  }
+  return next();
+}
+app.post("/api/auth/update-user", (c, next) => checkProfile(c, next));
 
 // The shared test account signs in by its bare name. It's made the first time someone signs in as it.
 app.post("/api/auth/sign-in/email", async (c, next) => {
