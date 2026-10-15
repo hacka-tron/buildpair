@@ -21,7 +21,7 @@
     }
   ],
   // Secrets (BETTER_AUTH_SECRET, TICKET_SECRET, RESEND_API_KEY, GOOGLE_CLIENT_SECRET) come from
-  // .dev.vars locally and `wrangler secret put` (via CI) in deployed environments.
+  // .dev.vars locally and the GitHub environment (the deploy workflow copies them) in deployed environments.
   "vars": {
     "ENVIRONMENT": "development",
     "APP_ORIGINS": "http://localhost:8081,http://localhost:8788,http://localhost:19006",

@@ -54,6 +54,7 @@ jobs:
           TICKET_SECRET: ${{ secrets.TICKET_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
+          set -o pipefail
           for key in BETTER_AUTH_SECRET TICKET_SECRET; do
             [ -n "${!key}" ] || { echo "Missing secret $key on the \"$TARGET\" environment (see docs/SETUP.md)."; exit 1; }
           done
