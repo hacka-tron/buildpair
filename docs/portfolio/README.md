@@ -69,7 +69,9 @@ The visual direction is called Margin Notes. A goal is the page, and supporters'
 
 ## Status
 
-The foundations are built and deployed to staging. That covers sign-in, spaces, invites, live chat with reactions, to-dos that post to the chat, offline sync, the landing page and the full CI and deploy pipeline. The remaining screens exist as complete designs for phone and desktop, and they are being built next. Production has not been released yet.
+The foundations and the first real screens are built and deployed to staging. People can sign in, see Today across all their spaces, add to-dos, create spaces, invite others by link, chat live with stacked reactions and watch completions post to the chat. The app has a sidebar layout on desktop and a tab bar with a floating add button on phones. Offline sync, the landing page and the full CI and deploy pipeline are in place. Habits and goals in full, Supporting, Discover and the weekly review exist as complete designs and are being built next. Production has not been released yet.
+
+![The working app](app-live.png)
 
 ## Images
 
@@ -79,10 +81,11 @@ All images are 2x resolution PNGs.
 |---|---|---|
 | `thumbnail.png` | Project thumbnail, 1600 × 1000 | Design concepts |
 | `social-cover.png` | Social and link preview cover, 1200 × 630 | Design concepts |
+| `app-live.png` | The working app on desktop and at phone width | Real app on a local build, made-up people |
 | `landing-page.png` | Landing page on desktop (light) and phone (dark) | Live staging site |
 | `phone-trio.png` | Today, a space with its chat, and Supporting on phones | Design concepts |
 | `desktop-space.png` | A space on desktop with its list, chat and people | Design concept |
 | `phone-lineup.png` | Spaces, Discover, a profile and notifications | Design concepts |
 | `screens/` | Individual phone, desktop and landing page screens | Mixed, see file names |
 
-Files starting with `landing-` show the live site. The other screens come from the product's design mockups in `docs/design/` and show where the app is heading. When describing the project publicly, call them designs rather than screenshots of the running app until those screens ship.
+Files starting with `app-` are screenshots of the real web app with made-up people (`app-phone-*` is the web app at phone width, not the native build). Files starting with `landing-` show the live site. The other screens come from the product's design mockups in `docs/design/` and show where the app is heading. When describing the project publicly, call those designs rather than screenshots of the running app until the screens ship.
