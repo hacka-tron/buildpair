@@ -6,7 +6,7 @@ import { spaceTransport } from "./transport";
 const syncs = new Map<string, SpaceSync>();
 
 /** One SpaceSync per space per signed-in person, kept for the app's lifetime so reopening is instant. */
-function getSync(spaceId: string, userId: string) {
+export function getSync(spaceId: string, userId: string) {
   const key = `${userId}:${spaceId}`;
   let sync = syncs.get(key);
   if (!sync) {

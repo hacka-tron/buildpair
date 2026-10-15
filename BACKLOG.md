@@ -10,6 +10,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Pick it up locally:** follow "Run it locally" in [README.md](README.md). A fresh clone was checked on 2026-10-14: install, local database, `pnpm check`, and all three servers (API on 8787, web app on 8081, landing page on 8788) start and work; sign-in codes print in the API's terminal.
 
+**App design pass (2026-10-15):** the app now follows the mockups' shell. Phones get a tab bar (Today, Spaces) and a floating +. Wide screens get the sidebar with your spaces. Today lists open items from every space, grouped by space, with a quick add sheet. Spaces shows tiles, summaries and faces. A space shows the chat with completion lines, stacked reactions (hover or press and hold to add), people with presence and an invite sheet. Checked in the browser at 390 and 1440 wide; not yet run on a real phone.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** with a real email at `staging.buildpair.app`. Not yet tested end to end with Resend.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
@@ -46,7 +48,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, real app icons and splash, owner-approved join requests. Until then, release only the landing page publicly if anything.
 - **Staging is public.** Anyone can open it and request sign-in codes to any address, which spends the Resend quota and can hurt the domain's email reputation. Plan: an allowlist of emails that can sign in on staging and previews (a variable, enforced in the API), plus a Cloudflare rate-limiting rule on the auth endpoints. Also mark staging pages `noindex`.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
-- **PR previews: the web app doesn't upload.** The preview API works (`buildpair-api-pr-<n>.<subdomain>.workers.dev`), but `wrangler versions upload --preview-alias` in `preview.yml` fails because the base `buildpair-web` Worker has never been deployed, and the step stays green because the pipe through `tee` hides the error. Fix: add `set -o pipefail`, and deploy the base `buildpair-web` Worker once (or on first preview) before uploading versions.
+- **Today and Spaces open a live socket per space** to show their contents. Fine for a few spaces; move to the UserHub inbox (see above) before people have many.
+- **Space colors come from the space ID**, so two spaces can share a color. Let owners pick, as the design says.
 - **Production D1 name:** the config says `buildpair-production`; the database's real name may be `buildpair-prod`. Deploys use the ID, so it works either way; align the name once confirmed.
 
 ## Later milestones

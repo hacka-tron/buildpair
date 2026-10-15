@@ -23,15 +23,21 @@ const browser = await chromium.launch();
 try {
   const stamp = Date.now();
   const maya = await signIn(browser, `maya-${stamp}@example.com`);
+  await maya.getByText("Spaces", { exact: true }).click();
   await maya.getByText("New space").click();
   await maya.getByPlaceholder("Life", { exact: true }).fill("Life");
   await maya.getByPlaceholder("Family, health and the house").fill("Family, health and the house");
-  await maya.getByText("Create space").click();
-  await maya.getByText("Life", { exact: true }).click();
+  await maya.getByText("Create space").click(); // opens the new space
+  await maya.getByText(/\(you\)/).waitFor(); // the space has loaded
   await maya.getByPlaceholder("+ Add to Life").fill("Pick up kids");
   await maya.getByPlaceholder("+ Add to Life").press("Enter");
-  await maya.getByText("Invite").click();
+  await maya.getByText("Invite", { exact: true }).click();
+  await maya.getByText("Make an invite link").click();
   const link = await maya.getByText(/buildpair\.app\/join\//).innerText();
+  await maya
+    .getByLabel("Close")
+    .last()
+    .click({ position: { x: 5, y: 5 } });
   const token = link.split("/join/")[1].trim();
 
   const jordan = await signIn(browser, `jordan-${stamp}@example.com`);
@@ -41,8 +47,10 @@ try {
   await maya.getByPlaceholder("Message Life…").fill("Flights booked!");
   await maya.getByPlaceholder("Message Life…").press("Enter");
   await jordan.getByText("Flights booked!").waitFor({ timeout: 5000 });
-  await jordan.getByText("+ 🔥").first().click();
-  await maya.getByText("🔥 1").waitFor({ timeout: 5000 });
+  await jordan.getByText("Flights booked!").hover();
+  await jordan.getByLabel("Add a reaction").first().click();
+  await jordan.getByLabel("React 🔥").click();
+  await maya.getByLabel("🔥 1").waitFor({ timeout: 5000 });
   await maya.getByLabel("Mark Pick up kids done").click();
   await jordan.getByText("Pick up kids").first().waitFor({ timeout: 5000 });
   if (shots) {

@@ -1,0 +1,441 @@
+import type { Item } from "@buildpair/protocol";
+import Feather from "@expo/vector-icons/Feather";
+import type { ReactNode } from "react";
+import { Modal, Pressable, Text, View, type ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { dueLabel } from "../lib/format";
+import { colors, personColor, radius, space, spaceColor } from "../lib/theme";
+
+/** react-native-web adds `hovered` to Pressable's style callback; the native types leave it out. */
+export type HoverState = { pressed: boolean; hovered?: boolean };
+
+export type IconName = React.ComponentProps<typeof Feather>["name"];
+
+export function Icon({
+  name,
+  size = 18,
+  color = colors.sub,
+}: {
+  name: IconName;
+  size?: number;
+  color?: string;
+}) {
+  return <Feather name={name} size={size} color={color} />;
+}
+
+/** The Buildpair mark: two rounded shapes side by side, you and the person in your corner. */
+export function Mark({ size = 28, light = false }: { size?: number; light?: boolean }) {
+  const w = size * 0.5;
+  const h = size * 0.58;
+  const r = size * 0.15;
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center" }}>
+      <View
+        style={{
+          position: "absolute",
+          left: size * 0.08,
+          width: w,
+          height: h,
+          borderRadius: r,
+          backgroundColor: light ? "#fff" : colors.royal,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: size * 0.42,
+          width: w,
+          height: h,
+          borderRadius: r,
+          borderWidth: size * 0.1,
+          borderColor: light ? "#fff" : colors.ink,
+        }}
+      />
+    </View>
+  );
+}
+
+export function Wordmark({ size = 20 }: { size?: number }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: size * 0.35 }}>
+      <Mark size={size * 1.25} />
+      <Text style={{ fontSize: size, fontWeight: "800", letterSpacing: -0.6, color: colors.ink }}>
+        Buildpair
+      </Text>
+    </View>
+  );
+}
+
+export function Avatar({
+  id,
+  name,
+  size = 28,
+  online,
+}: {
+  id: string;
+  name: string;
+  size?: number;
+  online?: boolean;
+}) {
+  return (
+    <View>
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: personColor(id),
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ color: "#fff", fontWeight: "700", fontSize: size * 0.42 }}>
+          {(name.trim()[0] ?? "?").toUpperCase()}
+        </Text>
+      </View>
+      {online ? (
+        <View
+          style={{
+            position: "absolute",
+            right: -1,
+            bottom: -1,
+            width: size * 0.34,
+            height: size * 0.34,
+            borderRadius: size,
+            backgroundColor: colors.online,
+            borderWidth: 2,
+            borderColor: "#fff",
+          }}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+/** Overlapping faces of the people in a space. */
+export function Faces({
+  people,
+  size = 22,
+  max = 4,
+}: {
+  people: { id: string; name: string }[];
+  size?: number;
+  max?: number;
+}) {
+  return (
+    <View style={{ flexDirection: "row" }}>
+      {people.slice(0, max).map((p, i) => (
+        <View
+          key={p.id}
+          style={{
+            marginLeft: i === 0 ? 0 : -size * 0.28,
+            borderRadius: size,
+            borderWidth: 2,
+            borderColor: "#fff",
+          }}
+        >
+          <Avatar id={p.id} name={p.name} size={size} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+export function SpaceTile({ id, name, size = 40 }: { id: string; name: string; size?: number }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size * 0.26,
+        backgroundColor: spaceColor(id),
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ color: "#fff", fontWeight: "700", fontSize: size * 0.42 }}>
+        {(name.trim()[0] ?? "?").toUpperCase()}
+      </Text>
+    </View>
+  );
+}
+
+/** A collapsible section header with an arrow, like "In this space" or a space's group on Today. */
+export function SectionHeader({
+  open,
+  onToggle,
+  children,
+  right,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+  right?: ReactNode;
+}) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: space.sm }}>
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        style={{ flexDirection: "row", alignItems: "center", gap: space.sm, flex: 1, minWidth: 0 }}
+      >
+        <Icon name={open ? "chevron-down" : "chevron-right"} size={14} color={colors.faint} />
+        {children}
+      </Pressable>
+      {right}
+    </View>
+  );
+}
+
+/** One to-do, habit or goal: the circle ticks it, the rest shows what and when. */
+export function ItemRow({
+  item,
+  onToggle,
+  meta,
+  today,
+  last,
+}: {
+  item: Item;
+  onToggle: () => void;
+  meta?: string;
+  today: string;
+  last?: boolean;
+}) {
+  const done = item.status === "done";
+  const due = item.dueOn ? dueLabel(item.dueOn, today) : null;
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: space.md,
+        paddingVertical: 11,
+        borderBottomWidth: last ? 0 : 1,
+        borderColor: colors.line,
+      }}
+    >
+      <Pressable
+        onPress={onToggle}
+        disabled={done}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: done }}
+        accessibilityLabel={`Mark ${item.title} done`}
+        hitSlop={8}
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 11,
+          borderWidth: done ? 0 : 1.6,
+          borderColor: "#B4BAC8",
+          backgroundColor: done ? colors.blue : "transparent",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {done ? <Icon name="check" size={14} color="#fff" /> : null}
+      </Pressable>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 15,
+              color: done ? colors.faint : colors.ink,
+              textDecorationLine: done ? "line-through" : "none",
+              flexShrink: 1,
+            }}
+          >
+            {item.title}
+          </Text>
+          {item.kind !== "todo" ? <Tag>{item.kind === "habit" ? "Habit" : "Goal"}</Tag> : null}
+          {item.visibility === "owner" ? <Icon name="lock" size={12} color={colors.faint} /> : null}
+        </View>
+        {meta ? (
+          <Text numberOfLines={1} style={{ fontSize: 12, color: colors.sub }}>
+            {meta}
+          </Text>
+        ) : null}
+      </View>
+      {due ? (
+        <Text style={{ fontSize: 13, color: due.late && !done ? colors.danger : colors.sub }}>
+          {due.text}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+export function Tag({ children, tone = "plain" }: { children: ReactNode; tone?: "plain" | "blue" }) {
+  return (
+    <View
+      style={{
+        borderRadius: 5,
+        paddingHorizontal: 6,
+        paddingVertical: 1,
+        backgroundColor: tone === "blue" ? colors.tint : colors.surface,
+        borderWidth: 1,
+        borderColor: tone === "blue" ? colors.tint : colors.line,
+      }}
+    >
+      <Text style={{ fontSize: 11, fontWeight: "600", color: tone === "blue" ? colors.blue : colors.sub }}>
+        {children}
+      </Text>
+    </View>
+  );
+}
+
+export function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+  return (
+    <View
+      style={[
+        {
+          borderWidth: 1,
+          borderColor: colors.line,
+          borderRadius: radius.card,
+          paddingHorizontal: space.lg,
+          backgroundColor: "#fff",
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+/** The floating + in the bottom-right corner, in the same spot on every platform. */
+export function Fab({ onPress, label, bottom = 0 }: { onPress: () => void; label: string; bottom?: number }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        position: "absolute",
+        right: 20,
+        bottom: bottom + 20,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: colors.royal,
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: pressed ? 0.85 : 1,
+        shadowColor: "#1a2a6e",
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 6,
+      })}
+    >
+      <Icon name="plus" size={26} color="#fff" />
+    </Pressable>
+  );
+}
+
+/** A pull-up sheet on phones; a centered dialog on wide screens. */
+export function Sheet({
+  visible,
+  onClose,
+  title,
+  children,
+  wide,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  wide: boolean;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} transparent animationType={wide ? "fade" : "slide"} onRequestClose={onClose}>
+      <Pressable
+        onPress={onClose}
+        accessibilityLabel="Close"
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(15, 20, 35, 0.35)",
+          justifyContent: wide ? "center" : "flex-end",
+          alignItems: wide ? "center" : "stretch",
+        }}
+      >
+        <Pressable
+          onPress={() => undefined}
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: radius.sheet,
+            borderBottomLeftRadius: wide ? radius.sheet : 0,
+            borderBottomRightRadius: wide ? radius.sheet : 0,
+            padding: space.xl,
+            paddingBottom: space.xl + (wide ? 0 : insets.bottom),
+            gap: space.lg,
+            width: wide ? 460 : "100%",
+          }}
+        >
+          {!wide ? (
+            <View
+              style={{
+                alignSelf: "center",
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.line,
+              }}
+            />
+          ) : null}
+          <Text style={{ fontSize: 20, fontWeight: "700", color: colors.ink, letterSpacing: -0.3 }}>
+            {title}
+          </Text>
+          {children}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+export function ChipRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <View style={{ gap: space.sm }}>
+      <Text style={{ fontSize: 12, fontWeight: "600", color: colors.sub }}>{label}</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>{children}</View>
+    </View>
+  );
+}
+
+export function Chip({
+  on,
+  onPress,
+  children,
+  leading,
+}: {
+  on: boolean;
+  onPress: () => void;
+  children: string;
+  leading?: ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: on }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: on ? colors.royal : colors.line,
+        backgroundColor: on ? colors.tint : "#fff",
+      }}
+    >
+      {leading}
+      <Text style={{ fontSize: 13, fontWeight: "600", color: on ? colors.blue : colors.sub }}>
+        {children}
+      </Text>
+    </Pressable>
+  );
+}
