@@ -37,10 +37,10 @@ Designed and planned next are habits with weekly progress, goals with steps, a T
 | API | Cloudflare Workers with Hono |
 | Real-time core | One Durable Object per space that owns its event log, chat and live sockets, plus one per person for their inbox |
 | Data | SQLite inside each Durable Object, D1 for global data, Drizzle for the schema |
-| Auth | Better Auth with email codes, sessions shared across subdomains |
+| Auth | Better Auth with email and password, an emailed code to confirm the address, sessions shared across subdomains |
 | Shared rules | A TypeScript domain package that runs the same rules on the device and on the server |
 | Contracts | Zod schemas for every command, event and socket message, with a versioned protocol |
-| Email | Resend for sign-in codes, Cloudflare Email Routing for inbound mail |
+| Email | Resend for confirmation and reset codes, Cloudflare Email Routing for inbound mail |
 | Delivery | GitHub Actions with a full preview environment per pull request, automatic staging deploys and approval-gated production releases |
 
 ## Engineering highlights
@@ -55,7 +55,7 @@ Designed and planned next are habits with weekly progress, goals with steps, a T
 
 **A pipeline that treats every pull request like production.** Each pull request gets its own API Worker, its own Durable Objects, its own D1 database and a preview web app, then a cleanup job removes them when the pull request closes. Merges deploy to staging automatically. Production deploys only when a release is published and approved, and secrets flow from GitHub environments to the Workers with nothing set by hand.
 
-**Staging locked to invited people.** Staging and previews accept only listed emails. The check sits where every sign-in code is sent and where every session is created, so strangers can neither receive email from the domain nor sign in by any method.
+**Staging locked to invited people.** Staging and previews accept only listed emails. The check sits where every code is sent, where every account is made and where every session is created, so strangers can neither receive email from the domain nor sign in by any method.
 
 ## Quality
 

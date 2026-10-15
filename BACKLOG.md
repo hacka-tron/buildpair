@@ -8,14 +8,16 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Staging is live (2026-10-15):** `staging.buildpair.app` (landing), `app-staging.buildpair.app` (web app), `api-staging.buildpair.app` (API, `/health` OK). Every merge to `main` deploys there. Setup done: D1 databases, GitHub environments (production needs the owner's approval), variables, secrets including `RESEND_API_KEY`, Resend domain verified, `DEPLOY_ENABLED=true`. Production has not been released. Expo is not set up yet, so no phone updates are published.
 
-**Pick it up locally:** follow "Run it locally" in [README.md](README.md). A fresh clone was checked on 2026-10-14: install, local database, `pnpm check`, and all three servers (API on 8787, web app on 8081, landing page on 8788) start and work; sign-in codes print in the API's terminal.
+**Pick it up locally:** follow "Run it locally" in [README.md](README.md). A fresh clone was checked on 2026-10-14: install, local database, `pnpm check`, and all three servers (API on 8787, web app on 8081, landing page on 8788) start and work; codes print in the API's terminal.
 
 **App design pass (2026-10-15):** the app now follows the mockups' shell. Phones get a tab bar (Today, Spaces) and a floating +. Wide screens get the sidebar with your spaces. Today lists open items from every space, grouped by space, with a quick add sheet. Spaces shows tiles, summaries and faces. A space shows the chat with completion lines, stacked reactions (hover or press and hold to add), people with presence and an invite sheet. Checked in the browser at 390 and 1440 wide; not yet run on a real phone.
 
 **Items, part 1 (2026-10-15):** quick add makes to-dos (today, tomorrow, no date), habits (times a week) and goals (finish by). Tapping an item opens its sheet: mark done, skip a habit for today, won't do, post an update to the chat, and a goal's steps with "+ Add a step". Habits show as done once checked off today; due goal steps show on Today.
 
+**Sign-in uses passwords (2026-10-15):** email codes only go out to confirm a new account or reset a password. Shared test account `bagel` / `bagel` works on staging.
+
 **Next, in order:**
-1. **Owner: try sign-in on staging** with a real email at `staging.buildpair.app`. Not yet tested end to end with Resend.
+1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
 3. **Build: rest of milestone 3.** Natural-language adding ("dentist friday 3pm"), editing an item (title, date, schedule, move to another space, only visible to me), multi-select with the action bar from the designs, a calendar date picker and repeat rules, reminders (UserHub alarms) and push notifications.
 
@@ -23,7 +25,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 | Area | State |
 |---|---|
-| Sign-up and sign-in | Email codes (Better Auth on D1). Landing-page sign-up sets the account name and drops you into the app. Google sign-in is wired but hidden until keys are set (`GOOGLE_ENABLED`). |
+| Sign-up and sign-in | Email and password (Better Auth on D1). One emailed code confirms the address at sign-up, and "Forgot your password?" emails a code to set a new one. Signing in sends nothing. Shared test account `bagel` / `bagel` on local, staging and previews (production refuses it). Landing-page sign-up drops you into the app. Google sign-in is wired but hidden until keys are set (`GOOGLE_ENABLED`). |
 | Spaces | Create (name + what it's for), list, invite by link (`buildpair.app/join/<token>`), join as a supporter. |
 | Chat | Live messages, stacked reactions, presence ("here now"), completion and skip lines written by the room. Offline messages queue and send on reconnect; no duplicates; gaps catch up. |
 | Items | To-dos (with a due date), habits (times a week) and goals (finish by, with steps). Quick add, an item sheet with done, skip, won't do and post an update. |
@@ -48,10 +50,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.
 - **Repository license:** none yet (all rights reserved).
 - **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, real app icons and splash, owner-approved join requests. Until then, release only the landing page publicly if anything.
-- **Staging is open to anyone.** Anyone can request sign-in codes there, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Still to do: a Cloudflare rate-limiting rule on the auth endpoints and `noindex` on staging pages.
+- **Staging is open to anyone.** Anyone can make an account there (one email each) or request password-reset codes, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Still to do: a Cloudflare rate-limiting rule on the auth endpoints and `noindex` on staging pages.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
 - **To-dos don't record when they were finished.** A to-do with no date (or an overdue one) ticked today drops off Today and out of its counts. Add a completed-on date to the item event when the protocol next changes.
 - **Skipping a habit twice in a day posts twice.** Skips change nothing on the item, so the app can't tell it's already skipped. Same fix: record skips on the item.
+- **The test account `bagel` is shared and public.** Anyone who reads the repo can sign in as it on staging. Fine for test data; keep real things out of it. Remove `TEST_LOGIN` from `wrangler.jsonc` to turn it off.
+- **Accounts made with email codes before 2026-10-15 have no password.** They set one with "Forgot your password?".
 - **Today and Spaces open a live socket per space** to show their contents. Fine for a few spaces; move to the UserHub inbox (see above) before people have many.
 - **Space colors come from the space ID**, so two spaces can share a color. Let owners pick, as the design says.
 
@@ -66,7 +70,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 - Domain `buildpair.app`: landing at `buildpair.app`, web app at `app.buildpair.app`, API at `api.buildpair.app` (staging: `staging.`, `app-staging.`, `api-staging.`).
 - Public repository, no license for now.
-- Sign-in: email codes first, then Google; add Sign in with Apple alongside Google on iOS.
+- Sign-in: email and password, with an emailed code only to confirm a new account or reset a password (2026-10-15, to save Resend email). Then Google; add Sign in with Apple alongside Google on iOS.
 - Analytics: privacy-first, no consent banner (PostHog EU cookieless, internal IDs only, session replay opt-in, a usage-data switch, no tracking pixels).
 - Architecture: one Expo app; Cloudflare Workers with a Durable Object per space and per person, D1, R2. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Production database name stays `buildpair-production` (confirmed 2026-10-15).

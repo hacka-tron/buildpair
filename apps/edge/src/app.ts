@@ -1,12 +1,12 @@
 import { newId } from "@buildpair/domain";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { Hono } from "hono";
+import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
-import { createAuth, NOT_INVITED } from "./auth";
+import { createAuth, NOT_INVITED, USE_PASSWORD } from "./auth";
 import { invites, memberships, spaces } from "./db/schema";
-import { assertConfig, type Env, isEmailAllowed } from "./env";
+import { assertConfig, type Env, isEmailAllowed, testLogin } from "./env";
 import { USER_HEADER } from "./space-room";
 import { signTicket, verifyTicket } from "./tickets";
 
@@ -42,18 +42,61 @@ app.use(
 
 app.get("/health", (c) => c.json({ ok: true, environment: c.env.ENVIRONMENT }));
 
-// Says plainly why no code is coming. Better Auth hides errors from sendVerificationOTP (so no one can probe
-// which emails have accounts), and that check in auth.ts is what actually stops every kind of code.
-app.post("/api/auth/email-otp/send-verification-otp", async (c, next) => {
-  if (!c.env.ALLOWED_EMAILS?.trim()) return next();
-  const body: unknown = await c.req.raw
+const jsonBody = (c: { req: { raw: Request } }): Promise<Record<string, unknown> | null> =>
+  c.req.raw
     .clone()
     .json()
+    .then((b) => (b && typeof b === "object" ? (b as Record<string, unknown>) : null))
     .catch(() => null);
-  const email = body && typeof body === "object" && "email" in body ? body.email : undefined;
-  if (typeof email === "string" && !isEmailAllowed(c.env, email))
+
+// Says plainly why no code is coming. Better Auth hides errors from sendVerificationOTP (so no one can probe
+// which emails have accounts), and the checks in auth.ts are what actually stop the codes.
+// Sign-up gets the same plain answer: Better Auth reports success for a refused account.
+app.post("/api/auth/email-otp/send-verification-otp", (c, next) => explainRefusal(c, next));
+app.post("/api/auth/sign-up/email", (c, next) => explainRefusal(c, next));
+
+async function explainRefusal(c: Context<App>, next: Next) {
+  const body = await jsonBody(c);
+  if (body?.type === "sign-in") return c.json({ ...USE_PASSWORD, error: USE_PASSWORD.message }, 400);
+  if (!c.env.ALLOWED_EMAILS?.trim()) return next();
+  if (typeof body?.email === "string" && !isEmailAllowed(c.env, body.email))
     return c.json({ ...NOT_INVITED, error: NOT_INVITED.message }, 403);
   return next();
+}
+
+// The shared test account signs in by its bare name. It's made the first time someone signs in as it.
+app.post("/api/auth/sign-in/email", async (c, next) => {
+  const login = testLogin(c.env);
+  const body = login && (await jsonBody(c));
+  if (!login || !body || typeof body.email !== "string" || body.email.trim().toLowerCase() !== login.name)
+    return next();
+  const auth = createAuth(c.env);
+  const ctx = await auth.$context;
+  if (!(await ctx.internalAdapter.findUserByEmail(login.email))) {
+    const user = await ctx.internalAdapter.createUser(
+      {
+        name: login.name,
+        email: login.email,
+        emailVerified: true,
+      },
+      { method: "email-password" },
+    );
+    await ctx.internalAdapter.linkAccount({
+      userId: user.id,
+      providerId: "credential",
+      accountId: user.id,
+      password: await ctx.password.hash(login.password),
+    });
+  }
+  const headers = new Headers(c.req.raw.headers);
+  headers.delete("content-length");
+  return auth.handler(
+    new Request(c.req.raw.url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ...body, email: login.email }),
+    }),
+  );
 });
 
 app.on(["GET", "POST"], "/api/auth/*", (c) => createAuth(c.env).handler(c.req.raw));

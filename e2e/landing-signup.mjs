@@ -1,4 +1,4 @@
-// End-to-end: a new person creates an account from the landing page (name, email, code) and lands
+// End-to-end: a new person creates an account from the landing page (name, email, password, then the emailed code) and lands
 // signed in inside the app, with their name on the account. Needs the API (EMAIL_PROVIDER=test),
 // the web app and the site running. Usage: node e2e/landing-signup.mjs [siteUrl] [appUrl] [apiUrl]
 import { chromium } from "playwright";
@@ -23,7 +23,8 @@ try {
     const email = `new-${label}-${Date.now()}@example.com`;
     await page.getByLabel("Your name").fill(`Dana ${label}`);
     await page.getByLabel("Email").fill(email);
-    await page.getByRole("button", { name: "Email me a code" }).click();
+    await page.getByLabel("Password").fill("correct horse battery");
+    await page.getByRole("button", { name: "Create account" }).click();
     await page.getByText("Check your email").waitFor();
     await page.getByLabel("Code").fill("424242"); // auto-submits at 6 digits
     await page.waitForURL(`${APP}/**`, { timeout: 10_000 });
@@ -43,10 +44,15 @@ try {
   await page.goto(SITE);
   await page.getByLabel("Your name").fill("Sam");
   await page.getByLabel("Email").fill("not-an-email");
-  await page.getByRole("button", { name: "Email me a code" }).click();
+  await page.getByLabel("Password").fill("correct horse battery");
+  await page.getByRole("button", { name: "Create account" }).click();
   await page.getByText("That email doesn't look right").waitFor();
   await page.getByLabel("Email").fill(`sam-${Date.now()}@example.com`);
-  await page.getByRole("button", { name: "Email me a code" }).click();
+  await page.getByLabel("Password").fill("short");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByText("Use at least 8 characters").waitFor();
+  await page.getByLabel("Password").fill("correct horse battery");
+  await page.getByRole("button", { name: "Create account" }).click();
   await page.getByLabel("Code").fill("000000");
   await page.getByRole("alert").filter({ hasText: /./ }).waitFor();
   console.log(`Wrong code shows: "${await page.getByRole("alert").innerText()}"`);

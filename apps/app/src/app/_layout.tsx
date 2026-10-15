@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useRef } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { authClient } from "../lib/auth";
@@ -7,7 +8,10 @@ import { colors } from "../lib/theme";
 
 export default function RootLayout() {
   const { data: session, isPending } = authClient.useSession();
-  if (isPending) {
+  // Only the first check shows the spinner. Later checks (after signing up, say) keep the screen and its state.
+  const loaded = useRef(false);
+  if (!isPending) loaded.current = true;
+  if (isPending && !loaded.current) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg }}>
         <ActivityIndicator color={colors.blue} />

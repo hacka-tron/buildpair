@@ -27,7 +27,9 @@
     "APP_ORIGINS": "http://localhost:8081,http://localhost:8788,http://localhost:19006",
     "BETTER_AUTH_URL": "http://localhost:8787",
     "EMAIL_PROVIDER": "console",
-    "EMAIL_FROM": "Buildpair <hello@buildpair.app>"
+    "EMAIL_FROM": "Buildpair <hello@buildpair.app>",
+    // A shared test account (sign in with the bare name). Staging and previews too; production refuses it.
+    "TEST_LOGIN": "bagel:bagel"
   },
   "env": {
     "staging": {
@@ -52,7 +54,8 @@
         "APP_ORIGINS": "https://app-staging.buildpair.app,https://staging.buildpair.app",
         "BETTER_AUTH_URL": "https://api-staging.buildpair.app",
         "EMAIL_PROVIDER": "resend",
-        "EMAIL_FROM": "Buildpair <hello@buildpair.app>"
+        "EMAIL_FROM": "Buildpair <hello@buildpair.app>",
+        "TEST_LOGIN": "bagel:bagel"
       }
     },
     "production": {
