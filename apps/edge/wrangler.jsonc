@@ -21,7 +21,7 @@
     }
   ],
   // Secrets (BETTER_AUTH_SECRET, TICKET_SECRET, RESEND_API_KEY, GOOGLE_CLIENT_SECRET) come from
-  // .dev.vars locally and `wrangler secret put` (via CI) in deployed environments.
+  // .dev.vars locally and the GitHub environment (the deploy workflow copies them) in deployed environments.
   "vars": {
     "ENVIRONMENT": "development",
     "APP_ORIGINS": "http://localhost:8081,http://localhost:8788,http://localhost:19006",
@@ -39,12 +39,11 @@
           { "name": "USER_HUB", "class_name": "UserHub" }
         ]
       },
-      // Fill in database_id after `wrangler d1 create buildpair-staging` (see docs/SETUP.md).
       "d1_databases": [
         {
           "binding": "DB",
           "database_name": "buildpair-staging",
-          "database_id": "REPLACE_WITH_STAGING_D1_ID",
+          "database_id": "9f47a350-976e-4791-aa47-100f3b7b1262",
           "migrations_dir": "migrations"
         }
       ],
@@ -69,7 +68,7 @@
         {
           "binding": "DB",
           "database_name": "buildpair-production",
-          "database_id": "REPLACE_WITH_PRODUCTION_D1_ID",
+          "database_id": "cecac9bf-7941-4da9-b68d-9d0b715d05a8",
           "migrations_dir": "migrations"
         }
       ],
