@@ -6,7 +6,7 @@ Start with [BACKLOG.md](BACKLOG.md) (where work stands, what's next) and update 
 
 | Path | Owns |
 |---|---|
-| `packages/protocol` | Zod schemas for commands, events, socket messages. Version changes with `PROTOCOL_VERSION`; the server accepts the current and previous version. |
+| `packages/protocol` | Zod schemas for commands, events, socket messages. Clients read server messages with `parseServerMessage`, which skips single events they don't know. Adding an event type that changes space state: bump `PROTOCOL_VERSION` and raise `MIN_PROTOCOL_VERSION` to it, so older clients are told to update instead of silently missing it. |
 | `packages/domain` | `decide(state, command, actor)` and `applyEvent(state, event)`: the rules, pure functions, used by both app and server. All rule changes go here, with tests. |
 | `packages/sync` | `SpaceSync`: optimistic updates, persisted pending queue, sequence cursor, gap catch-up. |
 | `apps/edge/src/space-room.ts` | One Durable Object per space: the only writer, numbers every event, stores the log in its SQLite, runs sockets. |
