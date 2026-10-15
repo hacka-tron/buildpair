@@ -206,6 +206,7 @@ export function ItemRow({
   last,
   onOpen,
   readOnly,
+  selection,
 }: {
   item: Item;
   onToggle: () => void;
@@ -216,11 +217,19 @@ export function ItemRow({
   onOpen?: () => void;
   /** Show the item without letting it be ticked (someone else's, or under a closed goal). */
   readOnly?: boolean;
+  /**
+   * Selecting several items: press and hold starts it (`onSelect`); while `active`, a tap selects
+   * instead of opening. Leave out `onSelect` for items that can't be selected.
+   */
+  selection?: { active: boolean; selected: boolean; onSelect?: () => void };
 }) {
   // A habit counts as done for the day once it's checked off today.
   const done = item.status === "done" || (item.kind === "habit" && item.doneOn.includes(today));
   const closed = item.status !== "open";
   const due = item.dueOn ? dueLabel(item.dueOn, today, item.dueTime) : null;
+  const selecting = selection?.active ?? false;
+  const picked = selection?.selected ?? false;
+  const canPick = Boolean(selection?.onSelect);
   return (
     <View
       style={{
@@ -228,35 +237,65 @@ export function ItemRow({
         alignItems: "center",
         gap: space.md,
         paddingVertical: 11,
+        paddingHorizontal: selecting ? space.sm : 0,
+        marginHorizontal: selecting ? -space.sm : 0,
+        borderRadius: selecting ? radius.chip : 0,
+        backgroundColor: picked ? colors.tint : "transparent",
         borderBottomWidth: last ? 0 : 1,
         borderColor: colors.line,
       }}
     >
+      {selecting ? (
+        <Pressable
+          onPress={selection?.onSelect}
+          disabled={!canPick}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: picked, disabled: !canPick }}
+          accessibilityLabel={`Select ${item.title}`}
+          hitSlop={8}
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            borderWidth: picked ? 0 : 1.6,
+            borderColor: canPick ? colors.royal : colors.line,
+            backgroundColor: picked ? colors.blue : "transparent",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {picked ? <Icon name="check" size={14} color="#fff" /> : null}
+        </Pressable>
+      ) : (
+        <Pressable
+          onPress={onToggle}
+          disabled={done || closed || readOnly}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: done }}
+          accessibilityLabel={`Mark ${item.title} done`}
+          hitSlop={8}
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            borderWidth: done ? 0 : 1.6,
+            borderColor: "#B4BAC8",
+            backgroundColor: done ? colors.blue : "transparent",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {done ? <Icon name="check" size={14} color="#fff" /> : null}
+        </Pressable>
+      )}
       <Pressable
-        onPress={onToggle}
-        disabled={done || closed || readOnly}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: done }}
-        accessibilityLabel={`Mark ${item.title} done`}
-        hitSlop={8}
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 11,
-          borderWidth: done ? 0 : 1.6,
-          borderColor: "#B4BAC8",
-          backgroundColor: done ? colors.blue : "transparent",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {done ? <Icon name="check" size={14} color="#fff" /> : null}
-      </Pressable>
-      <Pressable
-        onPress={onOpen}
-        disabled={!onOpen}
+        onPress={selecting ? selection?.onSelect : onOpen}
+        onLongPress={!selecting && canPick ? selection?.onSelect : undefined}
+        delayLongPress={350}
+        disabled={selecting ? !canPick : !onOpen && !canPick}
         accessibilityRole="button"
-        accessibilityLabel={`Open ${item.title}`}
+        accessibilityLabel={selecting ? `Select ${item.title}` : `Open ${item.title}`}
+        accessibilityHint={!selecting && canPick ? "Press and hold to select several" : undefined}
         style={{ flex: 1, minWidth: 0, gap: 2 }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>

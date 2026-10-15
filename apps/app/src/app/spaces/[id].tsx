@@ -1,4 +1,4 @@
-import { newId, type SpaceState, weekProgress } from "@buildpair/domain";
+import { newId, parseQuickAdd, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item, Message } from "@buildpair/protocol";
 import type { Change } from "@buildpair/sync";
 import { router, useLocalSearchParams } from "expo-router";
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { ItemSheet } from "../../components/item-sheet";
 import { Avatar, Card, Faces, Icon, ItemRow, SectionHeader, Sheet, SpaceTile } from "../../components/kit";
+import { SelectionBar, useSelection } from "../../components/selection";
 import { Shell, useWide } from "../../components/shell";
 import { Button, ErrorText } from "../../components/ui";
 import { createInvite } from "../../lib/api";
@@ -55,8 +56,22 @@ export default function SpaceScreen() {
     return problem === null;
   };
   const complete = (item: Item) => run({ type: "item.complete", payload: { itemId: item.id, on: today } });
-  const add = (title: string) =>
-    run({ type: "item.create", payload: { itemId: newId(), kind: "todo", title } });
+  // "+ Add to <space>" reads plain words the same way quick add does ("gym 4x a week", "rent friday").
+  const add = (text: string) => {
+    const p = parseQuickAdd(text, today);
+    return run({
+      type: "item.create",
+      payload: {
+        itemId: newId(),
+        kind: p.kind,
+        title: p.title,
+        dueOn: p.dueOn,
+        dueTime: p.dueTime,
+        timesPerWeek: p.timesPerWeek,
+      },
+    });
+  };
+  const selection = useSelection();
 
   const status = connected
     ? online.filter((u) => u !== userId).length
@@ -75,6 +90,7 @@ export default function SpaceScreen() {
       onOpen={setOpened}
       onAdd={add}
       wide={wide}
+      selectionFor={(item) => selection.rowProps(item, id, userId)}
     />
   );
 
@@ -129,6 +145,15 @@ export default function SpaceScreen() {
         apply={(change) => applyChange(id, userId, change)}
       />
       {inviteSheet}
+      {selection.active ? (
+        <SelectionBar
+          picked={selection.picked}
+          today={today}
+          wide={wide}
+          onClear={selection.clear}
+          apply={(spaceId, change) => applyChange(spaceId, userId, change)}
+        />
+      ) : null}
     </>
   );
 
@@ -246,6 +271,7 @@ function ItemsPanel(props: {
   /** Returns false when the change didn't go through, so the text stays for another try. */
   onAdd: (title: string) => boolean;
   wide: boolean;
+  selectionFor: (item: Item) => { active: boolean; selected: boolean; onSelect?: () => void };
 }) {
   const [open, setOpen] = useState(true);
   const [title, setTitle] = useState("");
@@ -268,6 +294,7 @@ function ItemsPanel(props: {
           onToggle={() => props.onToggle(item)}
           onOpen={() => props.onOpen(item)}
           meta={itemMeta(item, props.today, props.view)}
+          selection={props.selectionFor(item)}
         />
       ))}
       {props.doneCount ? (

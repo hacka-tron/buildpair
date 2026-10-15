@@ -17,6 +17,7 @@ import {
   SpaceTile,
 } from "../components/kit";
 import { kindOf, NO_SCHEDULE, type Schedule, SchedulePanel, scheduleLabel } from "../components/schedule";
+import { SelectionBar, useSelection } from "../components/selection";
 import { PageHeader, Shell, useWide } from "../components/shell";
 import { Button, ErrorText } from "../components/ui";
 import type { SpaceSummary } from "../lib/api";
@@ -55,6 +56,7 @@ export default function Today() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [adding, setAdding] = useState(false);
   const [showUpcoming, setShowUpcoming] = useState(true);
+  const selection = useSelection();
   const [problem, setProblem] = useState("");
   const [opened, setOpened] = useState<{ spaceId: string; item: Item } | null>(null);
 
@@ -104,7 +106,16 @@ export default function Today() {
         <PageHeader
           title="Today"
           sub={`${longDate()} · ${left} left${done ? ` · ${done} done` : ""}`}
-          right={wide ? <Button label="Add" onPress={() => setAdding(true)} /> : undefined}
+          right={
+            wide ? (
+              <View style={{ flexDirection: "row", gap: space.sm }}>
+                {!selection.active && left + done > 0 ? (
+                  <Button label="Select" kind="secondary" onPress={selection.start} />
+                ) : null}
+                <Button label="Add" onPress={() => setAdding(true)} />
+              </View>
+            ) : undefined
+          }
         />
         <ErrorText>{error || problem}</ErrorText>
         {spaces && spaces.length === 0 ? <FirstRun /> : null}
@@ -159,6 +170,7 @@ export default function Today() {
                       today={today}
                       last={i === list.length - 1}
                       meta={metaFor(item, today, view)}
+                      selection={selection.rowProps(item, s.id, userId)}
                       onOpen={() => setOpened({ spaceId: s.id, item })}
                       onToggle={() =>
                         setProblem(
@@ -190,6 +202,7 @@ export default function Today() {
                     today={today}
                     last={i === upcoming.length - 1}
                     meta={[s.name, metaFor(item, today, view)].filter(Boolean).join(" · ")}
+                    selection={selection.rowProps(item, s.id, userId)}
                     onOpen={() => setOpened({ spaceId: s.id, item })}
                     onToggle={() =>
                       setProblem(
@@ -206,7 +219,17 @@ export default function Today() {
           </View>
         ) : null}
       </ScrollView>
-      {!wide ? <Fab label="Add" onPress={() => setAdding(true)} /> : null}
+      {selection.active ? (
+        <SelectionBar
+          picked={selection.picked}
+          today={today}
+          wide={wide}
+          onClear={selection.clear}
+          apply={(spaceId, change) => applyChange(spaceId, userId, change)}
+        />
+      ) : !wide ? (
+        <Fab label="Add" onPress={() => setAdding(true)} />
+      ) : null}
       <QuickAdd
         visible={adding}
         onClose={() => setAdding(false)}

@@ -99,6 +99,13 @@ try {
     .waitFor();
   await maya.getByLabel("Open call mom").first().waitFor();
 
+  // Select several: Select, pick an item, Won't do. It leaves Today's list.
+  await maya.getByRole("button", { name: "Select", exact: true }).click();
+  await maya.getByLabel("Select call mom").first().click();
+  await maya.getByText("1 selected").waitFor();
+  await maya.getByText("Won't do", { exact: true }).last().click();
+  await maya.getByLabel("Open call mom").waitFor({ state: "detached" });
+
   const wrong = await open(browser, "wrong password");
   await wrong.getByPlaceholder("you@example.com").fill(`maya-${stamp}@example.com`);
   await wrong.getByLabel("Password").fill("not the password");
