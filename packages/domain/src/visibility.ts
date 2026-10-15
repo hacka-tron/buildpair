@@ -9,7 +9,10 @@ export function canSee(state: SpaceState, userId: UserId, event: SpaceEvent): bo
   const itemId =
     event.type === "item.created"
       ? event.payload.item.id
-      : event.type === "item.completed" || event.type === "item.skipped" || event.type === "item.wont"
+      : event.type === "item.completed" ||
+          event.type === "item.skipped" ||
+          event.type === "item.wont" ||
+          event.type === "item.edited"
         ? event.payload.itemId
         : event.type === "message.posted"
           ? event.payload.message.itemId

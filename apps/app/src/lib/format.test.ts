@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ago, dueLabel, localToday, peopleLine } from "./format";
+import { ago, dueLabel, localToday, peopleLine, timeLabel } from "./format";
 
 describe("format", () => {
   it("writes local dates as YYYY-MM-DD", () => {
@@ -12,6 +12,13 @@ describe("format", () => {
     expect(dueLabel("2026-10-14", "2026-10-15")).toEqual({ text: "Yesterday", late: true });
     expect(dueLabel("2026-10-01", "2026-10-15").late).toBe(true);
     expect(dueLabel("2026-12-24", "2026-10-15").late).toBe(false);
+  });
+
+  it("adds the time when there is one", () => {
+    expect(dueLabel("2026-10-16", "2026-10-15", "15:30")).toEqual({ text: "Tomorrow 3:30 PM", late: false });
+    expect(timeLabel("00:05")).toBe("12:05 AM");
+    expect(timeLabel("12:00")).toBe("12:00 PM");
+    expect(timeLabel("09:00")).toBe("9:00 AM");
   });
 
   it("says how long ago something happened", () => {

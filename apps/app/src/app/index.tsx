@@ -1,4 +1,4 @@
-import { newId, type SpaceState, weekProgress } from "@buildpair/domain";
+import { newId, parseQuickAdd, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item } from "@buildpair/protocol";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
@@ -16,6 +16,7 @@ import {
   Sheet,
   SpaceTile,
 } from "../components/kit";
+import { kindOf, NO_SCHEDULE, type Schedule, SchedulePanel, scheduleLabel } from "../components/schedule";
 import { PageHeader, Shell, useWide } from "../components/shell";
 import { Button, ErrorText } from "../components/ui";
 import type { SpaceSummary } from "../lib/api";
@@ -37,8 +38,11 @@ function forToday(item: Item, today: string, view: SpaceState | undefined) {
   return !item.dueOn || item.dueOn <= today;
 }
 
+// Items finished before finish days were recorded fall back to their due day.
 const doneOnDay = (item: Item, today: string) =>
-  item.kind === "habit" ? item.doneOn.includes(today) : item.status === "done" && item.dueOn === today;
+  item.doneOn.includes(today) ||
+  (item.kind !== "habit" && item.status === "done" && item.doneOn.length === 0 && item.dueOn === today);
+const skippedToday = (item: Item, today: string) => item.skippedOn.includes(today);
 
 export default function Today() {
   const wide = useWide();
@@ -50,18 +54,41 @@ export default function Today() {
   const views = useSpaceViews(ids, userId);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [adding, setAdding] = useState(false);
+  const [showUpcoming, setShowUpcoming] = useState(true);
   const [problem, setProblem] = useState("");
   const [opened, setOpened] = useState<{ spaceId: string; item: Item } | null>(null);
 
   const groups = (spaces ?? []).map((s) => {
     const view = views[s.id];
     const all = Object.values(view?.items ?? {});
-    const open = all.filter((i) => forToday(i, today, view) && !doneOnDay(i, today));
+    const open = all.filter(
+      (i) => forToday(i, today, view) && !doneOnDay(i, today) && !skippedToday(i, today),
+    );
     const doneToday = all.filter((i) => doneOnDay(i, today));
     return { space: s, view, open, doneToday };
   });
   const left = groups.reduce((n, g) => n + g.open.length, 0);
   const done = groups.reduce((n, g) => n + g.doneToday.length, 0);
+  // Open things due in the next two weeks, and goals with any deadline, soonest first, so nothing added
+  // for later drops out of sight.
+  const horizon = localToday(new Date(Date.now() + 14 * 86400000));
+  const upcoming = groups
+    .flatMap(({ space: s, view }) =>
+      Object.values(view?.items ?? {})
+        .filter(
+          (i) =>
+            i.status === "open" &&
+            i.kind !== "habit" &&
+            i.dueOn !== null &&
+            i.dueOn > today &&
+            (i.kind === "goal" || i.dueOn <= horizon) &&
+            (!i.parentId || view?.items[i.parentId]?.status === "open"),
+        )
+        .map((item) => ({ item, space: s, view })),
+    )
+    .sort((a, b) =>
+      `${a.item.dueOn}${a.item.dueTime ?? "99"}`.localeCompare(`${b.item.dueOn}${b.item.dueTime ?? "99"}`),
+    );
 
   return (
     <Shell active="today">
@@ -148,6 +175,36 @@ export default function Today() {
             </View>
           );
         })}
+        {upcoming.length ? (
+          <View style={{ marginTop: space.xl }}>
+            <SectionHeader open={showUpcoming} onToggle={() => setShowUpcoming((v) => !v)}>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Coming up</Text>
+              <Text style={{ fontSize: 12, color: colors.faint }}>Next two weeks, and goals</Text>
+            </SectionHeader>
+            {showUpcoming ? (
+              <View style={{ paddingLeft: wide ? 22 : 0 }}>
+                {upcoming.map(({ item, space: s, view }, i) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    today={today}
+                    last={i === upcoming.length - 1}
+                    meta={[s.name, metaFor(item, today, view)].filter(Boolean).join(" · ")}
+                    onOpen={() => setOpened({ spaceId: s.id, item })}
+                    onToggle={() =>
+                      setProblem(
+                        applyChange(s.id, userId, {
+                          type: "item.complete",
+                          payload: { itemId: item.id, on: today },
+                        }) ?? "",
+                      )
+                    }
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </ScrollView>
       {!wide ? <Fab label="Add" onPress={() => setAdding(true)} /> : null}
       <QuickAdd
@@ -205,30 +262,18 @@ function FirstRun() {
   );
 }
 
-type Kind = "todo" | "habit" | "goal";
-type Draft = { kind: Kind; title: string; dueOn: string | null; timesPerWeek: number | null };
-
-const KINDS: { kind: Kind; label: string }[] = [
-  { kind: "todo", label: "To-do" },
-  { kind: "habit", label: "Habit" },
-  { kind: "goal", label: "Goal" },
-];
-const WHEN = [
-  { label: "Today", offset: 0 },
-  { label: "Tomorrow", offset: 1 },
-  { label: "No date", offset: null },
-] as const;
-const BY = [
-  { label: "In a week", offset: 7 },
-  { label: "In a month", offset: 30 },
-  { label: "No deadline", offset: null },
-] as const;
-const PLACEHOLDER: Record<Kind, string> = {
-  todo: "Email 3 beta users",
-  habit: "Gym",
-  goal: "Launch v1",
+type Draft = {
+  kind: "todo" | "habit" | "goal";
+  title: string;
+  dueOn: string | null;
+  dueTime: string | null;
+  timesPerWeek: number | null;
 };
 
+/**
+ * Plain-words add: type "dentist friday 3pm" or "gym 4x a week" and the schedule is read from the words.
+ * The date chip shows what was understood and opens the picker to change it.
+ */
 function QuickAdd(props: {
   visible: boolean;
   onClose: () => void;
@@ -237,50 +282,74 @@ function QuickAdd(props: {
   /** Returns why it couldn't add, or null when it worked. */
   onAdd: (spaceId: string, draft: Draft) => string | null;
 }) {
-  const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<Kind>("todo");
+  const today = localToday();
+  const [text, setText] = useState("");
   const [spaceId, setSpaceId] = useState<string | null>(null);
-  const [when, setWhen] = useState<number | null>(0);
-  const [by, setBy] = useState<number | null>(30);
-  const [times, setTimes] = useState(3);
+  // A schedule picked by hand wins over the words; "keep as typed" ignores the words.
+  const [picked, setPicked] = useState<Schedule | null>(null);
+  const [asTyped, setAsTyped] = useState(false);
+  const [panel, setPanel] = useState<null | "when" | "space">(null);
   const [error, setError] = useState("");
   const chosen = spaceId ?? props.spaces[0]?.id ?? null;
-  const day = (offset: number | null) =>
-    offset === null ? null : localToday(new Date(Date.now() + offset * 86400000));
+  const parsed = parseQuickAdd(text, today);
+  const fromWords = !asTyped && parsed.understood.length > 0;
+  const schedule: Schedule =
+    picked ??
+    (fromWords
+      ? {
+          dueOn: parsed.dueOn,
+          dueTime: parsed.dueTime,
+          timesPerWeek: parsed.timesPerWeek,
+          deadline: parsed.kind === "goal",
+        }
+      : NO_SCHEDULE);
+  const title = fromWords ? parsed.title : text.trim();
+  const reset = () => {
+    setText("");
+    setPicked(null);
+    setAsTyped(false);
+    setPanel(null);
+    setError("");
+  };
   const add = () => {
-    if (!title.trim() || !chosen) return;
+    if (!title || !chosen) return;
     const problem = props.onAdd(chosen, {
-      kind,
-      title: title.trim(),
-      dueOn: kind === "todo" ? day(when) : kind === "goal" ? day(by) : null,
-      timesPerWeek: kind === "habit" ? times : null,
+      kind: kindOf(schedule),
+      title,
+      dueOn: schedule.timesPerWeek ? null : schedule.dueOn,
+      dueTime: schedule.timesPerWeek || schedule.deadline ? null : schedule.dueTime,
+      timesPerWeek: schedule.timesPerWeek,
     });
     if (problem) return setError(problem);
-    setError("");
-    setTitle("");
+    reset();
     props.onClose();
   };
+  const space_ = props.spaces.find((s) => s.id === chosen);
   return (
-    <Sheet visible={props.visible} onClose={props.onClose} title="Add" wide={props.wide}>
+    <Sheet
+      visible={props.visible}
+      onClose={() => {
+        setPanel(null);
+        props.onClose();
+      }}
+      title="Add"
+      wide={props.wide}
+    >
       {props.spaces.length === 0 ? (
         <Text style={{ fontSize: 14, color: colors.sub }}>Make a space first, then add things to it.</Text>
       ) : (
         <>
-          <ChipRow label="What">
-            {KINDS.map((k) => (
-              <Chip key={k.kind} on={kind === k.kind} onPress={() => setKind(k.kind)}>
-                {k.label}
-              </Chip>
-            ))}
-          </ChipRow>
           <TextInput
             autoFocus
-            value={title}
-            onChangeText={setTitle}
+            value={text}
+            onChangeText={(t) => {
+              setText(t);
+              setError("");
+            }}
             onSubmitEditing={add}
-            placeholder={PLACEHOLDER[kind]}
+            placeholder="Dentist friday 3pm, or gym 4x a week"
             placeholderTextColor={colors.faint}
-            accessibilityLabel="Title"
+            accessibilityLabel="What to add"
             style={{
               fontSize: 17,
               color: colors.ink,
@@ -292,47 +361,75 @@ function QuickAdd(props: {
               outlineColor: colors.royal,
             }}
           />
-          {kind === "todo" ? (
-            <ChipRow label="When">
-              {WHEN.map((w) => (
-                <Chip key={w.label} on={when === w.offset} onPress={() => setWhen(w.offset)}>
-                  {w.label}
-                </Chip>
-              ))}
-            </ChipRow>
-          ) : null}
-          {kind === "habit" ? (
-            <ChipRow label="Times a week">
-              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                <Chip key={n} on={times === n} onPress={() => setTimes(n)}>
-                  {n === 7 ? "Every day" : String(n)}
-                </Chip>
-              ))}
-            </ChipRow>
-          ) : null}
-          {kind === "goal" ? (
-            <ChipRow label="Finish by">
-              {BY.map((w) => (
-                <Chip key={w.label} on={by === w.offset} onPress={() => setBy(w.offset)}>
-                  {w.label}
-                </Chip>
-              ))}
-            </ChipRow>
-          ) : null}
-          <ChipRow label="Space">
-            {props.spaces.map((s) => (
-              <Chip
-                key={s.id}
-                on={chosen === s.id}
-                onPress={() => setSpaceId(s.id)}
-                leading={<SpaceTile id={s.id} name={s.name} size={16} />}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm, alignItems: "center" }}>
+            <Chip
+              on={panel === "when" || schedule !== NO_SCHEDULE}
+              onPress={() => setPanel(panel === "when" ? null : "when")}
+              leading={
+                <Icon name={schedule.timesPerWeek ? "repeat" : "calendar"} size={14} color={colors.blue} />
+              }
+            >
+              {scheduleLabel(schedule, today)}
+            </Chip>
+            <Chip
+              on={panel === "space"}
+              onPress={() => setPanel(panel === "space" ? null : "space")}
+              leading={space_ ? <SpaceTile id={space_.id} name={space_.name} size={16} /> : undefined}
+            >
+              {space_?.name ?? "Space"}
+            </Chip>
+            {fromWords && !picked ? (
+              <Pressable
+                onPress={() => setAsTyped(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Keep the words as typed"
+                hitSlop={6}
+                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
               >
-                {s.name}
-              </Chip>
-            ))}
-          </ChipRow>
+                <Text style={{ fontSize: 12, color: colors.faint }}>
+                  Read "{parsed.understood.join(" ")}" as the{" "}
+                  {kindOf(schedule) === "habit" ? "repeat" : "date"}
+                </Text>
+                <Icon name="x" size={12} color={colors.faint} />
+              </Pressable>
+            ) : null}
+          </View>
+          {panel === "when" ? (
+            <SchedulePanel mode="any" value={schedule} onChange={(next) => setPicked(next)} />
+          ) : null}
+          {panel === "space" ? (
+            <ChipRow label="Add to">
+              {props.spaces.map((s) => (
+                <Chip
+                  key={s.id}
+                  on={chosen === s.id}
+                  onPress={() => {
+                    setSpaceId(s.id);
+                    setPanel(null);
+                  }}
+                  leading={<SpaceTile id={s.id} name={s.name} size={16} />}
+                >
+                  {s.name}
+                </Chip>
+              ))}
+            </ChipRow>
+          ) : null}
+          {title ? (
+            <Text style={{ fontSize: 13, color: colors.sub }}>
+              Adds{" "}
+              <Text style={{ fontWeight: "600", color: colors.ink }}>
+                {kindOf(schedule) === "habit"
+                  ? "a habit"
+                  : kindOf(schedule) === "goal"
+                    ? "a goal"
+                    : "a to-do"}
+              </Text>{" "}
+              called <Text style={{ fontWeight: "600", color: colors.ink }}>{title}</Text>
+              {kindOf(schedule) === "goal" ? ". Open it after to add steps." : "."}
+            </Text>
+          ) : null}
           <ErrorText>{error}</ErrorText>
-          <Button label="Add" onPress={add} disabled={!title.trim()} />
+          <Button label="Add" onPress={add} disabled={!title} />
         </>
       )}
     </Sheet>

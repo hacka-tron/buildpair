@@ -2,15 +2,19 @@ import { newId, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item } from "@buildpair/protocol";
 import type { Change } from "@buildpair/sync";
 import { useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { dueLabel } from "../lib/format";
 import { colors, radius, space } from "../lib/theme";
 import { ItemRow, Sheet, Tag } from "./kit";
+import { type Schedule, SchedulePanel } from "./schedule";
 import { Button, ErrorText } from "./ui";
 
-type Mode = null | "skip" | "wont" | "update";
+type Mode = null | "skip" | "wont" | "update" | "edit";
 
-const PROMPTS: Record<Exclude<Mode, null>, { placeholder: string; confirm: string; optional: boolean }> = {
+const PROMPTS: Record<
+  Exclude<Mode, null | "edit">,
+  { placeholder: string; confirm: string; optional: boolean }
+> = {
   skip: { placeholder: "Add a reason (optional)", confirm: "Skip today", optional: true },
   wont: { placeholder: "Add a reason (optional)", confirm: "Won't do it", optional: true },
   update: { placeholder: "How's it going?", confirm: "Post to the chat", optional: false },
@@ -41,6 +45,7 @@ export function ItemSheet(props: {
   const open = live.status === "open";
   const shared = live.visibility === "space";
   const doneToday = live.kind === "habit" && live.doneOn.includes(props.today);
+  const skippedToday = live.skippedOn.includes(props.today);
   const steps = Object.values(view?.items ?? {}).filter((i) => i.parentId === live.id);
   const owner = view?.members[live.ownerId]?.name ?? "Someone";
 
@@ -60,6 +65,18 @@ export function ItemSheet(props: {
       run({ type: "item.update", payload: { itemId: live.id, body: reason } }, props.onClose);
   };
 
+  if (mode === "edit")
+    return (
+      <Sheet visible onClose={props.onClose} title="Edit" wide={props.wide}>
+        <EditItem
+          item={live}
+          onCancel={() => setMode(null)}
+          apply={(change) => run(change, () => setMode(null))}
+        />
+        <ErrorText>{error}</ErrorText>
+      </Sheet>
+    );
+
   return (
     <Sheet visible onClose={props.onClose} title={live.title} wide={props.wide}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm }}>
@@ -67,6 +84,19 @@ export function ItemSheet(props: {
         <Text style={{ fontSize: 14, color: colors.sub }}>{describe(live, steps, props.today)}</Text>
         {!shared ? <Text style={{ fontSize: 14, color: colors.sub }}>· Only you can see this</Text> : null}
         {!mine ? <Text style={{ fontSize: 14, color: colors.sub }}>· Added by {owner}</Text> : null}
+        {mine && open ? (
+          <Pressable
+            onPress={() => {
+              setError("");
+              setMode("edit");
+            }}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={{ marginLeft: "auto" }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.blue }}>Edit</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {live.kind === "goal" ? (
@@ -171,7 +201,7 @@ export function ItemSheet(props: {
             />
           ) : null}
           <View style={{ flexDirection: "row", gap: space.sm }}>
-            {live.kind === "habit" && !doneToday ? (
+            {live.kind === "habit" && !doneToday && !skippedToday ? (
               <View style={{ flex: 1 }}>
                 <Button label="Skip" kind="secondary" onPress={() => setMode("skip")} />
               </View>
@@ -207,8 +237,73 @@ function describe(item: Item, steps: Item[], today: string): string {
     const done = steps.filter((s) => s.status === "done").length;
     parts.push(`${done} of ${steps.length} steps`);
   }
-  if (item.dueOn) parts.push(`${item.kind === "goal" ? "by" : "due"} ${dueLabel(item.dueOn, today).text}`);
+  if (item.dueOn)
+    parts.push(
+      `${item.kind === "goal" ? "by" : "due"} ${dueLabel(item.dueOn, today, item.kind === "goal" ? null : item.dueTime).text}`,
+    );
   if (item.status === "done") parts.push("done");
   if (item.status === "wont") parts.push("won't do");
   return parts.join(" · ") || "No date";
+}
+
+/** Change the title and schedule. Habits change how often; to-dos and goals change their day. */
+function EditItem(props: { item: Item; onCancel: () => void; apply: (change: Change) => void }) {
+  const { item } = props;
+  const [title, setTitle] = useState(item.title);
+  const [schedule, setSchedule] = useState<Schedule>({
+    dueOn: item.dueOn,
+    dueTime: item.dueTime,
+    timesPerWeek: item.timesPerWeek,
+    deadline: item.kind === "goal",
+  });
+  const save = () => {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    props.apply({
+      type: "item.edit",
+      payload:
+        item.kind === "habit"
+          ? { itemId: item.id, title: trimmed, timesPerWeek: schedule.timesPerWeek ?? item.timesPerWeek ?? 1 }
+          : {
+              itemId: item.id,
+              title: trimmed,
+              dueOn: schedule.dueOn,
+              dueTime: item.kind === "goal" || !schedule.dueOn ? null : schedule.dueTime,
+            },
+    });
+  };
+  return (
+    <View style={{ gap: space.lg }}>
+      <TextInput
+        value={title}
+        onChangeText={setTitle}
+        onSubmitEditing={save}
+        accessibilityLabel="Title"
+        style={{
+          fontSize: 17,
+          color: colors.ink,
+          borderWidth: 1,
+          borderColor: colors.line,
+          borderRadius: radius.control,
+          paddingHorizontal: space.md,
+          paddingVertical: 12,
+          outlineColor: colors.royal,
+        }}
+      />
+      <SchedulePanel
+        mode={item.kind === "habit" ? "repeat" : "date"}
+        deadlineOnly={item.kind === "goal"}
+        value={schedule}
+        onChange={setSchedule}
+      />
+      <View style={{ flexDirection: "row", gap: space.sm }}>
+        <View style={{ flex: 1 }}>
+          <Button label="Cancel" kind="secondary" onPress={props.onCancel} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button label="Save" onPress={save} disabled={!title.trim()} />
+        </View>
+      </View>
+    </View>
+  );
 }

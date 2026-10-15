@@ -86,6 +86,19 @@ try {
     await maya.screenshot({ path: `${shots}/maya.png` });
     await jordan.screenshot({ path: `${shots}/jordan.png` });
   }
+  // Plain-words add on Today: the date is read from the words and the item shows under Coming up.
+  await maya.goto(WEB);
+  await maya.getByText("Add", { exact: true }).first().click();
+  await maya.getByLabel("What to add").fill("call mom in 2 days 6pm");
+  await maya.getByText("Adds a to-do called").waitFor();
+  await maya.getByRole("button", { name: "Add", exact: true }).last().click();
+  await maya.getByText("Coming up").waitFor();
+  await maya
+    .getByText(/6:00 PM/)
+    .first()
+    .waitFor();
+  await maya.getByLabel("Open call mom").first().waitFor();
+
   const wrong = await open(browser, "wrong password");
   await wrong.getByPlaceholder("you@example.com").fill(`maya-${stamp}@example.com`);
   await wrong.getByLabel("Password").fill("not the password");

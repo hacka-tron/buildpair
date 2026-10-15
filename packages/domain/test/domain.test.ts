@@ -132,3 +132,138 @@ describe("decide + apply", () => {
     expect(applyEvents(r.state, r.events)).toBe(r.state);
   });
 });
+
+describe("editing, finish days and skips", () => {
+  const create = (s: SpaceState, payload: Record<string, unknown>) => {
+    const itemId = newId();
+    return {
+      itemId,
+      ...run(
+        s,
+        cmd({ type: "item.create", payload: { itemId, title: "Thing", kind: "todo", ...payload } } as never),
+      ),
+    };
+  };
+
+  it("records the day a to-do was finished", () => {
+    const { itemId, state } = create(space(), { dueOn: "2026-10-01" });
+    const done = run(state, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-10" } })).state;
+    expect(done.items[itemId]).toMatchObject({ status: "done", doneOn: ["2026-10-10"] });
+  });
+
+  it("skipping a habit twice in a day posts once", () => {
+    const { itemId, state } = create(space(), { kind: "habit", timesPerWeek: 3 });
+    const once = run(state, cmd({ type: "item.skip", payload: { itemId, on: "2026-10-10" } }));
+    expect(once.state.items[itemId]?.skippedOn).toEqual(["2026-10-10"]);
+    const twice = run(once.state, cmd({ type: "item.skip", payload: { itemId, on: "2026-10-10" } }));
+    expect(twice.events).toEqual([]);
+  });
+
+  it("edits the title, day and time of a to-do", () => {
+    const { itemId, state } = create(space(), { dueOn: "2026-10-12" });
+    const edited = run(
+      state,
+      cmd({
+        type: "item.edit",
+        payload: { itemId, title: "Dentist", dueOn: "2026-10-16", dueTime: "15:00" },
+      }),
+    );
+    expect(edited.state.items[itemId]).toMatchObject({
+      title: "Dentist",
+      dueOn: "2026-10-16",
+      dueTime: "15:00",
+    });
+    // Clearing the day clears the time.
+    const cleared = run(edited.state, cmd({ type: "item.edit", payload: { itemId, dueOn: null } }));
+    expect(cleared.state.items[itemId]).toMatchObject({ dueOn: null, dueTime: null });
+  });
+
+  it("an edit that changes nothing produces no event", () => {
+    const { itemId, state } = create(space(), { title: "Same" });
+    expect(run(state, cmd({ type: "item.edit", payload: { itemId, title: "Same" } })).events).toEqual([]);
+  });
+
+  it("refuses edits that don't fit the item", () => {
+    const { itemId: habit, state } = create(space(), { kind: "habit", timesPerWeek: 3 });
+    expect(
+      decide(state, cmd({ type: "item.edit", payload: { itemId: habit, dueOn: "2026-10-16" } }), "maya").ok,
+    ).toBe(false);
+    const { itemId: todo, state: s2 } = create(state, {});
+    expect(
+      decide(s2, cmd({ type: "item.edit", payload: { itemId: todo, timesPerWeek: 2 } }), "maya").ok,
+    ).toBe(false);
+    expect(
+      decide(s2, cmd({ type: "item.edit", payload: { itemId: todo, dueTime: "09:00" } }), "maya").ok,
+    ).toBe(false);
+    expect(
+      decide(s2, cmd({ type: "item.edit", payload: { itemId: todo, title: "Mine now" } }), "jordan").ok,
+    ).toBe(false);
+  });
+
+  it("won't edit a finished item", () => {
+    const { itemId, state } = create(space(), {});
+    const done = run(state, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-10" } })).state;
+    expect(decide(done, cmd({ type: "item.edit", payload: { itemId, title: "New" } }), "maya").ok).toBe(
+      false,
+    );
+  });
+
+  it("changes a habit's times per week", () => {
+    const { itemId, state } = create(space(), { kind: "habit", timesPerWeek: 3 });
+    const edited = run(state, cmd({ type: "item.edit", payload: { itemId, timesPerWeek: 5 } }));
+    expect(edited.state.items[itemId]?.timesPerWeek).toBe(5);
+  });
+
+  it("keeps edits to private items from other members", () => {
+    const { itemId, state } = create(space(), { visibility: "owner" });
+    const { events, state: after } = run(
+      state,
+      cmd({ type: "item.edit", payload: { itemId, title: "Secret" } }),
+    );
+    expect(canSee(after, "jordan", events[0]!)).toBe(false);
+    expect(canSee(after, "maya", events[0]!)).toBe(true);
+  });
+
+  it("reads items saved before times and skips existed", () => {
+    const old = { ...space(), seq: 3 };
+    const legacy = {
+      seq: 4,
+      type: "item.created",
+      actorId: "maya",
+      commandId: null,
+      at: AT,
+      payload: {
+        item: {
+          id: newId(),
+          kind: "todo",
+          title: "Old",
+          ownerId: "maya",
+          parentId: null,
+          visibility: "space",
+          status: "open",
+          dueOn: null,
+          timesPerWeek: null,
+          doneOn: [],
+          createdAt: AT,
+        },
+      },
+    } as unknown as SpaceEvent;
+    const s = applyEvents(old, [legacy]);
+    const item = Object.values(s.items)[0]!;
+    expect(item.dueTime).toBeNull();
+    expect(item.skippedOn).toEqual([]);
+  });
+
+  it("refuses a time without a day when creating", () => {
+    expect(
+      decide(
+        space(),
+        cmd({
+          type: "item.create",
+          payload: { itemId: newId(), kind: "todo", title: "x", dueTime: "09:00" },
+        }),
+        "maya",
+      ).ok,
+    ).toBe(false);
+  });
+});

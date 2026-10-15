@@ -1,4 +1,12 @@
-import { applyEvents, decide, emptySpace, newId, type SpaceState, sequence } from "@buildpair/domain";
+import {
+  applyEvents,
+  decide,
+  emptySpace,
+  newId,
+  normalizeSpace,
+  type SpaceState,
+  sequence,
+} from "@buildpair/domain";
 import { Command, type CommandInput, PROTOCOL_VERSION, type ServerMessage } from "@buildpair/protocol";
 import type { Connection, PersistedSpace, SpaceStorage, Transport } from "./types";
 
@@ -47,7 +55,7 @@ export class SpaceSync {
   async start(): Promise<void> {
     const saved = await this.storage.load(this.spaceId);
     if (saved) {
-      this.confirmed = saved.confirmed;
+      this.confirmed = normalizeSpace(saved.confirmed);
       this.pending = saved.pending;
       this.recompute();
     }

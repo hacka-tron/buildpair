@@ -220,7 +220,7 @@ export function ItemRow({
   // A habit counts as done for the day once it's checked off today.
   const done = item.status === "done" || (item.kind === "habit" && item.doneOn.includes(today));
   const closed = item.status !== "open";
-  const due = item.dueOn ? dueLabel(item.dueOn, today) : null;
+  const due = item.dueOn ? dueLabel(item.dueOn, today, item.dueTime) : null;
   return (
     <View
       style={{
