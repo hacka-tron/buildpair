@@ -290,3 +290,63 @@ describe("space details", () => {
     expect(normalizeSpace(old as SpaceState).color).toBeNull();
   });
 });
+
+describe("a member deleting their account", () => {
+  const erased = (s: SpaceState, userId: string): SpaceEvent => ({
+    seq: s.seq + 1,
+    type: "member.erased",
+    actorId: userId,
+    commandId: null,
+    at: AT,
+    payload: { userId },
+  });
+
+  it("takes their items, messages and reactions with them and leaves everyone else's", () => {
+    const jordansItem = newId();
+    const jordansNote = newId();
+    const mayasNote = newId();
+    let s = space();
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: jordansItem, kind: "todo", title: "Run", visibility: "space" },
+      }),
+      "jordan",
+    ).state;
+    s = run(
+      s,
+      cmd({ type: "item.complete", payload: { itemId: jordansItem, on: "2026-10-10" } }),
+      "jordan",
+    ).state;
+    s = run(
+      s,
+      cmd({ type: "message.send", payload: { messageId: jordansNote, body: "hi" } }),
+      "jordan",
+    ).state;
+    s = run(s, cmd({ type: "message.send", payload: { messageId: mayasNote, body: "hey" } })).state;
+    s = run(
+      s,
+      cmd({ type: "reaction.toggle", payload: { messageId: mayasNote, emoji: "🎉" } }),
+      "jordan",
+    ).state;
+    s = run(s, cmd({ type: "reaction.toggle", payload: { messageId: mayasNote, emoji: "👍" } })).state;
+    s = run(s, cmd({ type: "reaction.toggle", payload: { messageId: jordansNote, emoji: "👍" } })).state;
+
+    const after = applyEvents(s, [erased(s, "jordan")]);
+    expect(after.members.jordan).toBeUndefined();
+    expect(after.members.maya).toBeDefined();
+    expect(after.items[jordansItem]).toBeUndefined();
+    expect(after.messages.map((m) => m.id)).toEqual([mayasNote]);
+    expect(after.reactions).toEqual({ [mayasNote]: { "👍": ["maya"] } });
+    expect(
+      decide(after, cmd({ type: "message.send", payload: { messageId: newId(), body: "?" } }), "jordan").ok,
+    ).toBe(false);
+  });
+
+  it("is sent to everyone in the space", () => {
+    const s = space();
+    const e = erased(s, "jordan");
+    expect(canSee(applyEvents(s, [e]), "maya", e)).toBe(true);
+  });
+});

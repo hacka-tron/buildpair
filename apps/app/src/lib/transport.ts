@@ -1,8 +1,9 @@
 import { parseServerMessage } from "@buildpair/protocol";
 import type { Connection, ConnectionHandlers, Transport } from "@buildpair/sync";
 import { WebSocket as ReconnectingWebSocket } from "partysocket";
-import { api } from "./api";
+import { ApiError, api } from "./api";
 import { API_URL } from "./config";
+import { markSpaceGone } from "./spaces";
 
 const wsBase = API_URL.replace(/^http/, "ws");
 
@@ -13,7 +14,16 @@ const wsBase = API_URL.replace(/^http/, "ws");
 export const spaceTransport: Transport = {
   connect(spaceId: string, handlers: ConnectionHandlers): Connection {
     const url = async () => {
-      const { ticket } = await api<{ ticket: string }>(`/spaces/${spaceId}/ticket`, { method: "POST" });
+      const { ticket } = await api<{ ticket: string }>(`/spaces/${spaceId}/ticket`, { method: "POST" }).catch(
+        (e: unknown) => {
+          // The space was deleted, or you're no longer in it. Stop trying and take it off the list.
+          if (e instanceof ApiError && e.status === 404) {
+            ws.close();
+            markSpaceGone(spaceId);
+          }
+          throw e;
+        },
+      );
       return `${wsBase}/spaces/${spaceId}/ws?ticket=${encodeURIComponent(ticket)}`;
     };
     const ws = new ReconnectingWebSocket(url, [], {

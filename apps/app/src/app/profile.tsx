@@ -5,15 +5,8 @@ import { Avatar, Card, Icon } from "../components/kit";
 import { PageHeader, Shell, signOut, useWide } from "../components/shell";
 import { Button, ErrorText, Field } from "../components/ui";
 import { authClient } from "../lib/auth";
+import { useSpaces } from "../lib/spaces";
 import { colors, space } from "../lib/theme";
-
-type ProfileUser = {
-  id: string;
-  name: string;
-  email: string;
-  building?: string | null;
-  timeZone?: string | null;
-};
 
 const deviceZone = () => {
   try {
@@ -136,6 +129,8 @@ export default function Profile() {
           </View>
           <Button label="Sign out" kind="secondary" onPress={() => void signOut()} />
         </Card>
+
+        <DeleteAccount />
       </ScrollView>
     </Shell>
   );
@@ -216,6 +211,89 @@ function ChangePassword() {
             setOpen(true);
           }}
         />
+      )}
+    </Card>
+  );
+}
+
+/** Deleting your account, with what it removes spelled out and your password to confirm. */
+function DeleteAccount() {
+  const { spaces } = useSpaces();
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const owned = (spaces ?? []).filter((s) => s.role === "owner");
+  const submit = async () => {
+    setBusy(true);
+    setError("");
+    const { error } = await authClient.deleteUser({ password });
+    setBusy(false);
+    if (error)
+      return setError(
+        error.code === "INVALID_PASSWORD"
+          ? "That password isn't right."
+          : (error.message ?? "Couldn't delete your account. Try again in a moment."),
+      );
+    // The account is gone on the server. Clear this device the same way signing out does.
+    await signOut();
+  };
+  return (
+    <Card style={{ gap: space.md }}>
+      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Delete account</Text>
+      {open ? (
+        <>
+          <Text style={{ fontSize: 14, color: colors.ink }}>
+            This can't be undone. Your profile and everything you added are deleted.
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.ink }}>
+            {owned.length === 0
+              ? "You don't own any spaces. Your items, messages and reactions are removed from the spaces you joined."
+              : `${owned.length === 1 ? "The space you own" : `The ${owned.length} spaces you own`} (${owned
+                  .map((s) => s.name)
+                  .join(", ")}) ${owned.length === 1 ? "is" : "are"} deleted for everyone in ${
+                  owned.length === 1 ? "it" : "them"
+                }. In spaces you joined, your items, messages and reactions are removed.`}
+          </Text>
+          <Field
+            label="Your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoComplete="current-password"
+            accessibilityLabel="Your password"
+          />
+          <ErrorText>{error}</ErrorText>
+          <View style={{ flexDirection: "row", gap: space.sm }}>
+            <View style={{ flex: 1 }}>
+              <Button
+                label="Cancel"
+                kind="secondary"
+                onPress={() => {
+                  setOpen(false);
+                  setPassword("");
+                  setError("");
+                }}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button
+                label="Delete my account"
+                kind="danger"
+                onPress={submit}
+                busy={busy}
+                disabled={!password}
+              />
+            </View>
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={{ fontSize: 13, color: colors.sub }}>
+            Removes your account and everything you added. Spaces you own are deleted for everyone in them.
+          </Text>
+          <Button label="Delete account" kind="secondary" onPress={() => setOpen(true)} />
+        </>
       )}
     </Card>
   );

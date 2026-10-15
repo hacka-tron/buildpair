@@ -12,6 +12,7 @@ Start with [BACKLOG.md](BACKLOG.md) (where work stands, what's next) and update 
 | `apps/edge/src/space-room.ts` | One Durable Object per space: the only writer, numbers every event, stores the log in its SQLite, runs sockets. |
 | `apps/edge/src/user-hub.ts` | One Durable Object per person: inbox socket, pokes from spaces. |
 | `apps/edge/src/app.ts` | Hono routes: auth, spaces, tickets, commands, invites. |
+| `apps/edge/src/account.ts` | Deleting an account: removes owned spaces and erases the person from spaces they joined (`member.erased`, and their events are deleted from each log). |
 | `apps/edge/src/db/schema.ts` | D1 schema (Drizzle). Change it, then `pnpm --filter @buildpair/edge db:generate`. |
 | `apps/site` | Landing page and sign-up (`public/`), plus a Worker for per-environment config and invite redirects. |
 | `apps/app/src/app` | Expo Router screens: Today (`index`), Spaces (`spaces/index`), a space (`spaces/[id]`), sign-in, invite join. |

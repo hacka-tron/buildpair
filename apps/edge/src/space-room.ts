@@ -177,6 +177,43 @@ export class SpaceRoom extends DurableObject<Env> {
     this.publish(events);
   }
 
+  /**
+   * Someone deleted their account. Records that they left (so open devices drop their things), then
+   * deletes every earlier event they made from the log, so nothing of theirs is stored or sent again.
+   * Safe to run twice.
+   */
+  async eraseMember(userId: string): Promise<void> {
+    const sql = this.ctx.storage.sql;
+    const hasEvents =
+      sql.exec("SELECT 1 FROM events WHERE actor_id = ? LIMIT 1", userId).toArray().length > 0;
+    if (!this.load().members[userId] && !hasEvents) return;
+    const [left] = this.commit([
+      {
+        type: "member.erased",
+        actorId: userId,
+        commandId: null,
+        at: new Date().toISOString(),
+        payload: { userId },
+      },
+    ]);
+    this.ctx.storage.transactionSync(() => {
+      sql.exec("DELETE FROM events WHERE actor_id = ? AND type != 'member.erased'", userId);
+      sql.exec("DELETE FROM commands WHERE seq NOT IN (SELECT seq FROM events)");
+    });
+    // Rebuild from the trimmed log, the same way a new device would.
+    this.state = null;
+    this.publish([left!]);
+  }
+
+  /** The owner deleted their account: close every connection and delete everything the space stored. */
+  async destroy(): Promise<void> {
+    for (const ws of this.ctx.getWebSockets()) closeQuietly(ws, 4004, "This space was deleted.");
+    await this.ctx.storage.deleteAll();
+    this.state = null;
+    // Leave empty tables behind so any late request finds an empty space instead of failing.
+    this.migrate();
+  }
+
   async isMember(userId: string): Promise<boolean> {
     return Boolean(this.load().members[userId]);
   }

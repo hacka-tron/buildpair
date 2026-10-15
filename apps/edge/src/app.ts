@@ -186,6 +186,15 @@ async function checkProfile(c: Context<App>, next: Next) {
 }
 app.post("/api/auth/update-user", (c, next) => checkProfile(c, next));
 
+// Deleting an account always takes the password, so a phone left signed in can't be used to do it. Better Auth
+// would also accept a recent session alone, or a token from an email we never send.
+app.post("/api/auth/delete-user", async (c, next) => {
+  const body = await jsonBody(c);
+  if (typeof body?.password !== "string" || !body.password || "token" in body)
+    return c.json(err("PASSWORD_REQUIRED", "Enter your password to delete your account."), 400);
+  return next();
+});
+
 // The shared test account signs in by its bare name. It's made the first time someone signs in as it.
 app.post("/api/auth/sign-in/email", async (c, next) => {
   const login = testLogin(c.env);

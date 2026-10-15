@@ -8,15 +8,17 @@ import { getSync, stopAllSyncs } from "./use-space";
 /** The signed-in person's spaces, shared by the sidebar, the Spaces tab and Today. */
 let spaces: SpaceSummary[] | null = null;
 let error = "";
+/** Spaces that were deleted (or that you were removed from) since the list loaded. */
+let gone: string[] = [];
 let loading: Promise<void> | null = null;
 /** Whose spaces these are, and a counter that makes answers for an earlier person get ignored. */
 let owner = "";
 let generation = 0;
 const listeners = new Set<() => void>();
-let snapshot: { spaces: SpaceSummary[] | null; error: string } = { spaces, error };
+let snapshot: { spaces: SpaceSummary[] | null; error: string; gone: string[] } = { spaces, error, gone };
 
 function emit() {
-  snapshot = { spaces, error };
+  snapshot = { spaces, error, gone };
   for (const l of listeners) l();
 }
 
@@ -55,6 +57,14 @@ export function patchSpace(id: string, patch: Partial<Pick<SpaceSummary, "name" 
   emit();
 }
 
+/** The server says this space is gone: drop it from the list so nothing keeps syncing it. */
+export function markSpaceGone(id: string) {
+  if (gone.includes(id)) return;
+  gone = [...gone, id];
+  if (spaces) spaces = spaces.filter((s) => s.id !== id);
+  emit();
+}
+
 /** One space's summary from the list, or undefined while it loads. */
 export function useSpaceSummary(id: string): SpaceSummary | undefined {
   const snap = useSyncExternalStore(
@@ -77,7 +87,8 @@ function clear() {
   owner = "";
   spaces = null;
   error = "";
-  snapshot = { spaces, error };
+  gone = [];
+  snapshot = { spaces, error, gone };
 }
 
 /** Called with the signed-in person's ID; a different person (or none) starts from nothing. */
