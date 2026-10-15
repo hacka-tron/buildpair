@@ -47,7 +47,7 @@ Create an Expo account and project (`npx eas-cli@latest init` in `apps/app`), th
 | `RESEND_API_KEY` | from step 2 |
 | `EXPO_TOKEN` | from step 3 |
 
-Put the secrets on each environment (`preview`, `staging`, `production`). Every deploy copies them onto that environment's Worker, so nothing is set in Cloudflare by hand.
+Put the secrets on each environment (`preview`, `staging`, `production`). Every deploy copies them onto that environment's Worker, so nothing is set in Cloudflare by hand. `RESEND_API_KEY` is required for staging and production (one repository secret covers all environments) and optional for previews, which print sign-in codes to the logs without it.
 
 Also turn on: branch protection for `main` (require the CI checks), secret scanning and push protection, and Dependabot alerts.
 

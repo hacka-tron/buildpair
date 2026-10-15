@@ -55,7 +55,8 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           set -o pipefail
-          for key in BETTER_AUTH_SECRET TICKET_SECRET; do
+          # Staging and production send sign-in codes through Resend, so the API refuses to start without its key.
+          for key in BETTER_AUTH_SECRET TICKET_SECRET RESEND_API_KEY; do
             [ -n "${!key}" ] || { echo "Missing secret $key on the \"$TARGET\" environment (see docs/SETUP.md)."; exit 1; }
           done
           jq -n 'env | {BETTER_AUTH_SECRET, TICKET_SECRET, RESEND_API_KEY} | with_entries(select(.value != null and .value != ""))' \
