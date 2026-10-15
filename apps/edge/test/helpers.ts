@@ -12,21 +12,24 @@ export interface Client {
   post(path: string, body?: unknown): Promise<Response>;
 }
 
-/** Sign in with an email code (the test provider always issues TEST_OTP) and return a client with the session cookie. */
+export const PASSWORD = "correct horse battery";
+
+/** Make an account with a password, confirm the email (the test provider always issues TEST_OTP), and return a
+ * client with the session cookie. */
 export async function signIn(email: string): Promise<Client> {
   const headers = { "content-type": "application/json", origin: ORIGIN };
-  const sent = await SELF.fetch(`${BASE}/api/auth/email-otp/send-verification-otp`, {
+  const made = await SELF.fetch(`${BASE}/api/auth/sign-up/email`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ email, type: "sign-in" }),
+    body: JSON.stringify({ name: email.split("@")[0], email, password: PASSWORD }),
   });
-  if (!sent.ok) throw new Error(`send otp: ${sent.status} ${await sent.text()}`);
-  const res = await SELF.fetch(`${BASE}/api/auth/sign-in/email-otp`, {
+  if (!made.ok) throw new Error(`sign up: ${made.status} ${await made.text()}`);
+  const res = await SELF.fetch(`${BASE}/api/auth/email-otp/verify-email`, {
     method: "POST",
     headers,
     body: JSON.stringify({ email, otp: TEST_OTP }),
   });
-  if (!res.ok) throw new Error(`sign in: ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new Error(`verify: ${res.status} ${await res.text()}`);
   const cookie = res.headers
     .getSetCookie()
     .map((c) => c.split(";")[0])

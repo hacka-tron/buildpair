@@ -1,4 +1,4 @@
-// End-to-end smoke test: two people sign in on the web app, one creates a space and invites the
+// End-to-end smoke test: two people make accounts on the web app, one creates a space and invites the
 // other, and they chat live. Run against a local Worker started with EMAIL_PROVIDER=test.
 // Usage: node e2e/two-people-chat.mjs [webUrl] [apiUrl]
 import { chromium } from "playwright";
@@ -7,13 +7,34 @@ const WEB = process.argv[2] ?? "http://localhost:8081";
 const OTP = "424242";
 const shots = process.env.SHOTS_DIR;
 
-async function signIn(browser, email) {
+const PASSWORD = "correct horse battery";
+
+async function open(browser, who) {
   const page = await (await browser.newContext({ viewport: { width: 1200, height: 800 } })).newPage();
-  page.on("pageerror", (e) => console.error(`[${email}] page error:`, e.message));
+  page.on("pageerror", (e) => console.error(`[${who}] page error:`, e.message));
   await page.goto(WEB);
+  return page;
+}
+
+/** Make an account with a password, then confirm the email with the code. */
+async function signIn(browser, email) {
+  const page = await open(browser, email);
+  await page.getByText("New here? Make an account").click();
+  await page.getByPlaceholder("Maya Chen").fill(email.split("-")[0]);
   await page.getByPlaceholder("you@example.com").fill(email);
-  await page.getByText("Send me a code").click();
+  await page.getByPlaceholder("At least 8 characters").fill(PASSWORD);
+  await page.getByText("Make my account").click();
   await page.getByPlaceholder("123456").fill(OTP);
+  await page.getByText("Confirm and sign in").click();
+  await page.getByText("Spaces", { exact: true }).waitFor();
+  return page;
+}
+
+/** Sign in again later with just the email and password. */
+async function signInAgain(browser, email, password) {
+  const page = await open(browser, email);
+  await page.getByPlaceholder("you@example.com").fill(email);
+  await page.getByLabel("Password").fill(password);
   await page.getByText("Sign in", { exact: true }).click();
   await page.getByText("Spaces", { exact: true }).waitFor();
   return page;
@@ -63,7 +84,17 @@ try {
     await maya.screenshot({ path: `${shots}/maya.png` });
     await jordan.screenshot({ path: `${shots}/jordan.png` });
   }
-  console.log("E2E passed: sign-in, space, invite, live chat, reactions, completion lines and updates work.");
+  const wrong = await open(browser, "wrong password");
+  await wrong.getByPlaceholder("you@example.com").fill(`maya-${stamp}@example.com`);
+  await wrong.getByLabel("Password").fill("not the password");
+  await wrong.getByText("Sign in", { exact: true }).click();
+  await wrong.getByText("That email and password don't match").waitFor();
+  const again = await signInAgain(browser, `maya-${stamp}@example.com`, PASSWORD);
+  await again.getByText("Life").first().waitFor();
+  await signInAgain(browser, "bagel", "bagel");
+  console.log(
+    "E2E passed: sign-up, password sign-in, the test account, space, invite, live chat, reactions, completion lines and updates work.",
+  );
 } finally {
   await browser.close();
 }

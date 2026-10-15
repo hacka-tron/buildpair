@@ -6,7 +6,7 @@ One Expo app runs on iOS, Android and the web. The backend runs on Cloudflare: a
 
 ## Status
 
-Milestone 1 (foundations) and the landing page with sign-up: sign-in with an email code, spaces, invite links, live chat with reactions, items that post completion lines to the chat, offline changes that sync on reconnect, CI and deploy pipelines. Next: items in full (habits, goals, schedules, Today), then people and Discover.
+Milestone 1 (foundations) and the landing page with sign-up: password sign-in with the email confirmed by a code, spaces, invite links, live chat with reactions, items that post completion lines to the chat, offline changes that sync on reconnect, CI and deploy pipelines. Next: items in full (habits, goals, schedules, Today), then people and Discover.
 
 Where things stand and what's next: [BACKLOG.md](BACKLOG.md).
 
@@ -36,7 +36,7 @@ pnpm --filter @buildpair/app web                        # web app on http://loca
 pnpm --filter @buildpair/site dev                       # landing page on http://localhost:8788
 ```
 
-Sign-in codes print in the API's terminal locally (`EMAIL_PROVIDER=console`). For phones, run `pnpm --filter @buildpair/app start` and open the app in a development build; set `EXPO_PUBLIC_API_URL` to an address your phone can reach.
+Codes (confirming a new account, resetting a password) print in the API's terminal locally (`EMAIL_PROVIDER=console`). Locally, on staging and on previews you can also sign in as the shared test account with the name `bagel` and the password `bagel` (set by `TEST_LOGIN`; production refuses it). For phones, run `pnpm --filter @buildpair/app start` and open the app in a development build; set `EXPO_PUBLIC_API_URL` to an address your phone can reach.
 
 ## Checks
 

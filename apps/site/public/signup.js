@@ -1,4 +1,4 @@
-// Account creation on the landing page: name and email, then the emailed code. The session cookie is
+// Account creation on the landing page: name, email and password, then the emailed code that confirms the address. The session cookie is
 // shared across buildpair.app subdomains, so after verifying we send people straight into the app.
 (() => {
   const config = window.BUILDPAIR || {
@@ -15,6 +15,7 @@
   const errorEl = form.querySelector(".form-error");
   const nameEl = document.getElementById("name");
   const emailEl = document.getElementById("email");
+  const passwordEl = document.getElementById("password");
   const codeEl = document.getElementById("code");
   let step = "details";
   let resendAt = 0;
@@ -54,6 +55,7 @@
         NOT_INVITED:
           "This is a test version of Buildpair, open to invited people only. Ask the person who invited you to add your email.",
         INVALID_EMAIL: "That email doesn't look right. Check it and try again.",
+        PASSWORD_TOO_SHORT: "Use at least 8 characters for your password.",
       }[data.code];
       throw new Error(plain || "Something went wrong on our side. Try again in a moment.");
     }
@@ -75,8 +77,7 @@
     (next === "code" ? codeEl : emailEl).focus();
   }
 
-  async function sendCode() {
-    await call("/api/auth/email-otp/send-verification-otp", { email: emailEl.value.trim(), type: "sign-in" });
+  function codeSent() {
     resendAt = Date.now() + 30_000;
     form.querySelector("[data-email]").textContent = emailEl.value.trim();
   }
@@ -90,18 +91,23 @@
         if (!nameEl.value.trim()) return showError("Add your name so your people know it's you.");
         if (!/^\S+@\S+\.\S+$/.test(emailEl.value.trim()))
           return showError("That email doesn't look right. Check it and try again.");
+        if (passwordEl.value.length < 8) return showError("Use at least 8 characters for your password.");
         setBusy(true);
-        await sendCode();
+        // Making the account emails the code. If the email already has an account, nothing is sent.
+        await call("/api/auth/sign-up/email", {
+          name: nameEl.value.trim(),
+          email: emailEl.value.trim(),
+          password: passwordEl.value,
+        });
+        codeSent();
         setBusy(false);
         go("code");
       } else {
         const otp = codeEl.value.replace(/\D/g, "");
         if (otp.length !== 6) return showError("Enter the 6-digit code from the email.");
         setBusy(true);
-        await call("/api/auth/sign-in/email-otp", { email: emailEl.value.trim(), otp });
-        const name = nameEl.value.trim();
-        // A new account starts without a name; returning people keep theirs if they left the field as is.
-        if (name) await call("/api/auth/update-user", { name }).catch(() => undefined);
+        // Confirming the email also signs you in.
+        await call("/api/auth/email-otp/verify-email", { email: emailEl.value.trim(), otp });
         window.location.assign(config.appUrl);
       }
     } catch (err) {
@@ -114,7 +120,11 @@
     const wait = Math.ceil((resendAt - Date.now()) / 1000);
     if (wait > 0) return showError(`You can ask for a new code in ${wait} seconds.`);
     try {
-      await sendCode();
+      await call("/api/auth/email-otp/send-verification-otp", {
+        email: emailEl.value.trim(),
+        type: "email-verification",
+      });
+      codeSent();
       showError("");
       codeEl.value = "";
       codeEl.focus();

@@ -20,6 +20,8 @@ export interface Env {
   RESEND_API_KEY?: string;
   /** Comma-separated emails allowed to sign in. Set on staging and previews so strangers can't use them; unset means anyone. */
   ALLOWED_EMAILS?: string;
+  /** "name:password" for a shared test account on staging, previews and local runs. Never in production. */
+  TEST_LOGIN?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
 }
@@ -29,6 +31,15 @@ export function isEmailAllowed(env: Env, email: string): boolean {
   if (!env.ALLOWED_EMAILS?.trim()) return true;
   const allowed = env.ALLOWED_EMAILS.split(",").map((e) => e.trim().toLowerCase());
   return allowed.includes(email.trim().toLowerCase());
+}
+
+/** The shared test account, if this environment has one. People sign in with its bare name. */
+export function testLogin(env: Env): { name: string; email: string; password: string } | null {
+  if (!env.TEST_LOGIN || env.ENVIRONMENT === "production") return null;
+  const at = env.TEST_LOGIN.indexOf(":");
+  if (at < 1 || at === env.TEST_LOGIN.length - 1) return null;
+  const name = env.TEST_LOGIN.slice(0, at).trim().toLowerCase();
+  return { name, email: `${name}@buildpair.app`, password: env.TEST_LOGIN.slice(at + 1) };
 }
 
 /** Fail fast with a clear message when configuration is missing or unsafe. */
@@ -44,6 +55,8 @@ export function assertConfig(env: Env): void {
   ) {
     throw new Error("EMAIL_PROVIDER must be 'cloudflare' or 'resend' in production.");
   }
+  if (env.ENVIRONMENT === "production" && env.TEST_LOGIN)
+    throw new Error("TEST_LOGIN must not be set in production.");
   if (env.EMAIL_PROVIDER === "resend" && !env.RESEND_API_KEY)
     throw new Error("RESEND_API_KEY is required for EMAIL_PROVIDER=resend.");
   if (env.EMAIL_PROVIDER === "cloudflare" && !env.EMAIL)
