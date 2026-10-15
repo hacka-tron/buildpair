@@ -1,4 +1,4 @@
-import { SELF } from "cloudflare:test";
+import { env, SELF } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
 import { PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
@@ -66,11 +66,19 @@ describe("deleting your account", () => {
     const inTheirs = await openSocket(jordan, theirs);
     inTheirs.send({ t: "hello", v: PROTOCOL_VERSION, afterSeq: 0 });
     await inTheirs.waitFor((m) => m.t === "events");
+    const mayasOtherDevice = await openSocket(maya, theirs);
+    const mayaCut = new Promise<number>((r) =>
+      mayasOtherDevice.ws.addEventListener("close", (e) => r(e.code)),
+    );
     const inMine = await openSocket(jordan, mine);
     const closed = new Promise<number>((r) => inMine.ws.addEventListener("close", (e) => r(e.code)));
 
+    const { id: mayaId } = (await (await maya.get("/me")).json()) as { id: string };
     const res = await maya.post("/api/auth/delete-user", { password: PASSWORD });
     expect(res.status).toBe(200);
+
+    // Her other device's connection is closed, so it hears nothing more.
+    expect(await mayaCut).toBe(4003);
 
     // Maya is signed out and can't sign back in.
     expect((await maya.get("/me")).status).toBe(401);
@@ -102,6 +110,11 @@ describe("deleting your account", () => {
     expect(text).toContain("Jordan stays");
     const fromMaya = batch.events.filter((e) => e.actorId !== batch.events[0]!.actorId);
     expect(fromMaya.map((e) => e.type)).toEqual(["member.erased"]);
+
+    // Running the erase again (a retried delete) changes nothing.
+    await env.SPACE_ROOM.get(env.SPACE_ROOM.idFromName(theirs)).eraseMember(mayaId);
+    const replay = (await (await jordan.get(`/spaces/${theirs}/events?after=0`)).json()) as Batch;
+    expect(replay.events.filter((e) => e.type === "member.erased")).toHaveLength(1);
 
     // Her invite link no longer works.
     const sam = await signIn(`sam-${newId()}@example.com`);

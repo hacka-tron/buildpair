@@ -233,7 +233,9 @@ function DeleteAccount() {
       return setError(
         error.code === "INVALID_PASSWORD"
           ? "That password isn't right."
-          : (error.message ?? "Couldn't delete your account. Try again in a moment."),
+          : error.code === "CREDENTIAL_ACCOUNT_NOT_FOUND"
+            ? "Your account doesn't have a password yet. Sign out, choose Forgot password to set one, then delete your account."
+            : (error.message ?? "Couldn't delete your account. Try again in a moment."),
       );
     // The account is gone on the server. Clear this device the same way signing out does.
     await signOut();

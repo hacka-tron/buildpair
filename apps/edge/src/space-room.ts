@@ -184,9 +184,16 @@ export class SpaceRoom extends DurableObject<Env> {
    */
   async eraseMember(userId: string): Promise<void> {
     const sql = this.ctx.storage.sql;
-    const hasEvents =
-      sql.exec("SELECT 1 FROM events WHERE actor_id = ? LIMIT 1", userId).toArray().length > 0;
-    if (!this.load().members[userId] && !hasEvents) return;
+    const theirs = sql
+      .exec<{ seq: number; command_id: string | null }>(
+        "SELECT seq, command_id FROM events WHERE actor_id = ? AND type != 'member.erased'",
+        userId,
+      )
+      .toArray();
+    // Their other devices may still be connected. They hear nothing more from this space.
+    for (const ws of this.ctx.getWebSockets(userId))
+      closeQuietly(ws, 4003, "You're no longer in this space.");
+    if (!this.load().members[userId] && theirs.length === 0) return;
     const [left] = this.commit([
       {
         type: "member.erased",
@@ -198,7 +205,9 @@ export class SpaceRoom extends DurableObject<Env> {
     ]);
     this.ctx.storage.transactionSync(() => {
       sql.exec("DELETE FROM events WHERE actor_id = ? AND type != 'member.erased'", userId);
-      sql.exec("DELETE FROM commands WHERE seq NOT IN (SELECT seq FROM events)");
+      // Only their own retry records. Other people's stay, so their retries still get the original answer.
+      for (const { command_id } of theirs)
+        if (command_id) sql.exec("DELETE FROM commands WHERE id = ?", command_id);
     });
     // Rebuild from the trimmed log, the same way a new device would.
     this.state = null;
@@ -367,6 +376,7 @@ export class SpaceRoom extends DurableObject<Env> {
     const after = events[0]!.seq - 1;
     for (const ws of this.ctx.getWebSockets()) {
       const { userId } = ws.deserializeAttachment() as SocketInfo;
+      if (!state.members[userId]) continue;
       this.send(ws, {
         t: "events",
         after,
