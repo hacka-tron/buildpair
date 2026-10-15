@@ -1,6 +1,6 @@
 # Buildpair: working notes for agents
 
-Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing structure, and [docs/PRODUCT.md](docs/PRODUCT.md) for what the product is. Design mockups: `docs/design/`.
+Start with [BACKLOG.md](BACKLOG.md) (where work stands, what's next) and update it when something finishes. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing structure, and [docs/PRODUCT.md](docs/PRODUCT.md) for what the product is. Design mockups: `docs/design/`.
 
 ## Map
 

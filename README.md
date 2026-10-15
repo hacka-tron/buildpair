@@ -8,6 +8,8 @@ One Expo app runs on iOS, Android and the web. The backend runs on Cloudflare: a
 
 Milestone 1 (foundations) and the landing page with sign-up: sign-in with an email code, spaces, invite links, live chat with reactions, items that post completion lines to the chat, offline changes that sync on reconnect, CI and deploy pipelines. Next: items in full (habits, goals, schedules, Today), then people and Discover.
 
+Where things stand and what's next: [BACKLOG.md](BACKLOG.md).
+
 ## Layout
 
 ```
