@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LocalDate, TimeOfDay, Timestamp, Ulid, UserId } from "./ids";
-import { Item, Member, Message } from "./model";
+import { Item, Member, Message, SpaceColor } from "./model";
 
 const ev = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
   z.object({
@@ -14,6 +14,16 @@ const ev = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
   });
 
 export const SpaceCreated = ev("space.created", z.object({ name: z.string(), purpose: z.string() }));
+export const SpaceEdited = ev(
+  "space.edited",
+  z.object({
+    changes: z.object({
+      name: z.string().min(1).max(60).optional(),
+      purpose: z.string().min(1).max(280).optional(),
+      color: SpaceColor.optional(),
+    }),
+  }),
+);
 export const MemberJoined = ev("member.joined", z.object({ member: Member }));
 export const ItemCreated = ev("item.created", z.object({ item: Item }));
 export const ItemEdited = ev(
@@ -39,6 +49,7 @@ export const ReactionToggled = ev(
 
 export const SpaceEvent = z.discriminatedUnion("type", [
   SpaceCreated,
+  SpaceEdited,
   MemberJoined,
   ItemCreated,
   ItemEdited,

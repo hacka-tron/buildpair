@@ -9,6 +9,9 @@ import {
   type SpaceEvent,
   type UnsequencedEvent,
 } from "@buildpair/protocol";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
+import { spaces } from "./db/schema";
 import type { Env } from "./env";
 
 const SCHEMA_VERSION = 1;
@@ -190,6 +193,7 @@ export class SpaceRoom extends DurableObject<Env> {
     if (!decision.ok) return decision;
     const events = this.commit(decision.events, command.id);
     this.publish(events);
+    for (const e of events) if (e.type === "space.edited") await this.updateIndex(e.payload.changes);
     return { ok: true, seq: this.load().seq };
   }
 
@@ -301,6 +305,19 @@ export class SpaceRoom extends DurableObject<Env> {
     const sockets = this.ctx.getWebSockets();
     const online = [...new Set(sockets.map((s) => (s.deserializeAttachment() as SocketInfo).userId))];
     for (const s of sockets) this.send(s, { t: "presence", online });
+  }
+
+  /**
+   * Keep the global list of spaces (D1) in step with a rename or new color, so sidebars and the
+   * Spaces tab show it. The room's log stays the source of truth; a failed write here only leaves
+   * the list stale until the next edit.
+   */
+  private async updateIndex(changes: { name?: string; purpose?: string; color?: string }) {
+    try {
+      await drizzle(this.env.DB).update(spaces).set(changes).where(eq(spaces.id, this.spaceId()));
+    } catch {
+      console.error("space index update failed", { spaceId: this.spaceId() });
+    }
   }
 
   /** Send new events to open sockets (filtered per person) and poke each member's inbox. */

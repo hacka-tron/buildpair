@@ -1,3 +1,4 @@
+import type { SpaceColor } from "@buildpair/protocol";
 import { authHeaders } from "./auth";
 import { API_URL } from "./config";
 
@@ -37,6 +38,8 @@ export interface SpaceSummary {
   id: string;
   name: string;
   purpose: string;
+  /** Picked by the owner; null or missing means the automatic color. */
+  color?: SpaceColor | null;
   role: "owner" | "supporter";
 }
 

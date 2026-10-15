@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LocalDate, TimeOfDay, Timestamp, Ulid } from "./ids";
-import { ItemKind, Visibility } from "./model";
+import { ItemKind, SpaceColor, Visibility } from "./model";
 
 const cmd = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
   z.object({ id: Ulid, type: z.literal(type), at: Timestamp, payload });
@@ -31,6 +31,16 @@ export const EditItem = cmd(
   }),
 );
 
+/** Change a space's name, purpose or color. Owners only. */
+export const EditSpace = cmd(
+  "space.edit",
+  z.object({
+    name: z.string().trim().min(1).max(60).optional(),
+    purpose: z.string().trim().min(1).max(280).optional(),
+    color: SpaceColor.optional(),
+  }),
+);
+
 export const CompleteItem = cmd("item.complete", z.object({ itemId: Ulid, on: LocalDate }));
 export const SkipItem = cmd(
   "item.skip",
@@ -57,6 +67,7 @@ export const ToggleReaction = cmd(
 export const Command = z.discriminatedUnion("type", [
   CreateItem,
   EditItem,
+  EditSpace,
   CompleteItem,
   SkipItem,
   WontDoItem,

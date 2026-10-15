@@ -20,6 +20,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Selecting several (2026-10-15):** press and hold an item (or Select on wide screens) on Today or in a space, tick more, then Done, Skip today, Won't do or Reschedule them together. "+ Add to <space>" reads plain words too.
 
+**Space settings (2026-10-15):** owners rename a space, change what it's for, and pick its color (gear in the space header). The global spaces list (D1, new `color` column) follows the room. Protocol version 3.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
@@ -64,7 +66,6 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **The test account `bagel` is shared and public.** Anyone who reads the repo can sign in as it on staging. Fine for test data; keep real things out of it. Remove `TEST_LOGIN` from `wrangler.jsonc` to turn it off.
 - **Accounts made with email codes before 2026-10-15 have no password.** They set one with "Forgot your password?".
 - **Today and Spaces open a live socket per space** to show their contents. Fine for a few spaces; move to the UserHub inbox (see above) before people have many.
-- **Space colors come from the space ID**, so two spaces can share a color. Let owners pick, as the design says.
 
 ## Later milestones
 

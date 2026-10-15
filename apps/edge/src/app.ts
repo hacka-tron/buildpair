@@ -205,7 +205,13 @@ app.post("/me/ticket", async (c) =>
 
 app.get("/spaces", async (c) => {
   const rows = await drizzle(c.env.DB)
-    .select({ id: spaces.id, name: spaces.name, purpose: spaces.purpose, role: memberships.role })
+    .select({
+      id: spaces.id,
+      name: spaces.name,
+      purpose: spaces.purpose,
+      color: spaces.color,
+      role: memberships.role,
+    })
     .from(memberships)
     .innerJoin(spaces, eq(spaces.id, memberships.spaceId))
     .where(eq(memberships.userId, c.get("userId")))

@@ -1,6 +1,6 @@
 import { SELF } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
-import type { SpaceEvent } from "@buildpair/protocol";
+import { PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
 import { command, openSocket, signIn } from "./helpers";
 
@@ -31,6 +31,31 @@ describe("API", () => {
       spaces: { id: string; role: string }[];
     };
     expect(spaces).toEqual([expect.objectContaining({ id: spaceId, role: "owner" })]);
+  });
+
+  it("lets the owner rename and recolor a space, and the list follows", async () => {
+    const { maya, spaceId } = await makeSpace();
+    const res = await maya.post(`/spaces/${spaceId}/commands`, {
+      commands: [command({ type: "space.edit", payload: { name: "Home", color: "teal" } })],
+    });
+    expect(((await res.json()) as { results: { ok: boolean }[] }).results[0]?.ok).toBe(true);
+    const { spaces } = (await (await maya.get("/spaces")).json()) as {
+      spaces: { id: string; name: string; color: string | null }[];
+    };
+    expect(spaces[0]).toMatchObject({ id: spaceId, name: "Home", color: "teal" });
+  });
+
+  it("won't let a supporter change a space's details", async () => {
+    const { maya, spaceId } = await makeSpace();
+    const jordan = await signIn(`jordan-${newId()}@example.com`);
+    const { token } = (await (await maya.post(`/spaces/${spaceId}/invites`)).json()) as { token: string };
+    await jordan.post(`/invites/${token}/accept`);
+    const res = await jordan.post(`/spaces/${spaceId}/commands`, {
+      commands: [command({ type: "space.edit", payload: { name: "Mine now" } })],
+    });
+    expect(((await res.json()) as { results: { ok: boolean }[] }).results[0]?.ok).toBe(false);
+    const { spaces } = (await (await maya.get("/spaces")).json()) as { spaces: { name: string }[] };
+    expect(spaces[0]?.name).toBe("Life");
   });
 
   it("requires a purpose for a new space", async () => {
@@ -86,7 +111,7 @@ describe("API", () => {
 
     const a = await openSocket(maya, spaceId);
     const b = await openSocket(jordan, spaceId);
-    a.send({ t: "hello", v: 1, afterSeq: 0 });
+    a.send({ t: "hello", v: PROTOCOL_VERSION, afterSeq: 0 });
     await a.waitFor((m) => m.t === "events");
 
     const send = command({ type: "message.send", payload: { messageId: newId(), body: "Flights booked!" } });
