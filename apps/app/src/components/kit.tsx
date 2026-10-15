@@ -391,7 +391,7 @@ export function Sheet({
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel="Close"
-            style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(15, 20, 35, 0.35)" }}
+            style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(15, 20, 35, 0.35)" }]}
           />
           <View
             style={{
