@@ -273,6 +273,16 @@ const TIMES: Rule[] = [
 const DEADLINE = new RegExp(`${B}(?:by|before|due by) $`, "i");
 
 export function parseQuickAdd(text: string, today: string): QuickAdd {
+  // Titles are at most 500 characters; anything longer is left as typed rather than scanned.
+  if (text.length > 500)
+    return {
+      title: text.trim(),
+      kind: "todo",
+      dueOn: null,
+      dueTime: null,
+      timesPerWeek: null,
+      understood: [],
+    };
   let rest = ` ${text} `;
   const understood: string[] = [];
   const result: QuickAdd = {
@@ -314,10 +324,12 @@ export function parseQuickAdd(text: string, today: string): QuickAdd {
     if (result.kind !== "goal" && take(TIMES) && !result.dueOn) result.dueOn = today;
   }
 
+  // Collapse spaces first so the trailing-word cleanup only ever sees single spaces.
   result.title = rest
     .replace(/\s+/g, " ")
-    .replace(/\s+(?:on|at|by|due|for|every|this|next|,)$/i, "")
-    .trim();
+    .trim()
+    .replace(/ [.,;]$/, "")
+    .replace(/ (?:on|at|by|due|for|every|this|next)$/i, "");
   // If everything was read as the schedule, keep the words as the title instead of leaving it empty.
   if (!result.title)
     return {

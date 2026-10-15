@@ -139,6 +139,19 @@ describe("quick add: leaves unclear words alone", () => {
     expect(read("tomorrow")).toEqual(todo("tomorrow"));
   });
 
+  it("drops a trailing cue word or stray punctuation from the title", () => {
+    expect(read("pay bill due on 11/20").title).toBe("pay bill");
+    expect(read("call friday.").title).toBe("call");
+  });
+
+  it("leaves very long text as typed, quickly", () => {
+    const long = `a${" ".repeat(20000)}b`;
+    const started = Date.now();
+    expect(parseQuickAdd(long, TODAY).understood).toEqual([]);
+    expect(parseQuickAdd(`x${" ".repeat(480)}today`, TODAY).dueOn).toBe(TODAY);
+    expect(Date.now() - started).toBeLessThan(200);
+  });
+
   it("rolls past dates into next year", () => {
     expect(read("anniversary jan 5").dueOn).toBe("2027-01-05");
   });
