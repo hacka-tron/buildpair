@@ -48,7 +48,6 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
 - **PR previews: the web app doesn't upload.** The preview API works (`buildpair-api-pr-<n>.<subdomain>.workers.dev`), but `wrangler versions upload --preview-alias` in `preview.yml` fails because the base `buildpair-web` Worker has never been deployed, and the step stays green because the pipe through `tee` hides the error. Fix: add `set -o pipefail`, and deploy the base `buildpair-web` Worker once (or on first preview) before uploading versions.
 - **Production D1 name:** the config says `buildpair-production`; the database's real name may be `buildpair-prod`. Deploys use the ID, so it works either way; align the name once confirmed.
-- **Dependabot #3** (`expo/expo-github-action` 8 → 9) is held on purpose: that action only runs in the preview and deploy workflows, which are now switched on. Check its release notes and merge it. The other GitHub Actions updates were merged on 2026-10-15.
 
 ## Later milestones
 
