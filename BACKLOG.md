@@ -26,7 +26,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 | Sign-up and sign-in | Email codes (Better Auth on D1). Landing-page sign-up sets the account name and drops you into the app. Google sign-in is wired but hidden until keys are set (`GOOGLE_ENABLED`). |
 | Spaces | Create (name + what it's for), list, invite by link (`buildpair.app/join/<token>`), join as a supporter. |
 | Chat | Live messages, stacked reactions, presence ("here now"), completion and skip lines written by the room. Offline messages queue and send on reconnect; no duplicates; gaps catch up. |
-| Items | To-dos can be added and ticked from the space's side panel. Habits, goals and the rest are rules-ready in `packages/domain` but have no screens yet. |
+| Items | To-dos (with a due date), habits (times a week) and goals (finish by, with steps). Quick add, an item sheet with done, skip, won't do and post an update. |
 | Privacy | "Only visible to me" items never reach other members (enforced on the server, tested). |
 | Landing page | `apps/site`: mobile and desktop, Margin Notes design, plain-language privacy page, invite-link redirects. |
 | Pipeline | CI on every push and PR; per-PR preview environments; staging on merge; production on approved release; Dependabot. Previews and deploys are untested until the setup is done. |
@@ -48,13 +48,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.
 - **Repository license:** none yet (all rights reserved).
 - **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, real app icons and splash, owner-approved join requests. Until then, release only the landing page publicly if anything.
-- **Staging is public.** Anyone can open it and request sign-in codes to any address, which spends the Resend quota and can hurt the domain's email reputation. Plan: an allowlist of emails that can sign in on staging and previews (a variable, enforced in the API), plus a Cloudflare rate-limiting rule on the auth endpoints. Also mark staging pages `noindex`.
+- **Staging is open to anyone.** Anyone can request sign-in codes there, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Still to do: a Cloudflare rate-limiting rule on the auth endpoints and `noindex` on staging pages.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
 - **To-dos don't record when they were finished.** A to-do with no date (or an overdue one) ticked today drops off Today and out of its counts. Add a completed-on date to the item event when the protocol next changes.
 - **Skipping a habit twice in a day posts twice.** Skips change nothing on the item, so the app can't tell it's already skipped. Same fix: record skips on the item.
 - **Today and Spaces open a live socket per space** to show their contents. Fine for a few spaces; move to the UserHub inbox (see above) before people have many.
 - **Space colors come from the space ID**, so two spaces can share a color. Let owners pick, as the design says.
-- **Production D1 name:** the config says `buildpair-production`; the database's real name may be `buildpair-prod`. Deploys use the ID, so it works either way; align the name once confirmed.
 
 ## Later milestones
 
@@ -70,6 +69,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - Sign-in: email codes first, then Google; add Sign in with Apple alongside Google on iOS.
 - Analytics: privacy-first, no consent banner (PostHog EU cookieless, internal IDs only, session replay opt-in, a usage-data switch, no tracking pixels).
 - Architecture: one Expo app; Cloudflare Workers with a Durable Object per space and per person, D1, R2. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- Production database name stays `buildpair-production` (confirmed 2026-10-15).
+- Staging stays open for now; the email allowlist is built but off (2026-10-15).
 - Inside a space, the chat comes first; updates come from the items themselves (no Update button in the chat).
 
 ## Where things are
