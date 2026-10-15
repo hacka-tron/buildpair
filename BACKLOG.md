@@ -50,6 +50,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, real app icons and splash, owner-approved join requests. Until then, release only the landing page publicly if anything.
 - **Staging is public.** Anyone can open it and request sign-in codes to any address, which spends the Resend quota and can hurt the domain's email reputation. Plan: an allowlist of emails that can sign in on staging and previews (a variable, enforced in the API), plus a Cloudflare rate-limiting rule on the auth endpoints. Also mark staging pages `noindex`.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
+- **To-dos don't record when they were finished.** A to-do with no date (or an overdue one) ticked today drops off Today and out of its counts. Add a completed-on date to the item event when the protocol next changes.
+- **Skipping a habit twice in a day posts twice.** Skips change nothing on the item, so the app can't tell it's already skipped. Same fix: record skips on the item.
 - **Today and Spaces open a live socket per space** to show their contents. Fine for a few spaces; move to the UserHub inbox (see above) before people have many.
 - **Space colors come from the space ID**, so two spaces can share a color. Let owners pick, as the design says.
 - **Production D1 name:** the config says `buildpair-production`; the database's real name may be `buildpair-prod`. Deploys use the ID, so it works either way; align the name once confirmed.

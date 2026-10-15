@@ -82,7 +82,8 @@ export function ItemSheet(props: {
               key={s.id}
               item={s}
               today={props.today}
-              last={i === steps.length - 1 && !mine}
+              last={i === steps.length - 1 && !(mine && open)}
+              readOnly={!mine || !open}
               onToggle={() => run({ type: "item.complete", payload: { itemId: s.id, on: props.today } })}
             />
           ))}

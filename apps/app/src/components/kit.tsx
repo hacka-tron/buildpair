@@ -196,6 +196,7 @@ export function ItemRow({
   today,
   last,
   onOpen,
+  readOnly,
 }: {
   item: Item;
   onToggle: () => void;
@@ -204,6 +205,8 @@ export function ItemRow({
   last?: boolean;
   /** Opens the item's details and actions. */
   onOpen?: () => void;
+  /** Show the item without letting it be ticked (someone else's, or under a closed goal). */
+  readOnly?: boolean;
 }) {
   // A habit counts as done for the day once it's checked off today.
   const done = item.status === "done" || (item.kind === "habit" && item.doneOn.includes(today));
@@ -222,7 +225,7 @@ export function ItemRow({
     >
       <Pressable
         onPress={onToggle}
-        disabled={done || closed}
+        disabled={done || closed || readOnly}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
         accessibilityLabel={`Mark ${item.title} done`}

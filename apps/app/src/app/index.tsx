@@ -28,9 +28,12 @@ import { colors, radius, space } from "../lib/theme";
  * What's on today: anything open that's due today or earlier, habits, top-level things without a
  * date, and goal steps that are due.
  */
-function forToday(item: Item, today: string) {
+function forToday(item: Item, today: string, view: SpaceState | undefined) {
   if (item.status !== "open") return false;
-  if (item.parentId) return Boolean(item.dueOn && item.dueOn <= today);
+  if (item.parentId) {
+    if (view?.items[item.parentId]?.status !== "open") return false;
+    return Boolean(item.dueOn && item.dueOn <= today);
+  }
   return !item.dueOn || item.dueOn <= today;
 }
 
@@ -53,7 +56,7 @@ export default function Today() {
   const groups = (spaces ?? []).map((s) => {
     const view = views[s.id];
     const all = Object.values(view?.items ?? {});
-    const open = all.filter((i) => forToday(i, today) && !doneOnDay(i, today));
+    const open = all.filter((i) => forToday(i, today, view) && !doneOnDay(i, today));
     const doneToday = all.filter((i) => doneOnDay(i, today));
     return { space: s, view, open, doneToday };
   });
