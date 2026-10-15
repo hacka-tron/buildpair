@@ -1,7 +1,7 @@
 import { newId, parseQuickAdd, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item } from "@buildpair/protocol";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ItemSheet } from "../components/item-sheet";
 import {
@@ -24,6 +24,7 @@ import type { SpaceSummary } from "../lib/api";
 import { authClient } from "../lib/auth";
 import { localToday, longDate } from "../lib/format";
 import { applyChange, useSpaces, useSpaceViews } from "../lib/spaces";
+import { TEMPLATES, type Template } from "../lib/templates";
 import { colors, radius, space } from "../lib/theme";
 
 /**
@@ -57,6 +58,14 @@ export default function Today() {
   const [adding, setAdding] = useState(false);
   const [showUpcoming, setShowUpcoming] = useState(true);
   const selection = useSelection();
+  // A goal just made from a template opens as soon as it shows up in the space.
+  const [toOpen, setToOpen] = useState<{ spaceId: string; itemId: string } | null>(null);
+  useEffect(() => {
+    const item = toOpen && views[toOpen.spaceId]?.items[toOpen.itemId];
+    if (!toOpen || !item) return;
+    setOpened({ spaceId: toOpen.spaceId, item });
+    setToOpen(null);
+  }, [toOpen, views]);
   const [problem, setProblem] = useState("");
   const [opened, setOpened] = useState<{ spaceId: string; item: Item } | null>(null);
 
@@ -238,6 +247,30 @@ export default function Today() {
         onAdd={(spaceId, draft) =>
           applyChange(spaceId, userId, { type: "item.create", payload: { itemId: newId(), ...draft } })
         }
+        onTemplate={(spaceId, t) => {
+          const itemId = newId();
+          const problem = applyChange(spaceId, userId, {
+            type: "item.create",
+            payload:
+              t.kind === "habit"
+                ? { itemId, kind: "habit", title: t.title, timesPerWeek: t.timesPerWeek ?? 3 }
+                : {
+                    itemId,
+                    kind: "goal",
+                    title: t.title,
+                    dueOn: localToday(new Date(Date.now() + (t.weeks ?? 4) * 7 * 86400000)),
+                  },
+          });
+          if (problem) return problem;
+          for (const step of t.steps ?? [])
+            applyChange(spaceId, userId, {
+              type: "item.create",
+              payload: { itemId: newId(), kind: "todo", title: step, parentId: itemId },
+            });
+          // Open the new goal so its steps (and where to add more) are right there.
+          if (t.kind === "goal") setToOpen({ spaceId, itemId });
+          return null;
+        }}
       />
       <ItemSheet
         key={opened?.item.id ?? "none"}
@@ -304,6 +337,8 @@ function QuickAdd(props: {
   wide: boolean;
   /** Returns why it couldn't add, or null when it worked. */
   onAdd: (spaceId: string, draft: Draft) => string | null;
+  /** Creates a template's goal and steps (or habit) in a space; returns why not, or null. */
+  onTemplate: (spaceId: string, template: Template) => string | null;
 }) {
   const today = localToday();
   const [text, setText] = useState("");
@@ -433,6 +468,25 @@ function QuickAdd(props: {
                   leading={<SpaceTile id={s.id} name={s.name} size={16} />}
                 >
                   {s.name}
+                </Chip>
+              ))}
+            </ChipRow>
+          ) : null}
+          {!text.trim() ? (
+            <ChipRow label="Or start from a template">
+              {TEMPLATES.map((t) => (
+                <Chip
+                  key={t.label}
+                  on={false}
+                  onPress={() => {
+                    if (!chosen) return;
+                    const problem = props.onTemplate(chosen, t);
+                    if (problem) return setError(problem);
+                    reset();
+                    props.onClose();
+                  }}
+                >
+                  {t.label}
                 </Chip>
               ))}
             </ChipRow>
