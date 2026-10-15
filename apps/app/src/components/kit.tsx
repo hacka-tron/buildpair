@@ -1,7 +1,16 @@
 import type { Item } from "@buildpair/protocol";
 import Feather from "@expo/vector-icons/Feather";
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View, type ViewStyle } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type ViewStyle,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { dueLabel } from "../lib/format";
 import { colors, personColor, radius, space, spaceColor } from "../lib/theme";
@@ -370,19 +379,21 @@ export function Sheet({
   return (
     <Modal visible={visible} transparent animationType={wide ? "fade" : "slide"} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
+        <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(15, 20, 35, 0.35)",
             justifyContent: wide ? "center" : "flex-end",
             alignItems: wide ? "center" : "stretch",
           }}
         >
+          {/* The backdrop sits behind the sheet, not around it, so clicks inside (on a field, say) never close it. */}
           <Pressable
-            onPress={() => undefined}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(15, 20, 35, 0.35)" }]}
+          />
+          <View
             style={{
               backgroundColor: "#fff",
               borderRadius: radius.sheet,
@@ -409,8 +420,8 @@ export function Sheet({
               {title}
             </Text>
             {children}
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

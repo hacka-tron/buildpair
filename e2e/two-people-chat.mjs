@@ -47,7 +47,9 @@ try {
   await maya.getByText("Spaces", { exact: true }).click();
   await maya.getByText("New space").click();
   await maya.getByPlaceholder("Life", { exact: true }).fill("Life");
-  await maya.getByPlaceholder("Family, health and the house").fill("Family, health and the house");
+  // Click into the field like a person would: a click inside a sheet must not close it.
+  await maya.getByPlaceholder("Family, health and the house").click();
+  await maya.keyboard.type("Family, health and the house");
   await maya.getByText("Create space").click(); // opens the new space
   await maya.getByText(/\(you\)/).waitFor(); // the space has loaded
   await maya.getByPlaceholder("+ Add to Life").fill("Pick up kids");
