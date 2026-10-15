@@ -47,8 +47,7 @@ Create an Expo account and project (`npx eas-cli@latest init` in `apps/app`), th
 | `RESEND_API_KEY` | from step 2 |
 | `EXPO_TOKEN` | from step 3 |
 
-The Worker's own secrets for staging and production are set once with
-`pnpm --filter @buildpair/edge exec wrangler secret put BETTER_AUTH_SECRET --env staging` (repeat for `TICKET_SECRET`, `RESEND_API_KEY`, and for `--env production`).
+Put the secrets on each environment (`preview`, `staging`, `production`). Every deploy copies them onto that environment's Worker, so nothing is set in Cloudflare by hand.
 
 Also turn on: branch protection for `main` (require the CI checks), secret scanning and push protection, and Dependabot alerts.
 

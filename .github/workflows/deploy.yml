@@ -46,6 +46,20 @@ jobs:
         working-directory: apps/edge
         run: pnpm exec wrangler deploy --env "$TARGET"
 
+      # The Worker's secrets come from this GitHub environment, so nobody sets them by hand.
+      - name: Set the API's secrets
+        working-directory: apps/edge
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          TICKET_SECRET: ${{ secrets.TICKET_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          for key in BETTER_AUTH_SECRET TICKET_SECRET; do
+            [ -n "${!key}" ] || { echo "Missing secret $key on the \"$TARGET\" environment (see docs/SETUP.md)."; exit 1; }
+          done
+          jq -n 'env | {BETTER_AUTH_SECRET, TICKET_SECRET, RESEND_API_KEY} | with_entries(select(.value != null and .value != ""))' \
+            | pnpm exec wrangler secret bulk --env "$TARGET"
+
       - name: Smoke test the API
         run: |
           host=$([ "$TARGET" = production ] && echo api.buildpair.app || echo api-staging.buildpair.app)
