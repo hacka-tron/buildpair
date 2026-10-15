@@ -2,7 +2,7 @@
 
 Where the work stands, what's next, and what's still open. Update it whenever something finishes or comes up.
 
-## > RESUME HERE (as of 2026-10-15, afternoon)
+## > RESUME HERE (as of 2026-10-15, evening)
 
 **Done and pushed to `main`:** milestone 1 (foundations) and the landing page with sign-up. CI is green: lint, typecheck, 28 unit/integration tests, two browser tests (sign-up on desktop and mobile; two people chatting live), secret scan and CodeQL.
 
@@ -24,13 +24,14 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Profile and templates (2026-10-15):** a Profile screen (your avatar on Today, or your name in the sidebar) with name, what you're building, time zone from the device, change password and sign out. Quick add offers goal templates (Launch v1, First 10 users, Raise a round, Train 4x a week).
 
+**Delete your account (2026-10-15, PR #26):** on the Profile screen, confirmed with your password. Spaces you own are deleted for everyone (their members see "This space is gone"). In spaces you joined, a `member.erased` event removes you and everything you made, and the room deletes your earlier events from its log. Your other signed-in devices are disconnected. Protocol version 4. Open: accounts with no password (Google only, not turned on yet) are told to set one with Forgot password first. Pending email codes for the address aren't deleted and expire on their own within 10 minutes. Narrow races if the person joins or makes a space while the delete runs; a retry finishes it.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: account deletion** (in the app, required by App Store review): remove the account, its memberships, and its items and messages from every space, with a confirm step.
-4. **Build: move an item to another space, and make an item private after creating it.** Both cross what the server sends to whom, so they need care and tests.
-5. **Build: reminders and push.** Needs the phone build (step 2) and an Expo account; reminders run on UserHub alarms.
-6. **Build: milestone 4 (people):** owner-approved join requests, the Activity tab, the Supporting tab.
+3. **Build: move an item to another space, and make an item private after creating it.** Both cross what the server sends to whom, so they need care and tests.
+4. **Build: reminders and push.** Needs the phone build (step 2) and an Expo account; reminders run on UserHub alarms.
+5. **Build: milestone 4 (people):** owner-approved join requests, the Activity tab, the Supporting tab.
 
 ## What exists now
 
