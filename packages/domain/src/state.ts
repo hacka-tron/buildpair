@@ -1,10 +1,12 @@
-import type { Item, Member, Message, SpaceEvent, UserId } from "@buildpair/protocol";
+import type { Item, Member, Message, SpaceColor, SpaceEvent, UserId } from "@buildpair/protocol";
 
 export interface SpaceState {
   /** Sequence number of the last event applied. */
   seq: number;
   name: string;
   purpose: string;
+  /** Picked by the owner; null means the automatic color. */
+  color: SpaceColor | null;
   members: Record<UserId, Member>;
   items: Record<string, Item>;
   /** Chat log in sequence order. */
@@ -14,7 +16,7 @@ export interface SpaceState {
 }
 
 export function emptySpace(): SpaceState {
-  return { seq: 0, name: "", purpose: "", members: {}, items: {}, messages: [], reactions: {} };
+  return { seq: 0, name: "", purpose: "", color: null, members: {}, items: {}, messages: [], reactions: {} };
 }
 
 /**
@@ -30,6 +32,13 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
       next.name = event.payload.name;
       next.purpose = event.payload.purpose;
       break;
+    case "space.edited": {
+      const { name, purpose, color } = event.payload.changes;
+      if (name !== undefined) next.name = name;
+      if (purpose !== undefined) next.purpose = purpose;
+      if (color !== undefined) next.color = color;
+      break;
+    }
     case "member.joined":
       next.members = { ...state.members, [event.payload.member.userId]: event.payload.member };
       break;
@@ -105,6 +114,7 @@ export function normalizeItem(item: Item): Item {
 export function normalizeSpace(state: SpaceState): SpaceState {
   return {
     ...state,
+    color: state.color ?? null,
     items: Object.fromEntries(Object.entries(state.items).map(([k, i]) => [k, normalizeItem(i)])),
   };
 }

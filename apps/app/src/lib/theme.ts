@@ -1,3 +1,5 @@
+import type { SpaceColor } from "@buildpair/protocol";
+
 /** Buildpair design tokens (Margin Notes direction). Light theme first; dark comes with the design system work. */
 export const colors = {
   bg: "#FFFFFF",
@@ -36,7 +38,20 @@ const PERSON_COLORS = [
 
 const hash = (s: string) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 
-/** A space's automatic color, stable for its ID. */
-export const spaceColor = (id: string) => SPACE_COLORS[hash(id) % SPACE_COLORS.length]!;
+/** The shade for each color an owner can pick (see SpaceColor in the protocol). */
+export const SPACE_SHADES: Record<SpaceColor, string> = {
+  blue: "#3557D6",
+  green: "#2F8F5B",
+  red: "#C0392B",
+  purple: "#7A4FB5",
+  amber: "#C47F0C",
+  teal: "#1F7A8C",
+  pink: "#B04A7E",
+  slate: "#5D6474",
+};
+
+/** A space's color: the one its owner picked, or an automatic one stable for its ID. */
+export const spaceColor = (id: string, picked?: SpaceColor | null) =>
+  picked ? SPACE_SHADES[picked] : SPACE_COLORS[hash(id) % SPACE_COLORS.length]!;
 /** A person's avatar color, stable for their ID. */
 export const personColor = (id: string) => PERSON_COLORS[hash(id) % PERSON_COLORS.length]!;

@@ -70,6 +70,8 @@ export const spaces = sqliteTable("spaces", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   purpose: text("purpose").notNull(),
+  /** Picked by the owner (a SpaceColor name); null means the automatic color. */
+  color: text("color"),
   ownerId: text("owner_id")
     .notNull()
     .references(() => user.id),

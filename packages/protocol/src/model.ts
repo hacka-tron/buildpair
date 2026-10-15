@@ -8,6 +8,10 @@ export type ItemKind = z.infer<typeof ItemKind>;
 export const Visibility = z.enum(["space", "owner"]);
 export type Visibility = z.infer<typeof Visibility>;
 
+/** A space's color, by name; the app picks the exact shade. */
+export const SpaceColor = z.enum(["blue", "green", "red", "purple", "amber", "teal", "pink", "slate"]);
+export type SpaceColor = z.infer<typeof SpaceColor>;
+
 export const ItemStatus = z.enum(["open", "done", "wont"]);
 export type ItemStatus = z.infer<typeof ItemStatus>;
 

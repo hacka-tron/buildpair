@@ -56,6 +56,17 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       };
       return { ok: true, events: [{ ...base, type: "item.created", payload: { item } }] };
     }
+    case "space.edit": {
+      if (state.members[actorId]?.role !== "owner")
+        return reject("Only the space's owner can change its details.");
+      const asked = command.payload;
+      const changes: typeof asked = {};
+      if (asked.name !== undefined && asked.name !== state.name) changes.name = asked.name;
+      if (asked.purpose !== undefined && asked.purpose !== state.purpose) changes.purpose = asked.purpose;
+      if (asked.color !== undefined && asked.color !== state.color) changes.color = asked.color;
+      if (Object.keys(changes).length === 0) return { ok: true, events: [] };
+      return { ok: true, events: [{ ...base, type: "space.edited", payload: { changes } }] };
+    }
     case "item.edit": {
       const item = ownItem(command.payload.itemId);
       if (typeof item === "string") return reject(item);

@@ -6,6 +6,7 @@ import {
   decide,
   emptySpace,
   newId,
+  normalizeSpace,
   type SpaceState,
   sequence,
   viewFor,
@@ -265,5 +266,27 @@ describe("editing, finish days and skips", () => {
         "maya",
       ).ok,
     ).toBe(false);
+  });
+});
+
+describe("space details", () => {
+  it("lets the owner rename and recolor, and ignores no-op edits", () => {
+    const s = run(space(), cmd({ type: "space.edit", payload: { name: "Home", color: "teal" } })).state;
+    expect(s).toMatchObject({ name: "Home", color: "teal" });
+    expect(run(s, cmd({ type: "space.edit", payload: { name: "Home" } })).events).toEqual([]);
+  });
+
+  it("won't let a supporter change them", () => {
+    expect(decide(space(), cmd({ type: "space.edit", payload: { name: "Mine" } }), "jordan").ok).toBe(false);
+  });
+
+  it("everyone in the space sees the change", () => {
+    const { state, events } = run(space(), cmd({ type: "space.edit", payload: { purpose: "Us" } }));
+    expect(canSee(state, "jordan", events[0]!)).toBe(true);
+  });
+
+  it("reads spaces saved before colors existed", () => {
+    const { color: _, ...old } = space();
+    expect(normalizeSpace(old as SpaceState).color).toBeNull();
   });
 });

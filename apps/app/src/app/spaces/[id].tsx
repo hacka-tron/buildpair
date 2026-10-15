@@ -2,7 +2,7 @@ import { newId, parseQuickAdd, type SpaceState, weekProgress } from "@buildpair/
 import type { Item, Message } from "@buildpair/protocol";
 import type { Change } from "@buildpair/sync";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -18,11 +18,12 @@ import { ItemSheet } from "../../components/item-sheet";
 import { Avatar, Card, Faces, Icon, ItemRow, SectionHeader, Sheet, SpaceTile } from "../../components/kit";
 import { SelectionBar, useSelection } from "../../components/selection";
 import { Shell, useWide } from "../../components/shell";
+import { SpaceSettings } from "../../components/space-settings";
 import { Button, ErrorText } from "../../components/ui";
 import { createInvite } from "../../lib/api";
 import { authClient } from "../../lib/auth";
 import { ago, localToday, peopleLine } from "../../lib/format";
-import { applyChange, useSpaces } from "../../lib/spaces";
+import { applyChange, patchSpace, useSpaces } from "../../lib/spaces";
 import { colors, radius, space } from "../../lib/theme";
 import { useSpace } from "../../lib/use-space";
 
@@ -40,6 +41,16 @@ export default function SpaceScreen() {
   const name = view.name || summary?.name || "";
   const purpose = view.purpose || summary?.purpose || "";
   const [inviting, setInviting] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const isOwner = view.members[userId]?.role === "owner";
+  // The room is the source of truth; bring the list (sidebar, Spaces tab) in line when it differs.
+  useEffect(() => {
+    // Only once connected: a copy saved on the device can be older than the list.
+    if (!summary || !view.name || !connected) return;
+    const color = view.color ?? null;
+    if (view.name !== summary.name || view.purpose !== summary.purpose || color !== (summary.color ?? null))
+      patchSpace(id, { name: view.name, purpose: view.purpose, color });
+  }, [id, summary, connected, view.name, view.purpose, view.color]);
   const [opened, setOpened] = useState<Item | null>(null);
 
   const nameOf = (uid: string) => (uid === userId ? "You" : (view.members[uid]?.name ?? "Someone"));
@@ -145,6 +156,18 @@ export default function SpaceScreen() {
         apply={(change) => applyChange(id, userId, change)}
       />
       {inviteSheet}
+      {settings ? (
+        <SpaceSettings
+          spaceId={id}
+          name={name}
+          purpose={purpose}
+          color={view.color ?? summary?.color ?? null}
+          wide={wide}
+          onClose={() => setSettings(false)}
+          apply={(change) => applyChange(id, userId, change)}
+          onSaved={(patch) => patchSpace(id, patch)}
+        />
+      ) : null}
       {selection.active ? (
         <SelectionBar
           picked={selection.picked}
@@ -171,7 +194,7 @@ export default function SpaceScreen() {
             borderColor: colors.line,
           }}
         >
-          <SpaceTile id={id} name={name || "?"} size={40} />
+          <SpaceTile id={id} name={name || "?"} size={40} color={view.color ?? summary?.color} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text numberOfLines={1} style={{ fontSize: 19, fontWeight: "700", color: colors.ink }}>
               {name || "Loading…"}
@@ -182,6 +205,17 @@ export default function SpaceScreen() {
               {status ? ` · ${status}` : ""}
             </Text>
           </View>
+          {isOwner ? (
+            <Pressable
+              onPress={() => setSettings(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Space settings"
+              hitSlop={8}
+              style={{ padding: space.sm }}
+            >
+              <Icon name="settings" size={18} color={colors.sub} />
+            </Pressable>
+          ) : null}
           <Button label="Invite" kind="secondary" onPress={() => setInviting(true)} />
         </View>
         {errorBar}
@@ -228,6 +262,25 @@ export default function SpaceScreen() {
             </Text>
             {others.length ? (
               <Faces people={others.map((m) => ({ id: m.userId, name: m.name }))} size={26} />
+            ) : null}
+            {isOwner ? (
+              <Pressable
+                onPress={() => setSettings(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Space settings"
+                hitSlop={8}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: colors.line,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon name="settings" size={16} color={colors.ink} />
+              </Pressable>
             ) : null}
             <Pressable
               onPress={() => setInviting(true)}

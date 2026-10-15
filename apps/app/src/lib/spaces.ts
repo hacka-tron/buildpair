@@ -48,6 +48,23 @@ export async function addSpace(name: string, purpose: string): Promise<SpaceSumm
   return created;
 }
 
+/** Update one space in the list at once (after its owner renames or recolors it). */
+export function patchSpace(id: string, patch: Partial<Pick<SpaceSummary, "name" | "purpose" | "color">>) {
+  if (!spaces) return;
+  spaces = spaces.map((s) => (s.id === id ? { ...s, ...patch } : s));
+  emit();
+}
+
+/** One space's summary from the list, or undefined while it loads. */
+export function useSpaceSummary(id: string): SpaceSummary | undefined {
+  const snap = useSyncExternalStore(
+    subscribe,
+    () => snapshot,
+    () => snapshot,
+  );
+  return snap.spaces?.find((s) => s.id === id);
+}
+
 /** Forget everything on sign-out so the next person starts clean. */
 export function resetSpaces() {
   clear();

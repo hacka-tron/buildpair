@@ -1,4 +1,4 @@
-import type { Item } from "@buildpair/protocol";
+import type { Item, SpaceColor } from "@buildpair/protocol";
 import Feather from "@expo/vector-icons/Feather";
 import type { ReactNode } from "react";
 import {
@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { dueLabel } from "../lib/format";
+import { useSpaceSummary } from "../lib/spaces";
 import { colors, personColor, radius, space, spaceColor } from "../lib/theme";
 
 /** react-native-web adds `hovered` to Pressable's style callback; the native types leave it out. */
@@ -150,14 +151,27 @@ export function Faces({
   );
 }
 
-export function SpaceTile({ id, name, size = 40 }: { id: string; name: string; size?: number }) {
+export function SpaceTile({
+  id,
+  name,
+  size = 40,
+  color,
+}: {
+  id: string;
+  name: string;
+  size?: number;
+  /** The picked color, when the caller has the live space; otherwise it comes from the spaces list. */
+  color?: SpaceColor | null;
+}) {
+  const summary = useSpaceSummary(id);
+  const picked = color !== undefined ? color : summary?.color;
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size * 0.26,
-        backgroundColor: spaceColor(id),
+        backgroundColor: spaceColor(id, picked),
         alignItems: "center",
         justifyContent: "center",
       }}
