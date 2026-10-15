@@ -107,7 +107,11 @@
         if (otp.length !== 6) return showError("Enter the 6-digit code from the email.");
         setBusy(true);
         // Confirming the email also signs you in.
-        await call("/api/auth/email-otp/verify-email", { email: emailEl.value.trim(), otp });
+        await call("/api/auth/email-otp/verify-email", {
+          email: emailEl.value.trim(),
+          otp,
+          password: passwordEl.value,
+        });
         window.location.assign(config.appUrl);
       }
     } catch (err) {

@@ -93,7 +93,7 @@ describe("email allowlist", () => {
     expect(made.status).toBe(200);
     const verified = await post(
       "/api/auth/email-otp/verify-email",
-      { email: address, otp: TEST_OTP },
+      { email: address, otp: TEST_OTP, password: PASSWORD },
       address,
     );
     expect(verified.status).toBe(200);

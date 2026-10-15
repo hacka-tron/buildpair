@@ -79,7 +79,10 @@ export default function SignIn() {
 
   const confirm = () =>
     run(async () => {
-      const { error } = await authClient.emailOtp.verifyEmail({ email: address, otp: code.trim() });
+      // The password goes along so the person who proves the inbox is the one whose password counts.
+      // Better Auth's types don't know the server takes it (see verify-email in apps/edge/src/app.ts).
+      const body: { email: string; otp: string } = { email: address, otp: code.trim(), ...{ password } };
+      const { error } = await authClient.emailOtp.verifyEmail(body);
       if (error) setError(plain(error, "That code didn't work. Check it or ask for a new one."));
     });
 

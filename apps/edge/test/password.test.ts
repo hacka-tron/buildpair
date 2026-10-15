@@ -31,7 +31,11 @@ describe("password sign-in", () => {
     expect(made.headers.getSetCookie()).toEqual([]);
     expect(send).toHaveBeenCalledTimes(1);
     expect(send.mock.calls[0]?.[1].to).toBe(to.toLowerCase());
-    const verified = await post("/api/auth/email-otp/verify-email", { email: to, otp: TEST_OTP });
+    const verified = await post("/api/auth/email-otp/verify-email", {
+      email: to,
+      otp: TEST_OTP,
+      password: PASSWORD,
+    });
     expect(verified.status).toBe(200);
     expect(verified.headers.getSetCookie().length).toBeGreaterThan(0);
   });
@@ -88,6 +92,51 @@ describe("password sign-in", () => {
     const send = vi.spyOn(email, "sendEmail");
     await post("/api/auth/email-otp/send-verification-otp", { email: to, type: "email-verification" });
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets whoever confirms the email set the password, so an earlier sign-up by someone else can't keep a way in", async () => {
+    const to = address();
+    await post("/api/auth/sign-up/email", { name: "Not Maya", email: to, password: "someone else's" });
+    // Maya signs up later (nothing happens, the email is taken), then asks for a code and confirms.
+    await post("/api/auth/sign-up/email", { name: "Maya", email: to, password: PASSWORD });
+    await post("/api/auth/email-otp/send-verification-otp", { email: to, type: "email-verification" });
+    const confirmed = await post("/api/auth/email-otp/verify-email", {
+      email: to,
+      otp: TEST_OTP,
+      password: PASSWORD,
+    });
+    expect(confirmed.status).toBe(200);
+    expect((await post("/api/auth/sign-in/email", { email: to, password: "someone else's" })).status).toBe(
+      401,
+    );
+    expect((await post("/api/auth/sign-in/email", { email: to, password: PASSWORD })).status).toBe(200);
+  });
+
+  it("won't confirm an email without a password", async () => {
+    const to = address();
+    await post("/api/auth/sign-up/email", { name: "Maya", email: to, password: PASSWORD });
+    const res = await post("/api/auth/email-otp/verify-email", { email: to, otp: TEST_OTP });
+    expect(res.status).toBe(400);
+    expect(res.headers.getSetCookie()).toEqual([]);
+    const short = await post("/api/auth/email-otp/verify-email", {
+      email: to,
+      otp: TEST_OTP,
+      password: "short",
+    });
+    expect(short.status).toBe(400);
+  });
+
+  it("drops the unsent code when a confirmed account asks for one", async () => {
+    const to = address();
+    await signIn(to);
+    await post("/api/auth/email-otp/send-verification-otp", { email: to, type: "email-verification" });
+    const res = await post("/api/auth/email-otp/verify-email", {
+      email: to,
+      otp: TEST_OTP,
+      password: PASSWORD,
+    });
+    expect(res.ok).toBe(false);
+    expect(res.headers.getSetCookie()).toEqual([]);
   });
 
   it("won't make an account from a code", async () => {

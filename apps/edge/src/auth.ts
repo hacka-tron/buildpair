@@ -10,6 +10,8 @@ import { type Env, isEmailAllowed, testLogin } from "./env";
 
 export const TEST_OTP = "424242";
 
+export const MIN_PASSWORD = 8;
+
 export const USE_PASSWORD = {
   code: "USE_PASSWORD",
   message: "Sign in with your email and password. Forgot it? Reset it from the sign-in screen.",
@@ -39,7 +41,7 @@ export function createAuth(env: Env) {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
-      minPasswordLength: 8,
+      minPasswordLength: MIN_PASSWORD,
       revokeSessionsOnPasswordReset: true,
     },
     emailVerification: { autoSignInAfterVerification: true, sendOnSignIn: false },
@@ -79,8 +81,13 @@ export function createAuth(env: Env) {
           if (type === "sign-in") throw new APIError("BAD_REQUEST", USE_PASSWORD);
           // A confirmation code also signs you in, so only accounts still waiting to be confirmed get one.
           if (type === "email-verification") {
-            const found = await ctx?.context.internalAdapter.findUserByEmail(email);
-            if (!found || found.user.emailVerified) return;
+            const adapter = ctx?.context.internalAdapter;
+            const found = await adapter?.findUserByEmail(email);
+            if (!found || found.user.emailVerified) {
+              // Better Auth stored a code before asking us to send it. Drop it so nobody can guess it.
+              await adapter?.deleteVerificationByIdentifier(`email-verification-otp-${email}`);
+              return;
+            }
           }
           // Every kind of code goes through here, so strangers can't use staging to send email.
           if (!isEmailAllowed(env, email)) throw new APIError("FORBIDDEN", NOT_INVITED);
