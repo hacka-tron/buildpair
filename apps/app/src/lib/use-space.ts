@@ -1,5 +1,5 @@
 import { SpaceSync } from "@buildpair/sync";
-import { useState, useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { spaceStorage } from "./storage";
 import { spaceTransport } from "./transport";
 
@@ -23,7 +23,7 @@ export function stopAllSyncs() {
 }
 
 export function useSpace(spaceId: string, userId: string) {
-  const [sync] = useState(() => getSync(spaceId, userId));
+  const sync = useMemo(() => getSync(spaceId, userId), [spaceId, userId]);
   const snapshot = useSyncExternalStore(sync.subscribe, sync.getSnapshot, sync.getSnapshot);
   return { sync, ...snapshot };
 }

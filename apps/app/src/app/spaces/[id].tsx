@@ -1,5 +1,6 @@
 import { newId, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item, Message } from "@buildpair/protocol";
+import type { Change } from "@buildpair/sync";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
@@ -19,7 +20,7 @@ import { Button, ErrorText } from "../../components/ui";
 import { createInvite } from "../../lib/api";
 import { authClient } from "../../lib/auth";
 import { ago, localToday, peopleLine } from "../../lib/format";
-import { useSpaces } from "../../lib/spaces";
+import { applyChange, useSpaces } from "../../lib/spaces";
 import { colors, radius, space } from "../../lib/theme";
 import { useSpace } from "../../lib/use-space";
 
@@ -46,20 +47,10 @@ export default function SpaceScreen() {
   const doneCount = items.length - open.length;
 
   const [notice, setNotice] = useState("");
-  // Until this device has loaded the space it can't check a change, so it waits rather than drop it.
-  const ready = Boolean(view.members[userId]);
-  const run = (change: Parameters<typeof sync.dispatch>[0]): boolean => {
-    if (!ready) {
-      setNotice("Still loading this space. Try again in a moment.");
-      return false;
-    }
-    const result = sync.dispatch(change);
-    if (!result.ok) {
-      setNotice(result.reason);
-      return false;
-    }
-    setNotice("");
-    return true;
+  const run = (change: Change): boolean => {
+    const problem = applyChange(id, userId, change);
+    setNotice(problem ?? "");
+    return problem === null;
   };
   const complete = (item: Item) => run({ type: "item.complete", payload: { itemId: item.id, on: today } });
   const add = (title: string) =>
@@ -396,7 +387,7 @@ function Chat(props: {
       <FlatList
         inverted
         data={rows}
-        extraData={picker}
+        extraData={[picker, props.pendingIds, props.view.reactions, props.view.items, props.userId]}
         keyExtractor={(r) => (r.kind === "day" ? r.key : r.message.id)}
         ListFooterComponent={props.header}
         contentContainerStyle={{ paddingVertical: space.md }}

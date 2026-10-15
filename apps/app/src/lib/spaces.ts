@@ -1,12 +1,17 @@
 import type { SpaceState } from "@buildpair/domain";
+import type { Change } from "@buildpair/sync";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { createSpace, listSpaces, type SpaceSummary } from "./api";
-import { getSync } from "./use-space";
+import { authClient } from "./auth";
+import { getSync, stopAllSyncs } from "./use-space";
 
 /** The signed-in person's spaces, shared by the sidebar, the Spaces tab and Today. */
 let spaces: SpaceSummary[] | null = null;
 let error = "";
 let loading: Promise<void> | null = null;
+/** Whose spaces these are, and a counter that makes answers for an earlier person get ignored. */
+let owner = "";
+let generation = 0;
 const listeners = new Set<() => void>();
 let snapshot: { spaces: SpaceSummary[] | null; error: string } = { spaces, error };
 
@@ -16,19 +21,24 @@ function emit() {
 }
 
 export function refreshSpaces(): Promise<void> {
-  loading ??= listSpaces()
+  if (loading) return loading;
+  const mine = generation;
+  const request = listSpaces()
     .then((res) => {
+      if (mine !== generation) return;
       spaces = res.spaces;
       error = "";
     })
     .catch((e: Error) => {
+      if (mine !== generation) return;
       error = e.message;
     })
     .finally(() => {
-      loading = null;
+      if (loading === request) loading = null;
       emit();
     });
-  return loading;
+  loading = request;
+  return request;
 }
 
 export async function addSpace(name: string, purpose: string): Promise<SpaceSummary> {
@@ -40,9 +50,28 @@ export async function addSpace(name: string, purpose: string): Promise<SpaceSumm
 
 /** Forget everything on sign-out so the next person starts clean. */
 export function resetSpaces() {
+  clear();
+  emit();
+}
+
+function clear() {
+  generation += 1;
+  loading = null;
+  owner = "";
   spaces = null;
   error = "";
-  emit();
+  snapshot = { spaces, error };
+}
+
+/** Called with the signed-in person's ID; a different person (or none) starts from nothing. */
+function ensureOwner(userId: string) {
+  if (owner === userId) return;
+  // Runs during render, so it clears quietly; every reader picks up the new snapshot as it renders.
+  if (owner) {
+    stopAllSyncs();
+    clear();
+  }
+  owner = userId;
 }
 
 const subscribe = (l: () => void) => {
@@ -51,14 +80,17 @@ const subscribe = (l: () => void) => {
 };
 
 export function useSpaces() {
+  const { data: session } = authClient.useSession();
+  const userId = session?.user.id ?? "";
+  if (userId) ensureOwner(userId);
   const snap = useSyncExternalStore(
     subscribe,
     () => snapshot,
     () => snapshot,
   );
   useEffect(() => {
-    if (spaces === null) void refreshSpaces();
-  }, []);
+    if (userId && spaces === null) void refreshSpaces();
+  }, [userId]);
   return snap;
 }
 
@@ -66,6 +98,8 @@ export function useSpaces() {
 export function useSpaceViews(ids: readonly string[], userId: string): Record<string, SpaceState> {
   const key = ids.join(",");
   const store = useMemo(() => {
+    // getSync starts a space's sync the first time it's asked for; it's cached, so a discarded render
+    // costs nothing more than an early start.
     const syncs = userId
       ? key
           .split(",")
@@ -92,4 +126,15 @@ export function useSpaceViews(ids: readonly string[], userId: string): Record<st
     };
   }, [key, userId]);
   return useSyncExternalStore(store.subscribe, store.get, store.get);
+}
+
+/**
+ * Applies a change to a space, unless this device hasn't loaded the space yet or the rules refuse it.
+ * Returns why it didn't happen, or null when it did.
+ */
+export function applyChange(spaceId: string, userId: string, change: Change): string | null {
+  const sync = getSync(spaceId, userId);
+  if (!sync.getSnapshot().view.members[userId]) return "Still loading that space. Try again in a moment.";
+  const result = sync.dispatch(change);
+  return result.ok ? null : result.reason;
 }

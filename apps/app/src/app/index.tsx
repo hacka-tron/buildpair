@@ -1,17 +1,27 @@
 import { newId, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item } from "@buildpair/protocol";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { ScrollView, Text, TextInput, View } from "react-native";
-import { Card, Chip, ChipRow, Fab, Faces, ItemRow, SectionHeader, Sheet, SpaceTile } from "../components/kit";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  Card,
+  Chip,
+  ChipRow,
+  Fab,
+  Faces,
+  Icon,
+  ItemRow,
+  SectionHeader,
+  Sheet,
+  SpaceTile,
+} from "../components/kit";
 import { PageHeader, Shell, useWide } from "../components/shell";
 import { Button, ErrorText } from "../components/ui";
 import type { SpaceSummary } from "../lib/api";
 import { authClient } from "../lib/auth";
 import { localToday, longDate } from "../lib/format";
-import { useSpaces, useSpaceViews } from "../lib/spaces";
+import { applyChange, useSpaces, useSpaceViews } from "../lib/spaces";
 import { colors, radius, space } from "../lib/theme";
-import { getSync } from "../lib/use-space";
 
 /** What's on today: due today or earlier, habits, and anything open without a date. */
 function forToday(item: Item, today: string) {
@@ -29,6 +39,7 @@ export default function Today() {
   const views = useSpaceViews(ids, userId);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [adding, setAdding] = useState(false);
+  const [problem, setProblem] = useState("");
 
   const groups = (spaces ?? []).map((s) => {
     const view = views[s.id];
@@ -56,7 +67,7 @@ export default function Today() {
           sub={`${longDate()} · ${left} left${done ? ` · ${done} done` : ""}`}
           right={wide ? <Button label="Add" onPress={() => setAdding(true)} /> : undefined}
         />
-        <ErrorText>{error}</ErrorText>
+        <ErrorText>{error || problem}</ErrorText>
         {spaces && spaces.length === 0 ? <FirstRun /> : null}
         {groups.map(({ space: s, view, open, doneToday }) => {
           const isOpen = !collapsed[s.id];
@@ -69,19 +80,26 @@ export default function Today() {
                 open={isOpen}
                 onToggle={() => setCollapsed((c) => ({ ...c, [s.id]: !c[s.id] }))}
                 right={
-                  people.length ? (
-                    <Faces people={people} size={20} />
-                  ) : (
-                    <Text style={{ fontSize: 12, color: colors.faint }}>Only you</Text>
-                  )
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/spaces/[id]", params: { id: s.id } })}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Open ${s.name}`}
+                    hitSlop={8}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                  >
+                    {people.length ? (
+                      <Faces people={people} size={20} />
+                    ) : (
+                      <Text style={{ fontSize: 12, color: colors.faint }}>Only you</Text>
+                    )}
+                    <Icon name="chevron-right" size={16} color={colors.faint} />
+                  </Pressable>
                 }
               >
                 <SpaceTile id={s.id} name={s.name} size={20} />
-                <Link href={{ pathname: "/spaces/[id]", params: { id: s.id } }} asChild>
-                  <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>
-                    {s.name}
-                  </Text>
-                </Link>
+                <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>
+                  {s.name}
+                </Text>
                 {open.length + doneToday.length > 0 ? (
                   <Text style={{ fontSize: 12, color: colors.faint }}>
                     {doneToday.length} of {open.length + doneToday.length} done
@@ -103,10 +121,12 @@ export default function Today() {
                       last={i === list.length - 1}
                       meta={metaFor(item, today, view)}
                       onToggle={() =>
-                        getSync(s.id, userId).dispatch({
-                          type: "item.complete",
-                          payload: { itemId: item.id, on: today },
-                        })
+                        setProblem(
+                          applyChange(s.id, userId, {
+                            type: "item.complete",
+                            payload: { itemId: item.id, on: today },
+                          }) ?? "",
+                        )
                       }
                     />
                   ))}
@@ -122,14 +142,12 @@ export default function Today() {
         onClose={() => setAdding(false)}
         spaces={spaces ?? []}
         wide={wide}
-        onAdd={(spaceId, title, dueOn) => {
-          if (!views[spaceId]?.members[userId]) return "Still loading that space. Try again in a moment.";
-          const result = getSync(spaceId, userId).dispatch({
+        onAdd={(spaceId, title, dueOn) =>
+          applyChange(spaceId, userId, {
             type: "item.create",
             payload: { itemId: newId(), kind: "todo", title, dueOn },
-          });
-          return result.ok ? null : result.reason;
-        }}
+          })
+        }
       />
     </Shell>
   );

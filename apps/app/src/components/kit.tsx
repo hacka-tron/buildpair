@@ -1,7 +1,7 @@
 import type { Item } from "@buildpair/protocol";
 import Feather from "@expo/vector-icons/Feather";
 import type { ReactNode } from "react";
-import { Modal, Pressable, Text, View, type ViewStyle } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { dueLabel } from "../lib/format";
 import { colors, personColor, radius, space, spaceColor } from "../lib/theme";
@@ -249,7 +249,11 @@ export function ItemRow({
             {item.title}
           </Text>
           {item.kind !== "todo" ? <Tag>{item.kind === "habit" ? "Habit" : "Goal"}</Tag> : null}
-          {item.visibility === "owner" ? <Icon name="lock" size={12} color={colors.faint} /> : null}
+          {item.visibility === "owner" ? (
+            <View accessible accessibilityLabel="Only you can see this">
+              <Icon name="lock" size={12} color={colors.faint} />
+            </View>
+          ) : null}
         </View>
         {meta ? (
           <Text numberOfLines={1} style={{ fontSize: 12, color: colors.sub }}>
@@ -351,46 +355,49 @@ export function Sheet({
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType={wide ? "fade" : "slide"} onRequestClose={onClose}>
-      <Pressable
-        onPress={onClose}
-        accessibilityLabel="Close"
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(15, 20, 35, 0.35)",
-          justifyContent: wide ? "center" : "flex-end",
-          alignItems: wide ? "center" : "stretch",
-        }}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <Pressable
-          onPress={() => undefined}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
           style={{
-            backgroundColor: "#fff",
-            borderRadius: radius.sheet,
-            borderBottomLeftRadius: wide ? radius.sheet : 0,
-            borderBottomRightRadius: wide ? radius.sheet : 0,
-            padding: space.xl,
-            paddingBottom: space.xl + (wide ? 0 : insets.bottom),
-            gap: space.lg,
-            width: wide ? 460 : "100%",
+            flex: 1,
+            backgroundColor: "rgba(15, 20, 35, 0.35)",
+            justifyContent: wide ? "center" : "flex-end",
+            alignItems: wide ? "center" : "stretch",
           }}
         >
-          {!wide ? (
-            <View
-              style={{
-                alignSelf: "center",
-                width: 36,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: colors.line,
-              }}
-            />
-          ) : null}
-          <Text style={{ fontSize: 20, fontWeight: "700", color: colors.ink, letterSpacing: -0.3 }}>
-            {title}
-          </Text>
-          {children}
+          <Pressable
+            onPress={() => undefined}
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: radius.sheet,
+              borderBottomLeftRadius: wide ? radius.sheet : 0,
+              borderBottomRightRadius: wide ? radius.sheet : 0,
+              padding: space.xl,
+              paddingBottom: space.xl + (wide ? 0 : insets.bottom),
+              gap: space.lg,
+              width: wide ? 460 : "100%",
+            }}
+          >
+            {!wide ? (
+              <View
+                style={{
+                  alignSelf: "center",
+                  width: 36,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: colors.line,
+                }}
+              />
+            ) : null}
+            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.ink, letterSpacing: -0.3 }}>
+              {title}
+            </Text>
+            {children}
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
