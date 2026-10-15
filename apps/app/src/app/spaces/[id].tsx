@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { ItemSheet } from "../../components/item-sheet";
 import { Avatar, Card, Faces, Icon, ItemRow, SectionHeader, Sheet, SpaceTile } from "../../components/kit";
 import { Shell, useWide } from "../../components/shell";
 import { Button, ErrorText } from "../../components/ui";
@@ -38,6 +39,7 @@ export default function SpaceScreen() {
   const name = view.name || summary?.name || "";
   const purpose = view.purpose || summary?.purpose || "";
   const [inviting, setInviting] = useState(false);
+  const [opened, setOpened] = useState<Item | null>(null);
 
   const nameOf = (uid: string) => (uid === userId ? "You" : (view.members[uid]?.name ?? "Someone"));
   const members = Object.values(view.members);
@@ -70,6 +72,7 @@ export default function SpaceScreen() {
       today={today}
       view={view}
       onToggle={complete}
+      onOpen={setOpened}
       onAdd={add}
       wide={wide}
     />
@@ -113,6 +116,22 @@ export default function SpaceScreen() {
     />
   );
 
+  const sheets = (
+    <>
+      <ItemSheet
+        key={opened?.id ?? "none"}
+        item={opened}
+        view={view}
+        userId={userId}
+        today={today}
+        wide={wide}
+        onClose={() => setOpened(null)}
+        apply={(change) => applyChange(id, userId, change)}
+      />
+      {inviteSheet}
+    </>
+  );
+
   if (wide) {
     return (
       <Shell active={{ spaceId: id }}>
@@ -151,7 +170,7 @@ export default function SpaceScreen() {
             <People members={members} online={online} userId={userId} onInvite={() => setInviting(true)} />
           </ScrollView>
         </View>
-        {inviteSheet}
+        {sheets}
       </Shell>
     );
   }
@@ -211,7 +230,7 @@ export default function SpaceScreen() {
         {errorBar}
         {chat}
       </KeyboardAvoidingView>
-      {inviteSheet}
+      {sheets}
     </Shell>
   );
 }
@@ -223,6 +242,7 @@ function ItemsPanel(props: {
   today: string;
   view: SpaceState;
   onToggle: (item: Item) => void;
+  onOpen: (item: Item) => void;
   /** Returns false when the change didn't go through, so the text stays for another try. */
   onAdd: (title: string) => boolean;
   wide: boolean;
@@ -246,7 +266,8 @@ function ItemsPanel(props: {
           item={item}
           today={props.today}
           onToggle={() => props.onToggle(item)}
-          meta={item.kind === "habit" ? habitMeta(item, props.today) : undefined}
+          onOpen={() => props.onOpen(item)}
+          meta={itemMeta(item, props.today, props.view)}
         />
       ))}
       {props.doneCount ? (
@@ -300,10 +321,17 @@ function ItemsPanel(props: {
   );
 }
 
-const habitMeta = (item: Item, today: string) => {
-  const p = weekProgress(item, today);
-  return `${p.done} of ${p.target} this week`;
-};
+function itemMeta(item: Item, today: string, view: SpaceState): string | undefined {
+  if (item.kind === "habit") {
+    const p = weekProgress(item, today);
+    return `${p.done} of ${p.target} this week`;
+  }
+  if (item.kind === "goal") {
+    const steps = Object.values(view.items).filter((i) => i.parentId === item.id);
+    return `${steps.filter((i) => i.status === "done").length} of ${steps.length} steps`;
+  }
+  return undefined;
+}
 
 function People(props: {
   members: { userId: string; name: string; role: string }[];

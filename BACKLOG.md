@@ -12,10 +12,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **App design pass (2026-10-15):** the app now follows the mockups' shell. Phones get a tab bar (Today, Spaces) and a floating +. Wide screens get the sidebar with your spaces. Today lists open items from every space, grouped by space, with a quick add sheet. Spaces shows tiles, summaries and faces. A space shows the chat with completion lines, stacked reactions (hover or press and hold to add), people with presence and an invite sheet. Checked in the browser at 390 and 1440 wide; not yet run on a real phone.
 
+**Items, part 1 (2026-10-15):** quick add makes to-dos (today, tomorrow, no date), habits (times a week) and goals (finish by). Tapping an item opens its sheet: mark done, skip a habit for today, won't do, post an update to the chat, and a goal's steps with "+ Add a step". Habits show as done once checked off today; due goal steps show on Today.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** with a real email at `staging.buildpair.app`. Not yet tested end to end with Resend.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: milestone 3, items in full.** Habits (weekly progress), goals with steps, schedules and repeats, natural-language adding ("dentist friday 3pm"), the Today view across spaces, Skip / Won't do / Update from the item itself (the action bar and menu from the designs), reminders (UserHub alarms) and push notifications.
+3. **Build: rest of milestone 3.** Natural-language adding ("dentist friday 3pm"), editing an item (title, date, schedule, move to another space, only visible to me), multi-select with the action bar from the designs, a calendar date picker and repeat rules, reminders (UserHub alarms) and push notifications.
 
 ## What exists now
 
@@ -48,6 +50,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, real app icons and splash, owner-approved join requests. Until then, release only the landing page publicly if anything.
 - **Staging is public.** Anyone can open it and request sign-in codes to any address, which spends the Resend quota and can hurt the domain's email reputation. Plan: an allowlist of emails that can sign in on staging and previews (a variable, enforced in the API), plus a Cloudflare rate-limiting rule on the auth endpoints. Also mark staging pages `noindex`.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
+- **To-dos don't record when they were finished.** A to-do with no date (or an overdue one) ticked today drops off Today and out of its counts. Add a completed-on date to the item event when the protocol next changes.
+- **Skipping a habit twice in a day posts twice.** Skips change nothing on the item, so the app can't tell it's already skipped. Same fix: record skips on the item.
 - **Today and Spaces open a live socket per space** to show their contents. Fine for a few spaces; move to the UserHub inbox (see above) before people have many.
 - **Space colors come from the space ID**, so two spaces can share a color. Let owners pick, as the design says.
 - **Production D1 name:** the config says `buildpair-production`; the database's real name may be `buildpair-prod`. Deploys use the ID, so it works either way; align the name once confirmed.
