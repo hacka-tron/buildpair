@@ -4,12 +4,14 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 ## > RESUME HERE (as of 2026-10-15)
 
-**Done and pushed to `main`:** milestone 1 (foundations) and the landing page with sign-up. CI is green: lint, typecheck, 28 unit/integration tests, two browser tests (sign-up on desktop and mobile; two people chatting live), secret scan and CodeQL. Deploys are written but switched off until the one-time setup below.
+**Done and pushed to `main`:** milestone 1 (foundations) and the landing page with sign-up. CI is green: lint, typecheck, 28 unit/integration tests, two browser tests (sign-up on desktop and mobile; two people chatting live), secret scan and CodeQL.
+
+**Staging is live (2026-10-15):** `staging.buildpair.app` (landing), `app-staging.buildpair.app` (web app), `api-staging.buildpair.app` (API, `/health` OK). Every merge to `main` deploys there. Setup done: D1 databases, GitHub environments (production needs the owner's approval), variables, secrets including `RESEND_API_KEY`, Resend domain verified, `DEPLOY_ENABLED=true`. Production has not been released. Expo is not set up yet, so no phone updates are published.
 
 **Pick it up locally:** follow "Run it locally" in [README.md](README.md). A fresh clone was checked on 2026-10-14: install, local database, `pnpm check`, and all three servers (API on 8787, web app on 8081, landing page on 8788) start and work; sign-in codes print in the API's terminal.
 
 **Next, in order:**
-1. **Owner: one-time setup** in [docs/SETUP.md](docs/SETUP.md): Cloudflare token, account ID and two D1 databases (paste their IDs into `apps/edge/wrangler.jsonc`), Resend with DNS records for `buildpair.app`, an Expo account and token, GitHub environments and secrets, then set `DEPLOY_ENABLED=true`. After that, merges deploy to staging and published releases deploy to production (with your approval).
+1. **Owner: try sign-in on staging** with a real email at `staging.buildpair.app`. Not yet tested end to end with Resend.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
 3. **Build: milestone 3, items in full.** Habits (weekly progress), goals with steps, schedules and repeats, natural-language adding ("dentist friday 3pm"), the Today view across spaces, Skip / Won't do / Update from the item itself (the action bar and menu from the designs), reminders (UserHub alarms) and push notifications.
 
@@ -41,7 +43,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Production deploys go straight to 100%** with a health check and one-command rollback; add gradual rollout after confirming it works with Durable Objects on staging.
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.
 - **Repository license:** none yet (all rights reserved).
-- **Dependabot #3** (`expo/expo-github-action` 8 → 9) is held on purpose: that action only runs in the preview and deploy workflows, which stay off until setup. Check its release notes and merge it once deploys are switched on. The other GitHub Actions updates were merged on 2026-10-15.
+- **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, real app icons and splash, owner-approved join requests. Until then, release only the landing page publicly if anything.
+- **Staging is public.** Anyone can open it and request sign-in codes to any address, which spends the Resend quota and can hurt the domain's email reputation. Plan: an allowlist of emails that can sign in on staging and previews (a variable, enforced in the API), plus a Cloudflare rate-limiting rule on the auth endpoints. Also mark staging pages `noindex`.
+- **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
+- **PR previews: the web app doesn't upload.** The preview API works (`buildpair-api-pr-<n>.<subdomain>.workers.dev`), but `wrangler versions upload --preview-alias` in `preview.yml` fails because the base `buildpair-web` Worker has never been deployed, and the step stays green because the pipe through `tee` hides the error. Fix: add `set -o pipefail`, and deploy the base `buildpair-web` Worker once (or on first preview) before uploading versions.
+- **Production D1 name:** the config says `buildpair-production`; the database's real name may be `buildpair-prod`. Deploys use the ID, so it works either way; align the name once confirmed.
+- **Dependabot #3** (`expo/expo-github-action` 8 → 9) is held on purpose: that action only runs in the preview and deploy workflows, which are now switched on. Check its release notes and merge it. The other GitHub Actions updates were merged on 2026-10-15.
 
 ## Later milestones
 
