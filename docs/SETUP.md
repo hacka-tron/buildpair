@@ -36,6 +36,7 @@ Create an Expo account and project (`npx eas-cli@latest init` in `apps/app`), th
 | `DEPLOY_ENABLED` | `true` once the steps above are done |
 | `CLOUDFLARE_ACCOUNT_ID` | from step 1 |
 | `CLOUDFLARE_WORKERS_SUBDOMAIN` | from step 1, without `.workers.dev` |
+| `ALLOWED_EMAILS` | on the `staging` and `preview` environments only: comma-separated emails that may sign in there. Never set it on `production`. Removing it later doesn't remove it from the Worker; delete the secret in Cloudflare too. |
 
 **Secrets** (on each environment, or repository-wide):
 

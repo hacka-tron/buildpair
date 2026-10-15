@@ -51,6 +51,8 @@
         INVALID_OTP: "That code isn't right. Check the email, or ask for a new code.",
         OTP_EXPIRED: "That code has expired. Ask for a new one below.",
         TOO_MANY_ATTEMPTS: "Too many wrong codes. Ask for a new one below.",
+        NOT_INVITED:
+          "This is a test version of Buildpair, open to invited people only. Ask the person who invited you to add your email.",
         INVALID_EMAIL: "That email doesn't look right. Check it and try again.",
       }[data.code];
       throw new Error(plain || "Something went wrong on our side. Try again in a moment.");
