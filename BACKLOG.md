@@ -36,7 +36,6 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 ## Known gaps (not bugs, just not built yet)
 
 - **App Store requirements before any store release:** in-app account deletion, report and block, Sign in with Apple (needed once Google sign-in ships on iOS).
-- **App icons and splash** are still Expo's template images; replace them with the Buildpair mark.
 - **Universal Links / App Links** need `apple-app-site-association` and `assetlinks.json` served from `buildpair.app/.well-known/` once the Apple Team ID and Android signing key exist.
 - **Invites** let anyone with the link join right away; the design calls for the owner to approve each request.
 - **The app doesn't use the UserHub inbox socket yet**, so spaces you don't have open don't update live (they catch up when opened).
@@ -49,7 +48,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Production deploys go straight to 100%** with a health check and one-command rollback; add gradual rollout after confirming it works with Durable Objects on staging.
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.
 - **Repository license:** none yet (all rights reserved).
-- **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, real app icons and splash, owner-approved join requests. Until then, release only the landing page publicly if anything.
+- **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, owner-approved join requests. Until then, release only the landing page publicly if anything.
 - **Staging is open to anyone.** Anyone can make an account there (one email each) or request password-reset codes, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Still to do: a Cloudflare rate-limiting rule on the auth endpoints and `noindex` on staging pages.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
 - **To-dos don't record when they were finished.** A to-do with no date (or an overdue one) ticked today drops off Today and out of its counts. Add a completed-on date to the item event when the protocol next changes.
