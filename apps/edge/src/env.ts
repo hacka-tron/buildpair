@@ -18,8 +18,17 @@ export interface Env {
   EMAIL_PROVIDER: "console" | "cloudflare" | "resend" | "test";
   EMAIL_FROM: string;
   RESEND_API_KEY?: string;
+  /** Comma-separated emails allowed to sign in. Set on staging and previews so strangers can't use them; unset means anyone. */
+  ALLOWED_EMAILS?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+}
+
+/** Whether this email may sign in here: true everywhere ALLOWED_EMAILS isn't set. */
+export function isEmailAllowed(env: Env, email: string): boolean {
+  if (!env.ALLOWED_EMAILS?.trim()) return true;
+  const allowed = env.ALLOWED_EMAILS.split(",").map((e) => e.trim().toLowerCase());
+  return allowed.includes(email.trim().toLowerCase());
 }
 
 /** Fail fast with a clear message when configuration is missing or unsafe. */

@@ -42,6 +42,7 @@ jobs:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           TICKET_SECRET: ${{ secrets.TICKET_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALLOWED_EMAILS: ${{ vars.ALLOWED_EMAILS }}
           WORKERS_SUBDOMAIN: ${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}
         run: node scripts/deploy-preview.mjs "$PR"
 
@@ -51,7 +52,10 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: ${{ steps.api.outputs.url }}
         run: |
+          set -o pipefail
           pnpm build:web
+          # Preview URLs hang off a base Worker, which has to exist before versions can be uploaded.
+          pnpm exec wrangler deployments list >/dev/null 2>&1 || pnpm exec wrangler deploy
           out=$(pnpm exec wrangler versions upload --preview-alias "pr-$PR" 2>&1 | tee /dev/stderr)
           echo "url=$(echo "$out" | grep -oE 'https://pr-[^ ]+\.workers\.dev' | head -1)" >> "$GITHUB_OUTPUT"
 

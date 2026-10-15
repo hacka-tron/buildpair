@@ -53,13 +53,15 @@ jobs:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           TICKET_SECRET: ${{ secrets.TICKET_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # Set on the staging environment only, so strangers can't use staging to send email.
+          ALLOWED_EMAILS: ${{ vars.ALLOWED_EMAILS }}
         run: |
           set -o pipefail
           # Staging and production send sign-in codes through Resend, so the API refuses to start without its key.
           for key in BETTER_AUTH_SECRET TICKET_SECRET RESEND_API_KEY; do
             [ -n "${!key}" ] || { echo "Missing secret $key on the \"$TARGET\" environment (see docs/SETUP.md)."; exit 1; }
           done
-          jq -n 'env | {BETTER_AUTH_SECRET, TICKET_SECRET, RESEND_API_KEY} | with_entries(select(.value != null and .value != ""))' \
+          jq -n 'env | {BETTER_AUTH_SECRET, TICKET_SECRET, RESEND_API_KEY, ALLOWED_EMAILS} | with_entries(select(.value != null and .value != ""))' \
             | pnpm exec wrangler secret bulk --env "$TARGET"
 
       - name: Smoke test the API

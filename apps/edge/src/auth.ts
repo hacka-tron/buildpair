@@ -1,13 +1,20 @@
 import { expo } from "@better-auth/expo";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError } from "better-auth/api";
 import { emailOTP } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./db/schema";
 import { sendEmail } from "./email";
-import type { Env } from "./env";
+import { type Env, isEmailAllowed } from "./env";
 
 export const TEST_OTP = "424242";
+
+export const NOT_INVITED = {
+  code: "NOT_INVITED",
+  message:
+    "This is a test version of Buildpair, open to invited people only. Ask the person who invited you to add your email.",
+};
 
 export function createAuth(env: Env) {
   const origins = env.APP_ORIGINS.split(",").map((o) => o.trim());
@@ -23,6 +30,16 @@ export function createAuth(env: Env) {
     database: drizzleAdapter(drizzle(env.DB, { schema }), { provider: "sqlite", schema }),
     trustedOrigins: [...origins, "buildpair://"],
     socialProviders: google,
+    // Covers every way an account can be made (email codes and Google); app.ts also stops codes being sent.
+    databaseHooks: {
+      user: {
+        create: {
+          async before(user) {
+            if (!isEmailAllowed(env, user.email)) throw new APIError("FORBIDDEN", NOT_INVITED);
+          },
+        },
+      },
+    },
     advanced: sharedCookieDomain ? { crossSubDomainCookies: { enabled: true, domain: "buildpair.app" } } : {},
     plugins: [
       expo(),

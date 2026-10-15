@@ -4,9 +4,9 @@ import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
-import { createAuth } from "./auth";
+import { createAuth, NOT_INVITED } from "./auth";
 import { invites, memberships, spaces } from "./db/schema";
-import { assertConfig, type Env } from "./env";
+import { assertConfig, type Env, isEmailAllowed } from "./env";
 import { USER_HEADER } from "./space-room";
 import { signTicket, verifyTicket } from "./tickets";
 
@@ -41,6 +41,18 @@ app.use(
 );
 
 app.get("/health", (c) => c.json({ ok: true, environment: c.env.ENVIRONMENT }));
+
+// On staging and previews only listed emails get a code, so strangers can't use them to send email.
+app.post("/api/auth/email-otp/send-verification-otp", async (c, next) => {
+  if (!c.env.ALLOWED_EMAILS?.trim()) return next();
+  const body = (await c.req.raw
+    .clone()
+    .json()
+    .catch(() => ({}))) as { email?: unknown };
+  if (typeof body.email === "string" && !isEmailAllowed(c.env, body.email))
+    return c.json({ ...NOT_INVITED, error: NOT_INVITED.message }, 403);
+  return next();
+});
 
 app.on(["GET", "POST"], "/api/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 

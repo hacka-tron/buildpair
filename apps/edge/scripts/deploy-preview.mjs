@@ -47,6 +47,7 @@ const secrets = {
   TICKET_SECRET: process.env.TICKET_SECRET,
 };
 if (process.env.RESEND_API_KEY) secrets.RESEND_API_KEY = process.env.RESEND_API_KEY;
+if (process.env.ALLOWED_EMAILS) secrets.ALLOWED_EMAILS = process.env.ALLOWED_EMAILS;
 wrangler(["secret", "bulk", "-c", "wrangler.preview.json"], { input: JSON.stringify(secrets) });
 
 console.log(`Preview API: ${apiUrl}`);
