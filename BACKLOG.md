@@ -41,7 +41,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Production deploys go straight to 100%** with a health check and one-command rollback; add gradual rollout after confirming it works with Durable Objects on staging.
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.
 - **Repository license:** none yet (all rights reserved).
-- **Dependabot pull requests** are open for routine updates; merge or close them as you like.
+- **Dependabot #3** (`expo/expo-github-action` 8 → 9) is held on purpose: that action only runs in the preview and deploy workflows, which stay off until setup. Check its release notes and merge it once deploys are switched on. The other GitHub Actions updates were merged on 2026-10-15.
 
 ## Later milestones
 
