@@ -30,12 +30,21 @@ export function createAuth(env: Env) {
     database: drizzleAdapter(drizzle(env.DB, { schema }), { provider: "sqlite", schema }),
     trustedOrigins: [...origins, "buildpair://"],
     socialProviders: google,
-    // Covers every way an account can be made (email codes and Google); app.ts also stops codes being sent.
+    // On staging and previews only listed emails can make an account or sign in, by any method.
     databaseHooks: {
       user: {
         create: {
           async before(user) {
             if (!isEmailAllowed(env, user.email)) throw new APIError("FORBIDDEN", NOT_INVITED);
+          },
+        },
+      },
+      session: {
+        create: {
+          async before(session, ctx) {
+            if (!env.ALLOWED_EMAILS?.trim()) return;
+            const user = await ctx?.context.internalAdapter.findUserById(session.userId);
+            if (!user || !isEmailAllowed(env, user.email)) throw new APIError("FORBIDDEN", NOT_INVITED);
           },
         },
       },
@@ -51,6 +60,8 @@ export function createAuth(env: Env) {
         // A fixed code only in automated tests; assertConfig forbids this provider in production.
         ...(env.EMAIL_PROVIDER === "test" ? { generateOTP: () => TEST_OTP } : {}),
         async sendVerificationOTP({ email, otp }) {
+          // Every kind of code goes through here, so strangers can't use staging to send email.
+          if (!isEmailAllowed(env, email)) throw new APIError("FORBIDDEN", NOT_INVITED);
           await sendEmail(env, {
             to: email,
             subject: `${otp} is your Buildpair code`,

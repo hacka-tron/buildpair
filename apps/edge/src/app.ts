@@ -42,14 +42,16 @@ app.use(
 
 app.get("/health", (c) => c.json({ ok: true, environment: c.env.ENVIRONMENT }));
 
-// On staging and previews only listed emails get a code, so strangers can't use them to send email.
+// Says plainly why no code is coming. Better Auth hides errors from sendVerificationOTP (so no one can probe
+// which emails have accounts), and that check in auth.ts is what actually stops every kind of code.
 app.post("/api/auth/email-otp/send-verification-otp", async (c, next) => {
   if (!c.env.ALLOWED_EMAILS?.trim()) return next();
-  const body = (await c.req.raw
+  const body: unknown = await c.req.raw
     .clone()
     .json()
-    .catch(() => ({}))) as { email?: unknown };
-  if (typeof body.email === "string" && !isEmailAllowed(c.env, body.email))
+    .catch(() => null);
+  const email = body && typeof body === "object" && "email" in body ? body.email : undefined;
+  if (typeof email === "string" && !isEmailAllowed(c.env, email))
     return c.json({ ...NOT_INVITED, error: NOT_INVITED.message }, 403);
   return next();
 });

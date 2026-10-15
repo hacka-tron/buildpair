@@ -1,9 +1,11 @@
 import { env } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { app } from "../src/app";
 import { TEST_OTP } from "../src/auth";
+import * as email from "../src/email";
 import { isEmailAllowed } from "../src/env";
+import { signIn } from "./helpers";
 
 const ORIGIN = "http://localhost:8081";
 
@@ -28,6 +30,12 @@ describe("email allowlist", () => {
     expect(isEmailAllowed(listed, " MAYA@example.com ")).toBe(true);
     expect(isEmailAllowed(listed, "sam@example.com")).toBe(true);
     expect(isEmailAllowed(listed, "stranger@example.com")).toBe(false);
+  });
+
+  it("tells an unlisted email why no code is coming, even with an odd body", async () => {
+    expect(
+      (await post("/api/auth/email-otp/send-verification-otp", null, "maya@example.com")).status,
+    ).not.toBe(500);
   });
 
   it("sends no code to an email that isn't on the list, and says why", async () => {
@@ -59,5 +67,35 @@ describe("email allowlist", () => {
     const res = await post("/api/auth/sign-in/email-otp", { email, otp: TEST_OTP }, "maya@example.com");
     expect(res.ok).toBe(false);
     expect(res.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("won't sign in an existing account that isn't on the list", async () => {
+    const email = `early-${newId()}@example.com`;
+    await signIn(email); // made before the list existed
+    expect((await post("/api/auth/email-otp/send-verification-otp", { email, type: "sign-in" })).status).toBe(
+      200,
+    );
+    const res = await post("/api/auth/sign-in/email-otp", { email, otp: TEST_OTP }, "maya@example.com");
+    expect(res.ok).toBe(false);
+    expect(res.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("sends no code of any kind to an unlisted email", async () => {
+    const address = `early-${newId()}@example.com`;
+    await signIn(address);
+    const send = vi.spyOn(email, "sendEmail");
+    await post("/api/auth/email-otp/request-password-reset", { email: address }, "maya@example.com");
+    expect(send).not.toHaveBeenCalled();
+    send.mockRestore();
+  });
+
+  it("still signs in a listed email", async () => {
+    const email = `maya-${newId()}@example.com`;
+    expect(
+      (await post("/api/auth/email-otp/send-verification-otp", { email, type: "sign-in" }, email)).status,
+    ).toBe(200);
+    const res = await post("/api/auth/sign-in/email-otp", { email, otp: TEST_OTP }, email);
+    expect(res.status).toBe(200);
+    expect(res.headers.getSetCookie().length).toBeGreaterThan(0);
   });
 });
