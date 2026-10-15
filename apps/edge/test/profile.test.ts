@@ -21,13 +21,13 @@ describe("profile", () => {
     });
   });
 
-  it.each([
+  it.each<[Record<string, unknown>, string]>([
     [{ name: "x".repeat(81) }, "name"],
     [{ building: "x".repeat(141) }, "building"],
     [{ building: 42 }, "building"],
     [{ timeZone: "Mars/Olympus" }, "time zone"],
     [{ timeZone: "x".repeat(100) }, "time zone"],
-  ])("refuses %j", async (body) => {
+  ])("refuses %j (%s)", async (body) => {
     const maya = await signIn(`maya-${newId()}@example.com`);
     const res = await maya.post("/api/auth/update-user", body);
     expect(res.status).toBe(400);
