@@ -27,7 +27,7 @@ export async function signIn(email: string): Promise<Client> {
   const res = await SELF.fetch(`${BASE}/api/auth/email-otp/verify-email`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ email, otp: TEST_OTP }),
+    body: JSON.stringify({ email, otp: TEST_OTP, password: PASSWORD }),
   });
   if (!res.ok) throw new Error(`verify: ${res.status} ${await res.text()}`);
   const cookie = res.headers

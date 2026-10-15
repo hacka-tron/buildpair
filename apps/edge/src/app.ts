@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
-import { createAuth, NOT_INVITED, USE_PASSWORD } from "./auth";
+import { createAuth, MIN_PASSWORD, NOT_INVITED, USE_PASSWORD } from "./auth";
 import { invites, memberships, spaces } from "./db/schema";
 import { assertConfig, type Env, isEmailAllowed, testLogin } from "./env";
 import { USER_HEADER } from "./space-room";
@@ -95,6 +95,41 @@ async function ensureTestAccount(ctx: AuthContext, login: { name: string; email:
     await ctx.internalAdapter.updatePassword(user.id, await ctx.password.hash(login.password));
   }
 }
+
+// Confirming an email takes the password too, and that password becomes the account's. Otherwise someone
+// could sign up first with another person's email and their own password, wait for the real owner to
+// confirm it, and keep a way in. Unconfirmed accounts can't sign in, so there are no other sessions to end.
+app.post("/api/auth/email-otp/verify-email", async (c) => {
+  const body = await jsonBody(c);
+  const password = body?.password;
+  if (typeof body?.email !== "string" || typeof password !== "string" || !password)
+    return c.json(err("PASSWORD_REQUIRED", "Enter your password with the code."), 400);
+  if (password.length < MIN_PASSWORD)
+    return c.json(
+      err("PASSWORD_TOO_SHORT", `Use at least ${MIN_PASSWORD} characters for your password.`),
+      400,
+    );
+  const auth = createAuth(c.env);
+  const res = await auth.handler(c.req.raw);
+  if (!res.ok) return res;
+  const ctx = await auth.$context;
+  const found = await ctx.internalAdapter.findUserByEmail(body.email.trim().toLowerCase(), {
+    includeAccounts: true,
+  });
+  if (found) {
+    const hash = await ctx.password.hash(password);
+    if (found.accounts.some((a) => a.providerId === "credential"))
+      await ctx.internalAdapter.updatePassword(found.user.id, hash);
+    else
+      await ctx.internalAdapter.linkAccount({
+        userId: found.user.id,
+        providerId: "credential",
+        accountId: found.user.id,
+        password: hash,
+      });
+  }
+  return res;
+});
 
 // The shared test account signs in by its bare name. It's made the first time someone signs in as it.
 app.post("/api/auth/sign-in/email", async (c, next) => {
