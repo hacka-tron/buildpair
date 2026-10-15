@@ -54,7 +54,11 @@ const jsonBody = (c: { req: { raw: Request } }): Promise<Record<string, unknown>
 // which emails have accounts), and the checks in auth.ts are what actually stop the codes.
 // Sign-up gets the same plain answer: Better Auth reports success for a refused account.
 app.post("/api/auth/email-otp/send-verification-otp", (c, next) => explainRefusal(c, next));
-app.post("/api/auth/sign-up/email", (c, next) => explainRefusal(c, next));
+app.post(
+  "/api/auth/sign-up/email",
+  (c, next) => explainRefusal(c, next),
+  (c, next) => checkProfile(c, next),
+);
 
 async function explainRefusal(c: Context<App>, next: Next) {
   const body = await jsonBody(c);
@@ -130,6 +134,37 @@ app.post("/api/auth/email-otp/verify-email", async (c) => {
   }
   return res;
 });
+
+export const PROFILE_LIMITS = { name: 80, building: 140 } as const;
+
+/** A valid IANA time zone, or false. */
+function isTimeZone(value: string): boolean {
+  if (!value || value.length > 64) return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Profile fields arrive through Better Auth, which doesn't check their size; these routes do. */
+async function checkProfile(c: Context<App>, next: Next) {
+  const body = await jsonBody(c);
+  const bad = (message: string) => c.json({ code: "INVALID_PROFILE", message, error: message }, 400);
+  if (body && typeof body.name === "string" && body.name.trim().length > PROFILE_LIMITS.name)
+    return bad(`Keep your name under ${PROFILE_LIMITS.name} characters.`);
+  if (body && "building" in body && body.building !== null) {
+    if (typeof body.building !== "string" || body.building.length > PROFILE_LIMITS.building)
+      return bad(`Keep "what you're building" under ${PROFILE_LIMITS.building} characters.`);
+  }
+  if (body && "timeZone" in body && body.timeZone !== null) {
+    if (typeof body.timeZone !== "string" || !isTimeZone(body.timeZone))
+      return bad("That time zone isn't one we know.");
+  }
+  return next();
+}
+app.post("/api/auth/update-user", (c, next) => checkProfile(c, next));
 
 // The shared test account signs in by its bare name. It's made the first time someone signs in as it.
 app.post("/api/auth/sign-in/email", async (c, next) => {

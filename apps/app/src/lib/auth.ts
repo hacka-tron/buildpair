@@ -1,5 +1,5 @@
 import { expoClient } from "@better-auth/expo/client";
-import { emailOTPClient } from "better-auth/client/plugins";
+import { emailOTPClient, inferAdditionalFields } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
@@ -12,6 +12,13 @@ export const authClient = createAuthClient({
   baseURL: API_URL,
   plugins: [
     emailOTPClient(),
+    // Profile fields (apps/edge/src/auth.ts).
+    inferAdditionalFields({
+      user: {
+        building: { type: "string", required: false },
+        timeZone: { type: "string", required: false },
+      },
+    }),
     ...(native
       ? [expoClient({ scheme: "buildpair", storagePrefix: "buildpair", storage: SecureStore })]
       : []),

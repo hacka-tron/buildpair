@@ -22,6 +22,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Space settings (2026-10-15):** owners rename a space, change what it's for, and pick its color (gear in the space header). The global spaces list (D1, new `color` column) follows the room. Protocol version 3.
 
+**Profile and templates (2026-10-15):** a Profile screen (your avatar on Today, or your name in the sidebar) with name, what you're building, time zone from the device, change password and sign out. Quick add offers goal templates (Launch v1, First 10 users, Raise a round, Train 4x a week).
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.

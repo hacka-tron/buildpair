@@ -8,6 +8,10 @@ export const user = sqliteTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
   image: text("image"),
+  /** Profile: what they're building, in their words. */
+  building: text("building"),
+  /** Profile: IANA time zone, e.g. "America/Chicago". */
+  timeZone: text("time_zone"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });

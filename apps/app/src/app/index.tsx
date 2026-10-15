@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ItemSheet } from "../components/item-sheet";
 import {
+  Avatar,
   Card,
   Chip,
   ChipRow,
@@ -123,7 +124,16 @@ export default function Today() {
                 ) : null}
                 <Button label="Add" onPress={() => setAdding(true)} />
               </View>
-            ) : undefined
+            ) : (
+              <Pressable
+                onPress={() => router.push("/profile")}
+                accessibilityRole="link"
+                accessibilityLabel="Your profile"
+                hitSlop={8}
+              >
+                <Avatar id={userId || "me"} name={session?.user.name || "?"} size={34} />
+              </Pressable>
+            )
           }
         />
         <ErrorText>{error || problem}</ErrorText>

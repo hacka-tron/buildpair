@@ -28,6 +28,7 @@ export default function RootLayout() {
           <Stack.Screen name="spaces/index" options={{ animation: "none" }} />
           <Stack.Screen name="spaces/[id]" />
           <Stack.Screen name="join/[token]" />
+          <Stack.Screen name="profile" />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="sign-in" />
