@@ -1,176 +1,260 @@
-import { Link } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
-import { Button, ErrorText, Field, Screen, styles } from "../components/ui";
-import { createSpace, listSpaces, type SpaceSummary } from "../lib/api";
+import { newId, type SpaceState, weekProgress } from "@buildpair/domain";
+import type { Item } from "@buildpair/protocol";
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  Card,
+  Chip,
+  ChipRow,
+  Fab,
+  Faces,
+  Icon,
+  ItemRow,
+  SectionHeader,
+  Sheet,
+  SpaceTile,
+} from "../components/kit";
+import { PageHeader, Shell, useWide } from "../components/shell";
+import { Button, ErrorText } from "../components/ui";
+import type { SpaceSummary } from "../lib/api";
 import { authClient } from "../lib/auth";
+import { localToday, longDate } from "../lib/format";
+import { applyChange, useSpaces, useSpaceViews } from "../lib/spaces";
 import { colors, radius, space } from "../lib/theme";
-import { stopAllSyncs } from "../lib/use-space";
 
-const SPACE_COLORS = ["#3557D6", "#2F8F5B", "#C0392B", "#7A4FB5", "#C47F0C", "#1F7A8C"];
-const colorFor = (id: string) =>
-  SPACE_COLORS[[...id].reduce((a, c) => a + c.charCodeAt(0), 0) % SPACE_COLORS.length]!;
+/** What's on today: due today or earlier, habits, and anything open without a date. */
+function forToday(item: Item, today: string) {
+  if (item.parentId || item.status !== "open") return false;
+  return !item.dueOn || item.dueOn <= today;
+}
 
-export default function Spaces() {
-  const [spaces, setSpaces] = useState<SpaceSummary[] | null>(null);
-  const [error, setError] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
-  const [purpose, setPurpose] = useState("");
-  const [busy, setBusy] = useState(false);
+export default function Today() {
+  const wide = useWide();
+  const today = localToday();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user.id ?? "";
+  const { spaces, error } = useSpaces();
+  const ids = useMemo(() => (spaces ?? []).map((s) => s.id), [spaces]);
+  const views = useSpaceViews(ids, userId);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [adding, setAdding] = useState(false);
+  const [problem, setProblem] = useState("");
 
-  const load = useCallback(async () => {
-    try {
-      setError("");
-      setSpaces((await listSpaces()).spaces);
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const create = async () => {
-    setBusy(true);
-    try {
-      const s = await createSpace(name.trim(), purpose.trim());
-      setSpaces((prev) => [s, ...(prev ?? [])]);
-      setCreating(false);
-      setName("");
-      setPurpose("");
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const groups = (spaces ?? []).map((s) => {
+    const view = views[s.id];
+    const all = Object.values(view?.items ?? {}).filter((i) => !i.parentId);
+    const open = all.filter((i) => forToday(i, today));
+    const doneToday = all.filter((i) => i.status === "done" && i.dueOn === today);
+    return { space: s, view, open, doneToday };
+  });
+  const left = groups.reduce((n, g) => n + g.open.length, 0);
+  const done = groups.reduce((n, g) => n + g.doneToday.length, 0);
 
   return (
-    <Screen>
-      <View
-        style={{
-          flex: 1,
-          padding: space.lg,
-          gap: space.md,
-          maxWidth: 720,
+    <Shell active="today">
+      <ScrollView
+        contentContainerStyle={{
+          padding: wide ? space.xxl : space.lg,
+          paddingBottom: 120,
+          maxWidth: 760,
           width: "100%",
-          alignSelf: "center",
+          alignSelf: wide ? "flex-start" : "center",
         }}
       >
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={styles.title}>Spaces</Text>
-          <Pressable
-            onPress={async () => {
-              stopAllSyncs();
-              await authClient.signOut();
-            }}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.sub, { color: colors.blue, fontWeight: "600" }]}>Sign out</Text>
-          </Pressable>
-        </View>
-        <ErrorText>{error}</ErrorText>
-
-        {creating ? (
-          <View
-            style={{
-              gap: space.md,
-              padding: space.md,
-              borderWidth: 1,
-              borderColor: colors.line,
-              borderRadius: radius.card,
-            }}
-          >
-            <Field label="Name" value={name} onChangeText={setName} placeholder="Life" maxLength={60} />
-            <Field
-              label="What it's for"
-              value={purpose}
-              onChangeText={setPurpose}
-              placeholder="Family, health and the house"
-              maxLength={280}
-            />
-            <View style={{ flexDirection: "row", gap: space.sm }}>
-              <View style={{ flex: 1 }}>
-                <Button
-                  label="Create space"
-                  onPress={create}
-                  busy={busy}
-                  disabled={!name.trim() || !purpose.trim()}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button label="Cancel" kind="secondary" onPress={() => setCreating(false)} />
-              </View>
-            </View>
-          </View>
-        ) : (
-          <Button label="New space" kind="secondary" onPress={() => setCreating(true)} />
-        )}
-
-        <FlatList
-          data={spaces ?? []}
-          keyExtractor={(s) => s.id}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={async () => {
-                setRefreshing(true);
-                await load();
-                setRefreshing(false);
-              }}
-            />
-          }
-          ListEmptyComponent={
-            spaces ? (
-              <Text style={[styles.sub, { textAlign: "center", marginTop: space.xl }]}>
-                No spaces yet. Make one for something you're working on, then invite someone to keep you
-                honest.
-              </Text>
-            ) : null
-          }
-          renderItem={({ item }) => (
-            <Link href={{ pathname: "/spaces/[id]", params: { id: item.id } }} asChild>
-              <Pressable
-                style={{
-                  flexDirection: "row",
-                  gap: space.md,
-                  alignItems: "center",
-                  paddingVertical: space.md,
-                  borderBottomWidth: 1,
-                  borderColor: colors.line,
-                }}
+        <PageHeader
+          title="Today"
+          sub={`${longDate()} · ${left} left${done ? ` · ${done} done` : ""}`}
+          right={wide ? <Button label="Add" onPress={() => setAdding(true)} /> : undefined}
+        />
+        <ErrorText>{error || problem}</ErrorText>
+        {spaces && spaces.length === 0 ? <FirstRun /> : null}
+        {groups.map(({ space: s, view, open, doneToday }) => {
+          const isOpen = !collapsed[s.id];
+          const people = Object.values(view?.members ?? {})
+            .filter((m) => m.userId !== userId)
+            .map((m) => ({ id: m.userId, name: m.name }));
+          return (
+            <View key={s.id} style={{ marginTop: space.md }}>
+              <SectionHeader
+                open={isOpen}
+                onToggle={() => setCollapsed((c) => ({ ...c, [s.id]: !c[s.id] }))}
+                right={
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/spaces/[id]", params: { id: s.id } })}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Open ${s.name}`}
+                    hitSlop={8}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                  >
+                    {people.length ? (
+                      <Faces people={people} size={20} />
+                    ) : (
+                      <Text style={{ fontSize: 12, color: colors.faint }}>Only you</Text>
+                    )}
+                    <Icon name="chevron-right" size={16} color={colors.faint} />
+                  </Pressable>
+                }
               >
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    backgroundColor: colorFor(item.id),
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
-                    {item.name.slice(0, 1).toUpperCase()}
+                <SpaceTile id={s.id} name={s.name} size={20} />
+                <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>
+                  {s.name}
+                </Text>
+                {open.length + doneToday.length > 0 ? (
+                  <Text style={{ fontSize: 12, color: colors.faint }}>
+                    {doneToday.length} of {open.length + doneToday.length} done
                   </Text>
+                ) : null}
+              </SectionHeader>
+              {isOpen ? (
+                <View style={{ paddingLeft: wide ? 22 : 0 }}>
+                  {open.length === 0 && doneToday.length === 0 ? (
+                    <Text style={{ fontSize: 13, color: colors.faint, paddingVertical: space.sm }}>
+                      Nothing due. Add something with the +.
+                    </Text>
+                  ) : null}
+                  {[...open, ...doneToday].map((item, i, list) => (
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      today={today}
+                      last={i === list.length - 1}
+                      meta={metaFor(item, today, view)}
+                      onToggle={() =>
+                        setProblem(
+                          applyChange(s.id, userId, {
+                            type: "item.complete",
+                            payload: { itemId: item.id, on: today },
+                          }) ?? "",
+                        )
+                      }
+                    />
+                  ))}
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontSize: 15, fontWeight: "600", color: colors.ink }} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.sub} numberOfLines={1}>
-                    {item.purpose}
-                  </Text>
-                </View>
-                {item.role === "supporter" ? <Text style={styles.sub}>Supporting</Text> : null}
-              </Pressable>
-            </Link>
-          )}
+              ) : null}
+            </View>
+          );
+        })}
+      </ScrollView>
+      {!wide ? <Fab label="Add a to-do" onPress={() => setAdding(true)} /> : null}
+      <QuickAdd
+        visible={adding}
+        onClose={() => setAdding(false)}
+        spaces={spaces ?? []}
+        wide={wide}
+        onAdd={(spaceId, title, dueOn) =>
+          applyChange(spaceId, userId, {
+            type: "item.create",
+            payload: { itemId: newId(), kind: "todo", title, dueOn },
+          })
+        }
+      />
+    </Shell>
+  );
+}
+
+function metaFor(item: Item, today: string, view: SpaceState | undefined) {
+  if (item.kind === "habit") {
+    const p = weekProgress(item, today);
+    return `${p.done} of ${p.target} this week`;
+  }
+  const parent = item.parentId ? view?.items[item.parentId]?.title : undefined;
+  return parent;
+}
+
+function FirstRun() {
+  return (
+    <Card style={{ paddingVertical: space.xl, gap: space.md, marginTop: space.lg }}>
+      <Text style={{ fontSize: 17, fontWeight: "700", color: colors.ink }}>Start with a space</Text>
+      <Text style={{ fontSize: 14, color: colors.sub, lineHeight: 20 }}>
+        A space is a list and one chat for something you're working on. Make one, add a few things to it, then
+        invite someone to keep you honest.
+      </Text>
+      <View style={{ alignSelf: "flex-start" }}>
+        <Button
+          label="Make a space"
+          onPress={() => router.push({ pathname: "/spaces", params: { new: "1" } })}
         />
       </View>
-    </Screen>
+    </Card>
+  );
+}
+
+const WHEN = [
+  { label: "Today", offset: 0 },
+  { label: "Tomorrow", offset: 1 },
+  { label: "No date", offset: null },
+] as const;
+
+function QuickAdd(props: {
+  visible: boolean;
+  onClose: () => void;
+  spaces: SpaceSummary[];
+  wide: boolean;
+  /** Returns why it couldn't add, or null when it worked. */
+  onAdd: (spaceId: string, title: string, dueOn: string | null) => string | null;
+}) {
+  const [title, setTitle] = useState("");
+  const [spaceId, setSpaceId] = useState<string | null>(null);
+  const [when, setWhen] = useState<number | null>(0);
+  const [error, setError] = useState("");
+  const chosen = spaceId ?? props.spaces[0]?.id ?? null;
+  const add = () => {
+    if (!title.trim() || !chosen) return;
+    const due = when === null ? null : localToday(new Date(Date.now() + when * 86400000));
+    const problem = props.onAdd(chosen, title.trim(), due);
+    if (problem) return setError(problem);
+    setError("");
+    setTitle("");
+    props.onClose();
+  };
+  return (
+    <Sheet visible={props.visible} onClose={props.onClose} title="Add to-do" wide={props.wide}>
+      {props.spaces.length === 0 ? (
+        <Text style={{ fontSize: 14, color: colors.sub }}>Make a space first, then add things to it.</Text>
+      ) : (
+        <>
+          <TextInput
+            autoFocus
+            value={title}
+            onChangeText={setTitle}
+            onSubmitEditing={add}
+            placeholder="Email 3 beta users"
+            placeholderTextColor={colors.faint}
+            style={{
+              fontSize: 17,
+              color: colors.ink,
+              borderWidth: 1,
+              borderColor: colors.line,
+              borderRadius: radius.control,
+              paddingHorizontal: space.md,
+              paddingVertical: 12,
+              outlineColor: colors.royal,
+            }}
+          />
+          <ChipRow label="When">
+            {WHEN.map((w) => (
+              <Chip key={w.label} on={when === w.offset} onPress={() => setWhen(w.offset)}>
+                {w.label}
+              </Chip>
+            ))}
+          </ChipRow>
+          <ChipRow label="Space">
+            {props.spaces.map((s) => (
+              <Chip
+                key={s.id}
+                on={chosen === s.id}
+                onPress={() => setSpaceId(s.id)}
+                leading={<SpaceTile id={s.id} name={s.name} size={16} />}
+              >
+                {s.name}
+              </Chip>
+            ))}
+          </ChipRow>
+          <ErrorText>{error}</ErrorText>
+          <Button label="Add" onPress={add} disabled={!title.trim()} />
+        </>
+      )}
+    </Sheet>
   );
 }

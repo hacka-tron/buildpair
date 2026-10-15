@@ -1,12 +1,12 @@
 import { SpaceSync } from "@buildpair/sync";
-import { useState, useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { spaceStorage } from "./storage";
 import { spaceTransport } from "./transport";
 
 const syncs = new Map<string, SpaceSync>();
 
 /** One SpaceSync per space per signed-in person, kept for the app's lifetime so reopening is instant. */
-function getSync(spaceId: string, userId: string) {
+export function getSync(spaceId: string, userId: string) {
   const key = `${userId}:${spaceId}`;
   let sync = syncs.get(key);
   if (!sync) {
@@ -23,7 +23,7 @@ export function stopAllSyncs() {
 }
 
 export function useSpace(spaceId: string, userId: string) {
-  const [sync] = useState(() => getSync(spaceId, userId));
+  const sync = useMemo(() => getSync(spaceId, userId), [spaceId, userId]);
   const snapshot = useSyncExternalStore(sync.subscribe, sync.getSnapshot, sync.getSnapshot);
   return { sync, ...snapshot };
 }

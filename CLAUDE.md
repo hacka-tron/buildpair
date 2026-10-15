@@ -14,7 +14,9 @@ Start with [BACKLOG.md](BACKLOG.md) (where work stands, what's next) and update 
 | `apps/edge/src/app.ts` | Hono routes: auth, spaces, tickets, commands, invites. |
 | `apps/edge/src/db/schema.ts` | D1 schema (Drizzle). Change it, then `pnpm --filter @buildpair/edge db:generate`. |
 | `apps/site` | Landing page and sign-up (`public/`), plus a Worker for per-environment config and invite redirects. |
-| `apps/app/src/app` | Expo Router screens. `apps/app/src/lib` holds the API client, auth, socket transport, local storage. |
+| `apps/app/src/app` | Expo Router screens: Today (`index`), Spaces (`spaces/index`), a space (`spaces/[id]`), sign-in, invite join. |
+| `apps/app/src/components` | `shell.tsx` (sidebar on wide screens, tab bar on phones), `kit.tsx` (avatars, tiles, item rows, sheets, chips), `ui.tsx` (buttons, fields). |
+| `apps/app/src/lib` | API client, auth, socket transport, local storage, `spaces.ts` (your spaces list and live views of several spaces), `format.ts` (dates and names). |
 
 ## Domains
 
