@@ -28,12 +28,14 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Private after creating (2026-10-16):** an item's sheet has "Make private" and "Share with the space". A goal takes its steps with it. Going private removes the item, its chat lines and the reactions on them from other members' screens and saved copies. Sharing again brings them all back. Steps now only go under your own top-level goal. Protocol version 5. Checked in the browser at 1440 wide; two-person behavior is covered by tests.
 
+**Move to another space (2026-10-16):** "Move to another space" on an item's sheet. A goal takes its steps and their history. The old space's log forgets the item. Chat lines about a shared item stay in the old chat, and lines about a private one go. A move that stops partway finishes when tried again. Protocol version 6. Checked in the browser at 1440 wide.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: move an item to another space.** It crosses two rooms (remove from one, add with its history to the other), so it needs care and tests.
-4. **Build: reminders and push.** Needs the phone build (step 2) and an Expo account; reminders run on UserHub alarms.
-5. **Build: milestone 4 (people):** owner-approved join requests, the Activity tab, the Supporting tab.
+3. **Build: owner-approved join requests** (milestone 4, and needed before production opens). Then the Activity tab and the Supporting tab.
+4. **Build: rate limiting on commands and sign-in, and report and block** (needed before production opens).
+5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
 ## What exists now
 
@@ -69,7 +71,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Quick add small cases (review of PR #18):** "SAT 3pm prep" reads as Saturday 3pm; a trailing "due" stays in the title ("pay bill due 11/20" keeps "due"); a period after a date stays ("call friday." becomes "call ."). Lookbehind in the parser is untested on a phone (Hermes).
 - **"order 2 jan prints" reads as January 2.** A number next to a month name counts as a date anywhere in the words. The add box shows it and one tap undoes it.
 - **"Every monday" becomes 1 time a week**, not specific days. Habits only know times per week for now.
-- **Still to build in milestone 3:** moving an item to another space, reminders and push.
+- **Still to build in milestone 3:** reminders and push.
+- **An edit made in the old space during a move can be lost.** The item is copied to the new space, then removed from the old one. A change in that split second stays behind. Rare, and the item is never lost.
 - **Making an item private still tells others its ID (review of the visibility change, minor).** The "went private" notice names item IDs only, but goes to every member, including people who join later. From it they can tell that a private item (or a goal with N steps) exists and roughly when it was made.
 - **Old odd step shapes keep their old visibility.** Before 2026-10-16 a direct command could put a goal under a goal, or a step under someone else's goal. The app never did. Such items don't follow their top goal when it's made private.
 - **Sharing an item again copies its chat lines and reactions into the log.** Toggling a long-lived goal back and forth many times grows the log. No size limit yet; snapshots (above) would fix it.
@@ -103,6 +106,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - Production database name stays `buildpair-production` (confirmed 2026-10-15).
 - Staging stays open for now; the email allowlist is built but off (2026-10-15).
 - Making an item private hides its past chat lines from the others too, and sharing it again brings them back (2026-10-16, Claude's call, reversible).
+- Moving an item leaves its chat lines in the old chat if it was shared, and takes nothing with it into the new chat (2026-10-16, Claude's call, reversible).
 - Steps follow their goal's visibility and go one level deep, under your own goal (2026-10-16, Claude's call, reversible).
 - Inside a space, the chat comes first; updates come from the items themselves (no Update button in the chat).
 
