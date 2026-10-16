@@ -2,6 +2,7 @@ import type { Item } from "@buildpair/protocol";
 import type { Change } from "@buildpair/sync";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { useShortcuts } from "../lib/shortcuts";
 import { colors, radius, space } from "../lib/theme";
 import { Icon, Sheet } from "./kit";
 import { NO_SCHEDULE, type Schedule, SchedulePanel } from "./schedule";
@@ -70,7 +71,24 @@ export function SelectionBar(props: {
     props.onClear();
   };
 
-  const action = (label: string, enabled: boolean, onPress: () => void) => (
+  const done = () =>
+    run(picked, (item) => ({ type: "item.complete", payload: { itemId: item.id, on: today } }));
+  const skip = () =>
+    run(skippable, (item) => ({ type: "item.skip", payload: { itemId: item.id, on: today, reason: null } }));
+  const wont = () =>
+    run(picked, (item) => ({ type: "item.wont", payload: { itemId: item.id, reason: null } }));
+  useShortcuts(
+    {
+      d: n > 0 ? done : undefined,
+      s: skippable.length > 0 ? skip : undefined,
+      w: n > 0 ? wont : undefined,
+      r: dated.length > 0 ? () => setRescheduling(true) : undefined,
+      Escape: props.onClear,
+    },
+    !rescheduling,
+  );
+
+  const action = (label: string, enabled: boolean, onPress: () => void, key?: string) => (
     <Pressable
       key={label}
       onPress={onPress}
@@ -84,7 +102,12 @@ export function SelectionBar(props: {
         opacity: enabled ? 1 : 0.4,
       })}
     >
-      <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{label}</Text>
+      <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+        {label}
+        {key && props.wide ? (
+          <Text style={{ color: "rgba(255,255,255,0.55)", fontWeight: "500" }}> {key}</Text>
+        ) : null}
+      </Text>
     </Pressable>
   );
 
@@ -134,19 +157,10 @@ export function SelectionBar(props: {
             </Text>
           </View>
           <View style={{ flexDirection: "row", justifyContent: props.wide ? "flex-end" : "space-between" }}>
-            {action("Done", n > 0, () =>
-              run(picked, (item) => ({ type: "item.complete", payload: { itemId: item.id, on: today } })),
-            )}
-            {action(props.wide ? "Skip today" : "Skip", skippable.length > 0, () =>
-              run(skippable, (item) => ({
-                type: "item.skip",
-                payload: { itemId: item.id, on: today, reason: null },
-              })),
-            )}
-            {action("Won't do", n > 0, () =>
-              run(picked, (item) => ({ type: "item.wont", payload: { itemId: item.id, reason: null } })),
-            )}
-            {action("Reschedule", dated.length > 0, () => setRescheduling(true))}
+            {action("Done", n > 0, done, "D")}
+            {action(props.wide ? "Skip today" : "Skip", skippable.length > 0, skip, "S")}
+            {action("Won't do", n > 0, wont, "W")}
+            {action("Reschedule", dated.length > 0, () => setRescheduling(true), "R")}
           </View>
         </View>
       </View>
