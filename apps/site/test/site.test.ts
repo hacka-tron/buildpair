@@ -31,4 +31,10 @@ describe("landing site", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("Privacy, in plain words");
   });
+
+  it("serves the terms page", async () => {
+    const res = await SELF.fetch("http://localhost/terms");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("Terms, in plain words");
+  });
 });

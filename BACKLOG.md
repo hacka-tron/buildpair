@@ -48,11 +48,14 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Milestone 4 (people) is done.**
 
+**Privacy and terms (2026-10-16):** the privacy page now says what's really kept, including reports, blocks, network addresses for rate limits, and what stays on the device. It no longer claims analytics we don't have. A new plain-words terms page (`/terms`) covers age 16+, owning your content, conduct rules, reports reviewed within a day, no warranty, and changes. The app links both from the sign-in screen and the profile.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: milestone 6 basics that production needs:** privacy policy and terms pages, then the desktop extras (Cmd+K, Upcoming week view). Milestone 5 (Discover) after.
-4. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
+3. **Build: the desktop extras** (Cmd+K, Upcoming week view, weekly review). Milestone 5 (Discover) after.
+4. **Owner: read the privacy and terms pages before production** (`staging.buildpair.app/privacy` and `/terms`). They're plain-words drafts I wrote, not legal advice. Decide the minimum age (I put 16), the governing law, and whether a lawyer should look before the public launch.
+5. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
 ## What exists now

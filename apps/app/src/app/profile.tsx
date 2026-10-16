@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Avatar, Card, Icon } from "../components/kit";
 import { PageHeader, Shell, signOut, useWide } from "../components/shell";
-import { Button, ErrorText, Field } from "../components/ui";
+import { Button, ErrorText, Field, LegalLinks } from "../components/ui";
 import { authClient } from "../lib/auth";
 import { useSpaces } from "../lib/spaces";
 import { colors, space } from "../lib/theme";
@@ -128,6 +128,7 @@ export default function Profile() {
             <Text style={{ fontSize: 15, color: colors.ink }}>{user?.email}</Text>
           </View>
           <Button label="Sign out" kind="secondary" onPress={() => void signOut()} />
+          <LegalLinks />
         </Card>
 
         <DeleteAccount />
