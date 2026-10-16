@@ -34,7 +34,13 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       const p = command.payload;
       if (state.items[p.itemId]) return reject("An item with this ID already exists.");
       const parent = p.parentId ? state.items[p.parentId] : undefined;
-      if (p.parentId && parent?.kind !== "goal") return reject("Steps can only be added under a goal.");
+      if (p.parentId) {
+        // Steps go one level deep, under your own goal, so a goal and its steps change together.
+        if (parent?.kind !== "goal" || parent.parentId || p.kind === "goal")
+          return reject("Steps can only be added under a goal.");
+        if (parent.ownerId !== actorId)
+          return reject("Only the person who added this goal can add steps to it.");
+      }
       if (p.kind === "habit" && !p.timesPerWeek) return reject("A habit needs a number of times per week.");
       if (p.dueTime && (p.kind === "habit" || !p.dueOn)) return reject("A time needs a day to go with it.");
       const item: Item = {
@@ -98,7 +104,11 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       if (typeof item === "string") return reject(item);
       if (item.parentId) return reject("Steps follow their goal. Change who can see the goal instead.");
       const visibility = command.payload.visibility;
-      const family = [item, ...Object.values(state.items).filter((i) => i.parentId === item.id)];
+      // Only your own steps: older data may hold someone else's step under your goal.
+      const family = [
+        item,
+        ...Object.values(state.items).filter((i) => i.parentId === item.id && i.ownerId === actorId),
+      ];
       const changing = family.filter((i) => i.visibility !== visibility);
       if (changing.length === 0) return { ok: true, events: [] };
       const itemIds = changing.map((i) => i.id);

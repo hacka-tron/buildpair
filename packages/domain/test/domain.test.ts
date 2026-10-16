@@ -486,4 +486,54 @@ describe("making an item private or shared after creating it", () => {
     ).state;
     expect(s.items[stepId]?.visibility).toBe("owner");
   });
+
+  it("steps go one level deep, under your own goal", () => {
+    const { s, goalId, stepId } = withGoal();
+    const step = (parentId: string, kind: "todo" | "goal" = "todo") =>
+      cmd({ type: "item.create", payload: { itemId: newId(), kind, title: "x", parentId } });
+    expect(decide(s, step(goalId, "goal"), "maya")).toMatchObject({ ok: false });
+    expect(decide(s, step(stepId), "maya")).toMatchObject({ ok: false });
+    expect(decide(s, step(goalId), "jordan")).toMatchObject({ ok: false });
+  });
+
+  it("leaves someone else's step alone, from data saved before that was refused", () => {
+    const { s, goalId } = withGoal();
+    const theirs = newId();
+    const created = applyEvents(
+      s,
+      sequence(
+        [
+          {
+            type: "item.created",
+            actorId: "jordan",
+            commandId: null,
+            at: AT,
+            payload: {
+              item: {
+                id: theirs,
+                kind: "todo",
+                title: "Jordan's",
+                ownerId: "jordan",
+                parentId: goalId,
+                visibility: "space",
+                status: "open",
+                dueOn: null,
+                dueTime: null,
+                timesPerWeek: null,
+                doneOn: [],
+                skippedOn: [],
+                createdAt: AT,
+              },
+            },
+          },
+        ],
+        s.seq,
+      ),
+    );
+    const r = run(
+      created,
+      cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } }),
+    );
+    expect(r.state.items[theirs]?.visibility).toBe("space");
+  });
 });

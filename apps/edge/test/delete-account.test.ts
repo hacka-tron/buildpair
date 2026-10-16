@@ -130,4 +130,41 @@ describe("deleting your account", () => {
     ).json()) as { results: { ok: boolean }[] };
     expect(ok.results[0]?.ok).toBe(true);
   });
+
+  it("takes their reactions out of copies made when someone shared an item again", async () => {
+    const maya = await signIn(`maya-${newId()}@example.com`);
+    const jordan = await signIn(`jordan-${newId()}@example.com`);
+    const theirs = await spaceOf(jordan, "Jordan's");
+    await join(jordan, maya, theirs);
+    const itemId = newId();
+    await run(
+      jordan,
+      theirs,
+      command({ type: "item.create", payload: { itemId, kind: "todo", title: "Ship it" } }),
+      command({ type: "item.complete", payload: { itemId, on: "2026-10-16" } }),
+    );
+    const before = (await (await jordan.get(`/spaces/${theirs}/events?after=0`)).json()) as Batch;
+    const line = before.events.find((e) => e.type === "message.posted");
+    if (line?.type !== "message.posted") throw new Error("no completion line");
+    await run(
+      maya,
+      theirs,
+      command({ type: "reaction.toggle", payload: { messageId: line.payload.message.id, emoji: "🎉" } }),
+    );
+    await run(
+      jordan,
+      theirs,
+      command({ type: "item.visibility", payload: { itemId, visibility: "owner" } }),
+      command({ type: "item.visibility", payload: { itemId, visibility: "space" } }),
+    );
+    const { id: mayaId } = (await (await maya.get("/me")).json()) as { id: string };
+    const shared = await (await jordan.get(`/spaces/${theirs}/events?after=0`)).text();
+    expect(shared).toContain(mayaId);
+
+    expect((await maya.post("/api/auth/delete-user", { password: PASSWORD })).status).toBe(200);
+    const batch = (await (await jordan.get(`/spaces/${theirs}/events?after=0`)).json()) as Batch;
+    const withoutErased = batch.events.filter((e) => e.type !== "member.erased");
+    expect(JSON.stringify(withoutErased)).not.toContain(mayaId);
+    expect(JSON.stringify(batch)).toContain("Ship it");
+  });
 });
