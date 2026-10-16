@@ -42,10 +42,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Unread dots (2026-10-16):** a blue dot on the Spaces and Supporting rows and in the sidebar when someone else has posted since you last had the space open. Read positions live on each device (localStorage on the web, SQLite on phones), so reading on one device doesn't clear another. A space this device has never opened starts as read. Checked in the browser, including after a reload.
 
+**Nudges (2026-10-16):** in a space whose owner has been quiet for a week, supporters see "Alex has been quiet for 9 days. Send a nudge?" above the message box, with three suggestions built from the owner's last skip reason and what they're working on. Tapping one fills the box to edit. The strip can be hidden. Checked in the browser.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: quiet-goal nudges and weekly reflections** (the rest of milestone 4).
+3. **Build: weekly reflections** (the last of milestone 4).
 4. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 

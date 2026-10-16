@@ -151,3 +151,40 @@ export function namesLine(names: readonly string[]): string {
   if (names.length === 2) return `${names[0]} and ${names[1]}`;
   return `${names[0]} and ${names.length - 1} others`;
 }
+
+export interface Nudge {
+  ownerName: string;
+  quietDays: number;
+  /** Ready-to-edit messages, most specific first. */
+  suggestions: string[];
+}
+
+/**
+ * For a supporter looking at a quiet space: a few check-in messages to start from, built from the
+ * owner's last word and what they're working on. Null when there's nothing to nudge about.
+ */
+export function nudgeFor(view: SpaceState | undefined, userId: string, now = Date.now()): Nudge | null {
+  if (!view || view.members[userId]?.role !== "supporter") return null;
+  const [quiet] = checkIns(
+    [{ id: "x", name: view.name, purpose: view.purpose, role: "supporter" }],
+    { x: view },
+    now,
+  );
+  if (!quiet) return null;
+  const owner = ownerOf(view)!;
+  const first = owner.name.split(" ")[0] || owner.name;
+  const working = Object.values(view.items)
+    .filter(
+      (i) => i.ownerId === owner.userId && i.status === "open" && i.visibility === "space" && !i.parentId,
+    )
+    .sort((a, b) => (a.kind === "goal" ? -1 : 0) - (b.kind === "goal" ? -1 : 0));
+  const focus = working[0]?.title;
+  const last = view.messages.filter((m) => m.authorId === owner.userId).at(-1);
+  const suggestions: string[] = [];
+  if (last?.kind === "skip" && last.body)
+    suggestions.push(`Hey ${first}, how are things since "${last.body}"?`);
+  if (focus) suggestions.push(`How's ${focus} going? Haven't heard from you in a bit.`);
+  suggestions.push(`Anything I can help with this week, ${first}?`);
+  if (focus) suggestions.push(`Even 10 minutes on ${focus} today counts. Want to check in after?`);
+  return { ownerName: owner.name, quietDays: quiet.quietDays, suggestions: suggestions.slice(0, 3) };
+}
