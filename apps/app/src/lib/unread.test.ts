@@ -63,4 +63,21 @@ describe("unread", () => {
     markRead("b", 8);
     expect(sent).toHaveLength(2);
   });
+
+  it("sends a big backlog in chunks the server accepts", () => {
+    const sent: { reads: Record<string, number>; all?: boolean }[] = [];
+    let open = false;
+    const send = (msg: { reads: Record<string, number>; all?: boolean }) => {
+      if (!open) return false;
+      sent.push(msg);
+      return true;
+    };
+    connectReads("me", send);
+    for (let i = 0; i < 450; i++) markRead(`s${i}`, 1);
+    open = true;
+    connectReads("me", send);
+    expect(sent.map((m) => Object.keys(m.reads).length)).toEqual([200, 200, 50]);
+    expect(sent[0]?.all).toBe(true);
+    expect(sent.slice(1).every((m) => !m.all)).toBe(true);
+  });
 });

@@ -2,6 +2,8 @@ import { env, runInDurableObject, SELF } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
 import type { InboxClientMessage, InboxMessage } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
+import { USER_HEADER } from "../src/space-room";
+import type { UserHub } from "../src/user-hub";
 import { type Client, PASSWORD, signIn } from "./helpers";
 
 /** One device's inbox socket. */
@@ -93,5 +95,12 @@ describe("read positions across devices", () => {
       async (_hub, state) => state.storage.sql.exec("SELECT * FROM reads").toArray().length,
     );
     expect(rows).toBe(0);
+    // A device still holding a ticket can't reconnect and save more.
+    await runInDurableObject(hub, async (h: UserHub) => {
+      const res = await h.fetch(
+        new Request("http://x/me/ws", { headers: { upgrade: "websocket", [USER_HEADER]: id } }),
+      );
+      expect(res.status).toBe(410);
+    });
   });
 });

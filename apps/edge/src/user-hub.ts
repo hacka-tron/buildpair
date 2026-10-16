@@ -18,12 +18,15 @@ export class UserHub extends DurableObject<Env> {
     ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS reads (space_id TEXT PRIMARY KEY, seq INTEGER NOT NULL)",
     );
+    // Set when the account is deleted, so a device still connecting can't save anything afterwards.
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS erased (id INTEGER PRIMARY KEY CHECK (id = 1))");
   }
 
   override async fetch(request: Request): Promise<Response> {
     if (request.headers.get("upgrade") !== "websocket")
       return new Response("Expected a WebSocket", { status: 426 });
     if (!request.headers.get(USER_HEADER)) return new Response("Unauthorized", { status: 401 });
+    if (this.erased()) return new Response("Gone", { status: 410 });
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server);
     return new Response(null, { status: 101, webSocket: client });
@@ -35,12 +38,13 @@ export class UserHub extends DurableObject<Env> {
 
   /** The account is being deleted: forget everything here and close its devices' sockets. */
   async erase(): Promise<void> {
-    for (const ws of this.ctx.getWebSockets()) closeQuietly(ws, 1000, "Account deleted");
+    this.ctx.storage.sql.exec("INSERT OR IGNORE INTO erased (id) VALUES (1)");
     this.ctx.storage.sql.exec("DELETE FROM reads");
+    for (const ws of this.ctx.getWebSockets()) closeQuietly(ws, 1000, "Account deleted");
   }
 
   override async webSocketMessage(ws: WebSocket, data: string | ArrayBuffer): Promise<void> {
-    if (typeof data !== "string" || data.length > 20_000) return;
+    if (typeof data !== "string" || data.length > 20_000 || this.erased()) return;
     let raw: unknown;
     try {
       raw = JSON.parse(data);
@@ -72,6 +76,10 @@ export class UserHub extends DurableObject<Env> {
       moved[spaceId] = seq;
     }
     return moved;
+  }
+
+  private erased(): boolean {
+    return this.ctx.storage.sql.exec("SELECT 1 FROM erased").toArray().length > 0;
   }
 
   private allReads(): ReadPositions {

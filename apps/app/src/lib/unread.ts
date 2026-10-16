@@ -13,11 +13,14 @@ let owner = "";
 let ready = false;
 /** The server's positions have arrived, so a space with none there really is new to this person. */
 let synced = false;
-/** Positions read here that the server hasn't been told about yet. */
+/** Positions read here that the server hasn't been told about yet. Saved too, so a restart keeps them. */
 let unsent: ReadPositions = {};
+/** The hub takes this many positions per message. */
+const CHUNK = 200;
 let sender: ((msg: InboxClientMessage) => boolean) | null = null;
 const listeners = new Set<() => void>();
 const key = (userId: string) => `read:${userId}`;
+const unsentKey = (userId: string) => `read-unsent:${userId}`;
 
 function emit() {
   read = { ...read };
@@ -32,22 +35,32 @@ async function load(userId: string) {
   read = {};
   unsent = {};
   sender = null;
-  try {
-    const saved = await kvStorage.get(key(userId));
-    // What was saved wins over anything marked while it loaded, unless the mark is newer.
-    if (saved && owner === userId) {
-      const stored = JSON.parse(saved) as Record<string, number>;
-      for (const [id, seq] of Object.entries(stored)) read[id] = Math.max(seq, read[id] ?? -1);
+  // What was saved wins over anything marked while it loaded, unless the mark is newer.
+  const restore = async (k: string, into: Record<string, number>) => {
+    try {
+      const saved = await kvStorage.get(k);
+      if (!saved || owner !== userId) return;
+      for (const [id, seq] of Object.entries(JSON.parse(saved) as Record<string, number>))
+        into[id] = Math.max(seq, into[id] ?? -1);
+    } catch {
+      // A damaged value: start fresh.
     }
-  } catch {
-    // A damaged value: start fresh.
-  }
-  if (owner === userId) ready = true;
+  };
+  await restore(key(userId), read);
+  await restore(unsentKey(userId), unsent);
+  if (owner !== userId) return;
+  ready = true;
+  // Keep anything that arrived while loading, and send what an earlier run couldn't.
+  save();
+  flush();
   emit();
 }
 
+/** Nothing is written until the saved copy has loaded, so a half-empty copy can't replace it. */
 function save() {
-  if (owner) void kvStorage.set(key(owner), JSON.stringify(read));
+  if (!owner || !ready) return;
+  void kvStorage.set(key(owner), JSON.stringify(read));
+  void kvStorage.set(unsentKey(owner), JSON.stringify(unsent));
 }
 
 /** The newest message position in a space that someone else wrote (blocked people don't count). */
@@ -88,9 +101,17 @@ export function markRead(spaceId: string, seq: number) {
   flush();
 }
 
-function flush() {
-  if (!sender || Object.keys(unsent).length === 0) return;
-  if (sender({ t: "read", reads: unsent })) unsent = {};
+/** Send what's waiting, a chunk at a time. Whatever doesn't go waits for the next open. */
+function flush(all = false) {
+  const before = Object.keys(unsent).length;
+  while (sender) {
+    const batch = Object.entries(unsent).slice(0, CHUNK);
+    if (batch.length === 0 && !all) break;
+    if (!sender({ t: "read", reads: Object.fromEntries(batch), ...(all ? { all } : {}) })) break;
+    for (const [id, seq] of batch) if (unsent[id] === seq) delete unsent[id];
+    all = false;
+  }
+  if (Object.keys(unsent).length !== before) save();
 }
 
 /**
@@ -101,10 +122,7 @@ function flush() {
 export function connectReads(userId: string, send: (msg: InboxClientMessage) => boolean) {
   void load(userId);
   sender = send;
-  const batch = Object.entries(unsent).slice(0, 200);
-  if (send({ t: "read", reads: Object.fromEntries(batch), all: true }))
-    for (const [id] of batch) delete unsent[id];
-  flush();
+  flush(true);
 }
 
 /** Positions from the server (all of them, or what another device just read). The furthest wins. */
