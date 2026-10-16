@@ -20,7 +20,7 @@ import {
   MIN_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
   type ServerMessage,
-  type SpaceEvent,
+  SpaceEvent,
   type UnsequencedEvent,
 } from "@buildpair/protocol";
 import { eq } from "drizzle-orm";
@@ -341,6 +341,12 @@ export class SpaceRoom extends DurableObject<Env> {
     if (seen !== undefined) return { ok: true, seq: seen };
     const decision = decide(this.load(), command, actorId);
     if (!decision.ok) return decision;
+    // Never store an event a device couldn't read back.
+    const at = this.load().seq;
+    if (sequence(decision.events, at).some((e) => !SpaceEvent.safeParse(e).success)) {
+      console.error("event failed validation", { type: command.type });
+      return { ok: false, reason: "That change couldn't be saved. Try making it shorter." };
+    }
     const events = this.commit(decision.events, command.id);
     // The list of spaces is updated before anyone hears about the change, so a sidebar that refreshes
     // on the news already sees it.

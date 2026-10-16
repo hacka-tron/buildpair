@@ -772,6 +772,15 @@ describe("weekly reflections", () => {
     expect(reflectionDue(s, "maya", saturday)).toBe(false);
   });
 
+  it("refuses a reflection too long to save, counting quotes and line breaks", () => {
+    const heavy = '"\n'.repeat(450);
+    const c = cmd({
+      type: "reflection.post",
+      payload: { messageId: newId(), wins: heavy, blockers: heavy, next: heavy },
+    });
+    expect(decide(space(), c, "maya")).toMatchObject({ ok: false, reason: expect.stringContaining("long") });
+  });
+
   it("doesn't read a broken body as a reflection", () => {
     const r = run(space(), post("ok"));
     const broken = { ...r.state.messages.at(-1)!, body: "not json" };

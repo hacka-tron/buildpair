@@ -164,13 +164,18 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       if (state.messages.some((m) => m.id === command.payload.messageId)) return { ok: true, events: [] };
       return { ok: true, events: [chat("text", command.payload.body, null, command.payload.messageId)] };
     case "reflection.post": {
-      const { messageId, wins, blockers, next } = command.payload;
+      const { messageId } = command.payload;
       if (state.messages.some((m) => m.id === messageId)) return { ok: true, events: [] };
+      const [wins, blockers, next] = [
+        command.payload.wins,
+        command.payload.blockers,
+        command.payload.next,
+      ].map((t) => t.trim());
       if (!wins && !blockers && !next) return reject("Write at least one part of your reflection.");
-      return {
-        ok: true,
-        events: [chat("reflection", JSON.stringify({ wins, blockers, next }), null, messageId)],
-      };
+      const body = JSON.stringify({ wins, blockers, next });
+      // A chat message holds 4000 characters; quotes and line breaks take more room once saved.
+      if (body.length > 4000) return reject("That reflection is a bit long. Shorten it a little so it fits.");
+      return { ok: true, events: [chat("reflection", body, null, messageId)] };
     }
     case "reaction.toggle": {
       const { messageId, emoji } = command.payload;
