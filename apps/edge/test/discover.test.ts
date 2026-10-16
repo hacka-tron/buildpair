@@ -120,4 +120,38 @@ describe("Discover", () => {
     expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
     expect(statuses[10]).toBe(429);
   });
+
+  it("takes a goal off the card once it's made private, and refreshes a request asked again", async () => {
+    const { maya, spaceId, name } = await listedSpace();
+    const sam = await signIn(`sam-${newId()}@example.com`);
+    const goalId = newId();
+    await maya.post(`/spaces/${spaceId}/commands`, {
+      commands: [
+        command({ type: "item.create", payload: { itemId: goalId, kind: "goal", title: "Raise a round" } }),
+      ],
+    });
+    await eventually(
+      () => discover(sam, name),
+      (ls) => ls.some((l) => l.goals.some((g) => g.title === "Raise a round")),
+    );
+    await maya.post(`/spaces/${spaceId}/commands`, {
+      commands: [command({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } })],
+    });
+    const after = await eventually(
+      () => discover(sam, name),
+      (ls) => !ls.some((l) => l.goals.some((g) => g.title === "Raise a round")),
+    );
+    expect(JSON.stringify(after)).not.toContain("Raise a round");
+    // Someone the offerer blocked can't be offered to.
+    await sam.post("/me/blocks", { userId: await idOf(maya) });
+    expect((await sam.post(`/discover/${spaceId}/offer`, {})).status).toBe(404);
+  });
+
+  it("takes the owner's first name from their account", async () => {
+    const { spaceId, name } = await listedSpace();
+    const sam = await signIn(`sam-${newId()}@example.com`);
+    const found = (await discover(sam, name)).find((l) => l.spaceId === spaceId);
+    // Test accounts are named after their email's first part, so that's the account name here.
+    expect(found?.ownerName).toMatch(/^maya-/);
+  });
 });

@@ -1,7 +1,7 @@
 import { newId } from "@buildpair/domain";
 import { Ulid } from "@buildpair/protocol";
 import { APIError } from "better-auth/api";
-import { and, count, desc, eq, gt, inArray, isNotNull, isNull, like, notInArray, or } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, isNotNull, isNull, like, lt, notInArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
@@ -472,7 +472,11 @@ app.post("/invites/:token/accept", async (c) => {
     await db
       .insert(joinRequests)
       .values({ spaceId: invite.spaceId, userId, name: c.get("userName"), createdAt: new Date() })
-      .onConflictDoNothing();
+      // Asking again keeps the request fresh, so it doesn't expire out of the owner's list.
+      .onConflictDoUpdate({
+        target: [joinRequests.spaceId, joinRequests.userId],
+        set: { createdAt: new Date(), name: c.get("userName") },
+      });
   return c.json({ spaceId: invite.spaceId, spaceName: invite.name, status: "requested" });
 });
 
@@ -481,6 +485,10 @@ app.get("/spaces/:id/requests", async (c) => {
   const spaceId = c.req.param("id");
   if ((await roleIn(c.env, spaceId, c.get("userId"))) !== "owner")
     return c.json(err("not_found", "Space not found."), 404);
+  // Expired requests go for good.
+  await drizzle(c.env.DB)
+    .delete(joinRequests)
+    .where(and(eq(joinRequests.spaceId, spaceId), lt(joinRequests.createdAt, weekAgo())));
   const requests = await drizzle(c.env.DB)
     .select({
       userId: joinRequests.userId,
@@ -577,7 +585,6 @@ app.get("/me/blocks", async (c) => {
   return c.json({ blocks: rows });
 });
 
-/** Block someone you share a space with. Their messages and reactions are hidden from you. */
 /** Owners only: show a space on Discover, or take it off. */
 app.post("/spaces/:id/listing", async (c) => {
   const body = z.object({ on: z.boolean() }).safeParse(await c.req.json().catch(() => null));
@@ -639,6 +646,12 @@ app.post("/discover/:spaceId/offer", async (c) => {
   const db = drizzle(c.env.DB);
   const listing = await db.select().from(listings).where(eq(listings.spaceId, spaceId)).get();
   if (!listing) return c.json(err("not_found", "That space isn't on Discover any more."), 404);
+  const iBlocked = await db
+    .select({ id: blocks.blockedId })
+    .from(blocks)
+    .where(and(eq(blocks.blockerId, me), eq(blocks.blockedId, listing.ownerId)))
+    .get();
+  if (iBlocked) return c.json(err("not_found", "That space isn't on Discover any more."), 404);
   if (await isMember(c.env, spaceId, me)) return c.json({ status: "member" });
   const sent = await db
     .select({ n: count() })
@@ -681,6 +694,7 @@ app.post("/discover/:spaceId/offer", async (c) => {
   return c.json({ status: "requested" });
 });
 
+/** Block someone you share a space with. Their messages and reactions are hidden from you. */
 app.post("/me/blocks", async (c) => {
   const body = z
     .object({ userId: z.string().min(1).max(64) })
