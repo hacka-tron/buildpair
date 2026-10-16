@@ -128,11 +128,13 @@ function ListingCard({ listing: l, onOffered }: { listing: Listing; onOffered: (
         <Text style={{ fontSize: 14, color: colors.ink, lineHeight: 20 }}>{l.purpose}</Text>
         {l.goals.length ? (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-            {l.goals.map((g, i) => (
-              <Tag key={`${i}-${g.title}`} tone="blue">
-                {g.title}
-              </Tag>
-            ))}
+            {l.goals
+              .filter((g, i, all) => all.findIndex((x) => x.title === g.title) === i)
+              .map((g) => (
+                <Tag key={g.title} tone="blue">
+                  {g.title}
+                </Tag>
+              ))}
           </View>
         ) : null}
         {l.asked ? (
