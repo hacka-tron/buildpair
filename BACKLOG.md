@@ -32,11 +32,13 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Join requests (2026-10-16):** opening an invite link now asks to join. The owner sees "Invite · N waiting" (a badge on phones, a tag on the Spaces tab), and lets people in or declines them from the invite sheet. "Stop all old links" resets them. Until let in, the person sees nothing of the space. Checked in the browser at 1440 wide.
 
+**Rate limits (2026-10-16):** sign-in, sign-up and email codes allow 20 tries a minute per network address. Changes (commands over HTTPS or the socket, invites, moves, new spaces) allow 120 a minute per person. Over the limit, people see "Too many tries in a short time. Wait a minute, then try again." Workers rate limiting counts per Cloudflare location, so the limits are approximate.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
 3. **Build: the Activity tab and the Supporting tab** (milestone 4).
-4. **Build: rate limiting on commands and sign-in, and report and block** (needed before production opens).
+4. **Build: report and block** (needed before production opens).
 5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
 ## What exists now
@@ -61,15 +63,14 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **The app doesn't use the UserHub inbox socket yet**, so spaces you don't have open don't update live (they catch up when opened).
 - **SpaceRoom rebuilds its state by replaying the whole log on wake.** Add snapshots before spaces get long histories.
 - **The list of your spaces lives in D1**; the architecture moves it (with unread counts) into UserHub later.
-- **No rate limiting** on commands yet.
 - **Analytics and error tracking** (PostHog EU cookieless, Sentry) are decided but not wired in.
 - **Desktop web layouts** (sidebar, margin, Cmd+K, Upcoming, weekly review) from `docs/design/buildpair-web.html` aren't built; the web app uses the simple responsive layout for now.
 - **Dark mode** in the app (the landing page already has it).
 - **Production deploys go straight to 100%** with a health check and one-command rollback; add gradual rollout after confirming it works with Durable Objects on staging.
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.
 - **Repository license:** none yet (all rights reserved).
-- **Before production opens to the public:** rate limiting on sign-in and commands, report and block. Until then, release only the landing page publicly if anything.
-- **Staging is open to anyone.** Anyone can make an account there (one email each) or request password-reset codes, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Still to do: a Cloudflare rate-limiting rule on the auth endpoints and `noindex` on staging pages.
+- **Before production opens to the public:** report and block. Until then, release only the landing page publicly if anything.
+- **Staging is open to anyone.** Anyone can make an account there (one email each) or request password-reset codes, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Sign-in and codes are now rate limited per address. Still to do: `noindex` on staging pages.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
 - **Plain-words adding reads full weekday names and "today" anywhere** ("watch Friday Night Lights", "watch Today show" get a date). The add box shows what it read and one tap keeps the words as typed. Short names (fri, sat, sun) only count after on, next, this, by or due, or right before a time. "daily", "weekly" and "weekends" only count as the last words. Numeric dates need on, by, due or before ("on 10/20"). "At 7:30" stays in the words (morning or evening is unclear). A time with no day means today.
 - **Quick add small cases (review of PR #18):** "SAT 3pm prep" reads as Saturday 3pm; a trailing "due" stays in the title ("pay bill due 11/20" keeps "due"); a period after a date stays ("call friday." becomes "call ."). Lookbehind in the parser is untested on a phone (Hermes).
@@ -82,7 +83,6 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Old odd step shapes keep their old visibility.** Before 2026-10-16 a direct command could put a goal under a goal, or a step under someone else's goal. The app never did. Such items don't follow their top goal when it's made private.
 - **Sharing an item again copies its chat lines and reactions into the log.** Toggling a long-lived goal back and forth many times grows the log. No size limit yet; snapshots (above) would fix it.
 - **Confirm step polish (review of PR #16, minor):** check the 128-character password maximum in the verify-email wrapper, and hash the password before confirming so a failed database write can't leave the old password in place.
-- **No rate limiting on auth routes yet.** Codes allow 5 guesses each. Add a Cloudflare rate-limiting rule on `/api/auth/*` before production.
 - **The test account `bagel` is shared and public.** Anyone who reads the repo can sign in as it on staging. Fine for test data; keep real things out of it. Remove `TEST_LOGIN` from `wrangler.jsonc` to turn it off.
 - **A space's color can't go back to automatic** once the owner picks one. The protocol would need a "none" value.
 - **The spaces list (D1) isn't retried** if updating it after a rename or recolor fails. It stays out of date until the next edit, and the space screen corrects it when opened.
@@ -112,6 +112,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - Staging stays open for now; the email allowlist is built but off (2026-10-15).
 - Making an item private hides its past chat lines from the others too, and sharing it again brings them back (2026-10-16, Claude's call, reversible).
 - A declined person may ask again; stopping old links is the owner's way to end it (2026-10-16, Claude's call, reversible).
+- Rate limits: 20 auth tries a minute per address, 120 changes a minute per person (2026-10-16, Claude's call, reversible in wrangler.jsonc).
 - Any member can make an invite link, but only the owner lets people in (2026-10-16, Claude's call, reversible).
 - Moving an item leaves its chat lines in the old chat if it was shared, and takes nothing with it into the new chat (2026-10-16, Claude's call, reversible).
 - Steps follow their goal's visibility and go one level deep, under your own goal (2026-10-16, Claude's call, reversible).

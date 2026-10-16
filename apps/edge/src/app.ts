@@ -8,7 +8,7 @@ import { cors } from "hono/cors";
 import { z } from "zod";
 import { createAuth, MIN_PASSWORD, NOT_INVITED, USE_PASSWORD } from "./auth";
 import { accountErasures, invites, joinRequests, memberships, spaces, user } from "./db/schema";
-import { assertConfig, type Env, isEmailAllowed, testLogin } from "./env";
+import { assertConfig, type Env, isEmailAllowed, SLOW_DOWN, testLogin, withinLimit } from "./env";
 import { USER_HEADER } from "./space-room";
 import { signTicket, verifyTicket } from "./tickets";
 
@@ -51,6 +51,10 @@ app.post("/api/auth/*", async (c, next) => {
   const type = c.req.header("content-type") ?? "";
   if (!type.toLowerCase().startsWith("application/json"))
     return c.json(err("UNSUPPORTED_BODY", "Send this as JSON."), 415);
+  // Cloudflare always sets the caller's address; without it (tests, some local runs) there's nothing to key on.
+  const ip = c.req.header("cf-connecting-ip");
+  if (ip && !(await withinLimit(c.env.AUTH_LIMIT, `auth:${ip}`)))
+    return c.json(err("TOO_MANY_REQUESTS", SLOW_DOWN), 429);
   return next();
 });
 
@@ -248,6 +252,10 @@ app.use("*", async (c, next) => {
   if (!session) return c.json(err("unauthenticated", "Please sign in."), 401);
   c.set("userId", session.user.id);
   c.set("userName", session.user.name || session.user.email.split("@")[0] || "Someone");
+  // Tickets only open a connection (whose commands are counted in the room), so they don't count.
+  const counts = c.req.method === "POST" && !c.req.path.endsWith("/ticket");
+  if (counts && !(await withinLimit(c.env.WRITE_LIMIT, `write:${session.user.id}`)))
+    return c.json(err("too_many_requests", SLOW_DOWN), 429);
   await next();
 });
 

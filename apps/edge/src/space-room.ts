@@ -24,7 +24,7 @@ import {
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { spaces } from "./db/schema";
-import type { Env } from "./env";
+import { type Env, SLOW_DOWN, withinLimit } from "./env";
 
 const SCHEMA_VERSION = 2;
 const MAX_EVENTS_PER_BATCH = 500;
@@ -499,6 +499,10 @@ export class SpaceRoom extends DurableObject<Env> {
         return;
       }
       case "cmd": {
+        if (!(await withinLimit(this.env.WRITE_LIMIT, `write:${userId}`))) {
+          this.send(ws, { t: "reject", id: msg.cmd.id, reason: SLOW_DOWN });
+          return;
+        }
         const result = await this.runCommand(msg.cmd, userId);
         this.send(
           ws,
