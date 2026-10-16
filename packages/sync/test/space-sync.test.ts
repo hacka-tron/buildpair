@@ -202,10 +202,17 @@ describe("SpaceSync", () => {
       await settle();
       expect(maya.sync.getSnapshot().pendingIds.size).toBe(1);
       expect(maya.sync.getSnapshot().error?.reason).toContain("Wait");
+      // A change made meanwhile waits too, so it can't overtake the first.
+      maya.sync.dispatch({ type: "message.send", payload: { messageId: newId(), body: "after" } });
+      await settle();
+      expect(room.state.messages).toEqual([]);
+      expect(texts(maya.sync)).toEqual(["later", "after"]);
       await new Promise((r) => setTimeout(r, 400));
       await settle();
       expect(maya.sync.getSnapshot().pendingIds.size).toBe(0);
-      expect(room.state.messages.map((m) => m.body)).toEqual(["later"]);
+      expect(room.state.messages.map((m) => m.body)).toEqual(["later", "after"]);
+      // Once it lands, the notice goes.
+      expect(maya.sync.getSnapshot().error).toBeNull();
     } finally {
       SpaceSync.retryMs = before;
     }
