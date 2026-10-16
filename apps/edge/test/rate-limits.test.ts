@@ -18,12 +18,12 @@ describe("rate limits", () => {
         },
         body: JSON.stringify({ email: `nobody-${newId()}@example.com`, password: "wrong password here" }),
       });
+    // The limit counts in fixed one-minute windows, so attempts that straddle a minute boundary get two
+    // allowances. Within two windows at most 40 pass, so the 41st attempt is always refused.
     const statuses: number[] = [];
-    for (let i = 0; i < 25; i++) statuses.push((await attempt()).status);
+    for (let i = 0; i < 41; i++) statuses.push((await attempt()).status);
     expect(statuses.slice(0, 20)).not.toContain(429);
-    const last = await attempt();
-    // Better Auth has its own small limiter too, and either may answer first.
-    expect(last.status).toBe(429);
+    expect(statuses).toContain(429);
   });
 
   it("slows down one person's changes, over HTTPS and the socket, without touching anyone else", async () => {
