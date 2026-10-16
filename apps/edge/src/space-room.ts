@@ -30,6 +30,12 @@ import { listings, profileStats, spaces, user } from "./db/schema";
 import { type Env, SLOW_DOWN, withinLimit } from "./env";
 
 const SCHEMA_VERSION = 3;
+/**
+ * What a saved snapshot was built with. Bump the last part whenever applyEvent's results change for the same
+ * events, so rooms rebuild from their log instead of trusting an old snapshot.
+ */
+const SNAPSHOT_VERSION = PROTOCOL_VERSION * 100 + 1;
+const SNAPSHOT_MAX_BYTES = 1_500_000;
 const MAX_EVENTS_PER_BATCH = 500;
 /** The Worker sets this after verifying a ticket; Durable Objects are not reachable from the internet directly. */
 export const USER_HEADER = "x-buildpair-user";
@@ -139,7 +145,7 @@ export class SpaceRoom extends DurableObject<Env> {
       const snap = this.ctx.storage.sql
         .exec<{ seq: number; data: string }>(
           "SELECT seq, data FROM snapshot WHERE id = 1 AND v = ?",
-          PROTOCOL_VERSION,
+          SNAPSHOT_VERSION,
         )
         .toArray()[0];
       const base = snap ? normalizeSpace(JSON.parse(snap.data) as SpaceState) : emptySpace();
@@ -151,21 +157,29 @@ export class SpaceRoom extends DurableObject<Env> {
 
   private snapshotSeq = 0;
 
-  /** Save the state now and then, so a long history isn't replayed on every wake. */
+  /**
+   * Save the state now and then, so a long history isn't replayed on every wake. Never fails a change: the
+   * events are already stored, and a missing snapshot only means a slower wake.
+   */
   private maybeSnapshot() {
     const state = this.state;
     const every = Number(this.env.SNAPSHOT_EVERY) || 500;
     if (!state || state.seq - this.snapshotSeq < every) return;
-    const data = JSON.stringify(state);
-    // Very large spaces stay replay-only rather than risk a row that's too big to store.
-    if (data.length > 1_500_000) return;
-    this.ctx.storage.sql.exec(
-      "INSERT OR REPLACE INTO snapshot (id, seq, v, data) VALUES (1, ?, ?, ?)",
-      state.seq,
-      PROTOCOL_VERSION,
-      data,
-    );
+    // Counted as done either way, so a space too big to save isn't re-measured on every change.
     this.snapshotSeq = state.seq;
+    try {
+      const data = JSON.stringify(state);
+      // Rows hold 2 MB; very large spaces stay replay-only.
+      if (new TextEncoder().encode(data).length > SNAPSHOT_MAX_BYTES) return;
+      this.ctx.storage.sql.exec(
+        "INSERT OR REPLACE INTO snapshot (id, seq, v, data) VALUES (1, ?, ?, ?)",
+        state.seq,
+        SNAPSHOT_VERSION,
+        data,
+      );
+    } catch {
+      console.error("snapshot failed", { spaceId: this.spaceId() });
+    }
   }
 
   /** The log was rewritten (someone erased, an item moved out): the old snapshot would bring things back. */
