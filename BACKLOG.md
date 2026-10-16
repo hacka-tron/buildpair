@@ -67,11 +67,11 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 **Keyboard shortcuts (2026-10-16):** on the web, Q on Today opens quick add. With items selected, D (done), S (skip today), W (won't do) and R (reschedule) act on them, and Esc stops selecting. The bar shows the keys on wide screens. Shortcuts never fire while typing in a field or with ⌘, Ctrl or Alt held.
 
 **Next, in order:**
-1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
+1. **Done (2026-10-16):** the owner signed in on staging and the web app works for them.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
 3. **Build: the polish list** from the known gaps below (move refusals reported, busy retries paused, read positions shared across devices), or anything the owner asks for. The big remaining features (reminders and push, Jira, Sign in with Apple, analytics) each need something only the owner can set up first. Milestone 7 (Jira) needs a Jira app registration from the owner first.
-4. **Owner: read the privacy and terms pages before production** (`staging.buildpair.app/privacy` and `/terms`). They're plain-words drafts I wrote, not legal advice. Decide the minimum age (I put 16), the governing law, and whether a lawyer should look before the public launch.
-5. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
+4. **Done (2026-10-16):** the owner read the privacy and terms drafts and is fine with them as they are (age 16+).
+5. **Owner: turn on Cloudflare Email Routing** for `buildpair.app`, add a personal inbox as the destination (confirm its email), and route `hello@` and `reports@` to it. Add the `_dmarc` TXT record (`v=DMARC1; p=none`) at the same time. Then I set `MODERATION_EMAIL=reports@buildpair.app` on staging and production, check SPF still includes Resend, and send a test report.
 6. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
 ## What exists now
@@ -140,6 +140,10 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 7. **Integrations:** Jira first, then Linear and GitHub; habit sources like Apple Health and Strava.
 
 ## Decisions (owner)
+
+- Integrations (Jira, Linear, GitHub, health apps) wait. Focus on core features and polish (2026-10-16).
+- Privacy and terms drafts are fine as written, minimum age 16 (2026-10-16).
+- Mail on the domain: `hello@` (public contact) and `reports@` (moderation) forward to the owner's personal inbox through Cloudflare Email Routing, so no personal address sits in the public repo (2026-10-16, suggested by Claude, owner to set up).
 
 - The agent drives the project and decides; the owner reviews "Claude's call" entries later (2026-10-16). See "Who decides" in CLAUDE.md.
 - Domain `buildpair.app`: landing at `buildpair.app`, web app at `app.buildpair.app`, API at `api.buildpair.app` (staging: `staging.`, `app-staging.`, `api-staging.`).
