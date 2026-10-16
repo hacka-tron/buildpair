@@ -31,6 +31,8 @@ export interface Env {
   ALLOWED_EMAILS?: string;
   /** "name:password" for a shared test account on staging, previews and local runs. Never in production. */
   TEST_LOGIN?: string;
+  /** How many events between saved snapshots of a space (default 500; tests use a small number). */
+  SNAPSHOT_EVERY?: string;
   /** Where reports go for review. Unset means they're only stored. */
   MODERATION_EMAIL?: string;
   GOOGLE_CLIENT_ID?: string;
