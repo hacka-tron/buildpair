@@ -33,9 +33,13 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
     case "item.create": {
       const p = command.payload;
       if (state.items[p.itemId]) return reject("An item with this ID already exists.");
+      const parent = p.parentId ? state.items[p.parentId] : undefined;
       if (p.parentId) {
-        const parent = state.items[p.parentId];
-        if (parent?.kind !== "goal") return reject("Steps can only be added under a goal.");
+        // Steps go one level deep, under your own goal, so a goal and its steps change together.
+        if (parent?.kind !== "goal" || parent.parentId || p.kind === "goal")
+          return reject("Steps can only be added under a goal.");
+        if (parent.ownerId !== actorId)
+          return reject("Only the person who added this goal can add steps to it.");
       }
       if (p.kind === "habit" && !p.timesPerWeek) return reject("A habit needs a number of times per week.");
       if (p.dueTime && (p.kind === "habit" || !p.dueOn)) return reject("A time needs a day to go with it.");
@@ -45,7 +49,8 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
         title: p.title,
         ownerId: actorId,
         parentId: p.parentId,
-        visibility: p.visibility,
+        // Steps follow their goal, so a private goal never has a shared step.
+        visibility: parent?.visibility ?? p.visibility,
         status: "open",
         dueOn: p.kind === "habit" ? null : p.dueOn,
         dueTime: p.kind === "habit" ? null : p.dueTime,
@@ -94,6 +99,31 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       if (Object.keys(changes).length === 0) return { ok: true, events: [] };
       return { ok: true, events: [{ ...base, type: "item.edited", payload: { itemId: item.id, changes } }] };
     }
+    case "item.visibility": {
+      const item = ownItem(command.payload.itemId);
+      if (typeof item === "string") return reject(item);
+      if (item.parentId) return reject("Steps follow their goal. Change who can see the goal instead.");
+      const visibility = command.payload.visibility;
+      // Only your own steps: older data may hold someone else's step under your goal.
+      const family = [
+        item,
+        ...Object.values(state.items).filter((i) => i.parentId === item.id && i.ownerId === actorId),
+      ];
+      const changing = family.filter((i) => i.visibility !== visibility);
+      if (changing.length === 0) return { ok: true, events: [] };
+      const itemIds = changing.map((i) => i.id);
+      const payload = { itemIds, visibility, items: [] as Item[], messages: [] as Message[], reactions: {} };
+      if (visibility === "space") {
+        // The others never received these items, so the event carries them whole.
+        const ids = new Set(itemIds);
+        payload.items = changing.map((i) => ({ ...i, visibility }));
+        payload.messages = state.messages.filter((m) => m.itemId && ids.has(m.itemId));
+        payload.reactions = Object.fromEntries(
+          payload.messages.flatMap((m) => (state.reactions[m.id] ? [[m.id, state.reactions[m.id]]] : [])),
+        );
+      }
+      return { ok: true, events: [{ ...base, type: "item.visibility", payload }] };
+    }
     case "item.complete": {
       const item = ownItem(command.payload.itemId);
       if (typeof item === "string") return reject(item);
@@ -135,7 +165,11 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       return { ok: true, events: [chat("text", command.payload.body, null, command.payload.messageId)] };
     case "reaction.toggle": {
       const { messageId, emoji } = command.payload;
-      if (!state.messages.some((m) => m.id === messageId)) return reject("That message no longer exists.");
+      const message = state.messages.find((m) => m.id === messageId);
+      const about = message?.itemId ? state.items[message.itemId] : undefined;
+      // A line about someone else's private item is hidden from this person, so it doesn't exist for them.
+      if (!message || (about && about.visibility === "owner" && about.ownerId !== actorId))
+        return reject("That message no longer exists.");
       const on = !(state.reactions[messageId]?.[emoji] ?? []).includes(actorId);
       return {
         ok: true,

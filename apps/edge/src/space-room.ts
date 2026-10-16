@@ -33,6 +33,27 @@ export function closeQuietly(ws: WebSocket, code: number, reason: string) {
   }
 }
 
+type VisibilityPayload = Extract<SpaceEvent, { type: "item.visibility" }>["payload"];
+
+/** A shared-again event's copies with one person's items, chat lines and reactions removed. */
+export function withoutPerson(p: VisibilityPayload, userId: string): VisibilityPayload {
+  const messages = p.messages.filter((m) => m.authorId !== userId);
+  const kept = new Set(messages.map((m) => m.id));
+  const reactions = Object.fromEntries(
+    Object.entries(p.reactions)
+      .filter(([messageId]) => kept.has(messageId))
+      .map(([messageId, byEmoji]) => [
+        messageId,
+        Object.fromEntries(
+          Object.entries(byEmoji)
+            .map(([emoji, users]) => [emoji, users.filter((u) => u !== userId)] as const)
+            .filter(([, users]) => users.length > 0),
+        ),
+      ]),
+  );
+  return { ...p, items: p.items.filter((i) => i.ownerId !== userId), messages, reactions };
+}
+
 export type CommandResult = { ok: true; seq: number } | { ok: false; reason: string };
 
 /**
@@ -205,6 +226,19 @@ export class SpaceRoom extends DurableObject<Env> {
     ]);
     this.ctx.storage.transactionSync(() => {
       sql.exec("DELETE FROM events WHERE actor_id = ? AND type != 'member.erased'", userId);
+      // Sharing an item copies its chat lines and reactions into someone else's event. Take theirs out too.
+      const copies = sql
+        .exec<{ seq: number; payload: string }>(
+          "SELECT seq, payload FROM events WHERE type = 'item.visibility' AND payload LIKE ?",
+          `%${userId}%`,
+        )
+        .toArray();
+      for (const { seq, payload } of copies)
+        sql.exec(
+          "UPDATE events SET payload = ? WHERE seq = ?",
+          JSON.stringify(withoutPerson(JSON.parse(payload), userId)),
+          seq,
+        );
       // Only their own retry records. Other people's stay, so their retries still get the original answer.
       for (const { command_id } of theirs)
         if (command_id) sql.exec("DELETE FROM commands WHERE id = ?", command_id);

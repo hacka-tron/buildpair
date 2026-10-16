@@ -163,4 +163,29 @@ describe("SpaceSync", () => {
     expect(titles(jordan.sync)).toEqual(["Pick up kids"]);
     expect(jordan.sync.getSnapshot().view.seq).toBe(room.state.seq);
   });
+
+  it("drops an item from other devices, saved copy included, when its owner makes it private", async () => {
+    const room = new FakeRoom(["maya", "jordan"]);
+    const maya = device(room, "maya");
+    const jordan = device(room, "jordan");
+    await maya.sync.start();
+    await jordan.sync.start();
+    await settle();
+
+    const itemId = newId();
+    maya.sync.dispatch({ type: "item.create", payload: { itemId, kind: "todo", title: "Therapy" } });
+    await settle();
+    expect(jordan.sync.getSnapshot().view.items[itemId]).toBeDefined();
+
+    maya.sync.dispatch({ type: "item.visibility", payload: { itemId, visibility: "owner" } });
+    await settle();
+    await jordan.sync.flush();
+    expect(maya.sync.getSnapshot().view.items[itemId]?.visibility).toBe("owner");
+    expect(jordan.sync.getSnapshot().view.items[itemId]).toBeUndefined();
+    expect(JSON.stringify(await jordan.storage.load("space-1"))).not.toContain("Therapy");
+
+    maya.sync.dispatch({ type: "item.visibility", payload: { itemId, visibility: "space" } });
+    await settle();
+    expect(jordan.sync.getSnapshot().view.items[itemId]).toMatchObject({ title: "Therapy" });
+  });
 });

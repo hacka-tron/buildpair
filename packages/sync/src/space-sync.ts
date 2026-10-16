@@ -6,6 +6,7 @@ import {
   normalizeSpace,
   type SpaceState,
   sequence,
+  viewFor,
 } from "@buildpair/domain";
 import { Command, type CommandInput, PROTOCOL_VERSION, type ServerMessage } from "@buildpair/protocol";
 import type { Connection, PersistedSpace, SpaceStorage, Transport } from "./types";
@@ -126,7 +127,8 @@ export class SpaceSync {
           return;
         }
         const fresh = msg.events.filter((e) => e.seq > this.confirmed.seq);
-        const next = applyEvents(this.confirmed, fresh);
+        // Keep only what this person may see, so an item someone makes private leaves this device.
+        const next = viewFor(applyEvents(this.confirmed, fresh), this.userId);
         this.confirmed = { ...next, seq: Math.max(next.seq, msg.upTo) };
         const confirmedIds = new Set(fresh.map((e) => e.commandId).filter(Boolean));
         this.pending = this.pending.filter((c) => !confirmedIds.has(c.id));

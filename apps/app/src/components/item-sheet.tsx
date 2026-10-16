@@ -82,7 +82,9 @@ export function ItemSheet(props: {
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm }}>
         <Tag tone="blue">{live.kind === "todo" ? "To-do" : live.kind === "habit" ? "Habit" : "Goal"}</Tag>
         <Text style={{ fontSize: 14, color: colors.sub }}>{describe(live, steps, props.today)}</Text>
-        {!shared ? <Text style={{ fontSize: 14, color: colors.sub }}>· Only you can see this</Text> : null}
+        {!shared && live.parentId ? (
+          <Text style={{ fontSize: 14, color: colors.sub }}>· Only you can see this</Text>
+        ) : null}
         {!mine ? <Text style={{ fontSize: 14, color: colors.sub }}>· Added by {owner}</Text> : null}
         {mine && open ? (
           <Pressable
@@ -98,6 +100,30 @@ export function ItemSheet(props: {
           </Pressable>
         ) : null}
       </View>
+
+      {mine && !live.parentId ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+          <Text style={{ flex: 1, fontSize: 13, color: colors.sub }}>
+            {shared
+              ? "Everyone in this space can see this."
+              : "Only you can see this. Its check-offs don't post to the chat."}
+          </Text>
+          <Pressable
+            onPress={() =>
+              run({
+                type: "item.visibility",
+                payload: { itemId: live.id, visibility: shared ? "owner" : "space" },
+              })
+            }
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.blue }}>
+              {shared ? "Make private" : "Share with the space"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {live.kind === "goal" ? (
         <View>

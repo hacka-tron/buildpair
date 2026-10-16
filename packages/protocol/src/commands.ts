@@ -41,6 +41,12 @@ export const EditSpace = cmd(
   }),
 );
 
+/**
+ * Make an item "only visible to me", or share it with the space again. Goals take their steps with
+ * them; steps follow their goal and can't be changed alone.
+ */
+export const SetItemVisibility = cmd("item.visibility", z.object({ itemId: Ulid, visibility: Visibility }));
+
 export const CompleteItem = cmd("item.complete", z.object({ itemId: Ulid, on: LocalDate }));
 export const SkipItem = cmd(
   "item.skip",
@@ -67,6 +73,7 @@ export const ToggleReaction = cmd(
 export const Command = z.discriminatedUnion("type", [
   CreateItem,
   EditItem,
+  SetItemVisibility,
   EditSpace,
   CompleteItem,
   SkipItem,
