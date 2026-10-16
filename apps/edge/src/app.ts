@@ -518,6 +518,35 @@ app.get("/spaces/:id/requests", async (c) => {
   });
 });
 
+/**
+ * Add someone to a space as a supporter, safely against account deletion running at the same moment: if
+ * their account (or, given `ownerId`, the owner's) started going away meanwhile, the join is undone so
+ * nothing of theirs stays behind. True when they're in.
+ */
+async function joinAsSupporter(env: Env, spaceId: string, userId: string, name: string, ownerId?: string) {
+  const db = drizzle(env.DB);
+  try {
+    await db
+      .insert(memberships)
+      .values({ spaceId, userId, role: "supporter", joinedAt: new Date() })
+      .onConflictDoNothing();
+  } catch {
+    // Their account, or the space, is already gone.
+    return false;
+  }
+  await room(env, spaceId).addMember({ userId, role: "supporter", name });
+  const going = async (id: string) =>
+    Boolean(await db.select().from(accountErasures).where(eq(accountErasures.userId, id)).get()) ||
+    !(await db.select({ id: user.id }).from(user).where(eq(user.id, id)).get());
+  const spaceGone = !(await db.select({ id: spaces.id }).from(spaces).where(eq(spaces.id, spaceId)).get());
+  if (spaceGone || (await going(userId)) || (ownerId !== undefined && (await going(ownerId)))) {
+    await room(env, spaceId).eraseMember(userId);
+    await db.delete(memberships).where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, userId)));
+    return false;
+  }
+  return true;
+}
+
 /** Owner only: let someone in as a supporter, or turn them down. Answering twice changes nothing. */
 app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
   const spaceId = c.req.param("id");
@@ -534,25 +563,9 @@ app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
   if (!request || c.req.param("answer") === "decline" || request.createdAt < weekAgo())
     return c.json({ ok: true });
   const userId = request.userId;
-  try {
-    await db
-      .insert(memberships)
-      .values({ spaceId, userId, role: "supporter", joinedAt: new Date() })
-      .onConflictDoNothing();
-  } catch {
-    // Their account is already gone.
-    return c.json({ ok: true });
-  }
-  await room(c.env, spaceId).addMember({ userId, role: "supporter", name: request.name });
-  // If they started deleting their account meanwhile, that deletion may have missed this join. Undo it.
-  const leaving = await db.select().from(accountErasures).where(eq(accountErasures.userId, userId)).get();
-  const still = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).get();
-  if (leaving || !still) {
-    await room(c.env, spaceId).eraseMember(userId);
-    await db.delete(memberships).where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, userId)));
-    return c.json({ ok: true });
-  }
-  // "Support each other": they suggested one of their spaces, so the owner joins it as a supporter.
+  if (!(await joinAsSupporter(c.env, spaceId, userId, request.name))) return c.json({ ok: true });
+  // "Support each other": they suggested one of their spaces, so the owner joins it as a supporter. Only
+  // while they still own it, and not if either has blocked the other (sharing a space is a given here).
   const me = c.get("userId");
   const back = request.mutualSpaceId;
   if (
@@ -561,11 +574,7 @@ app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
     (await roleIn(c.env, back, userId)) === "owner" &&
     (await shareASpace(c.env, me, userId))
   ) {
-    await db
-      .insert(memberships)
-      .values({ spaceId: back, userId: me, role: "supporter", joinedAt: new Date() })
-      .onConflictDoNothing();
-    await room(c.env, back).addMember({ userId: me, role: "supporter", name: c.get("userName") });
+    await joinAsSupporter(c.env, back, me, c.get("userName"), userId);
   }
   return c.json({ ok: true });
 });

@@ -1,6 +1,6 @@
 import { newId } from "@buildpair/domain";
 import { describe, expect, it } from "vitest";
-import { type Client, command, join, signIn } from "./helpers";
+import { type Client, command, join, PASSWORD, signIn } from "./helpers";
 
 type Listing = {
   spaceId: string;
@@ -200,4 +200,34 @@ describe("Discover", () => {
     await maya.post(`/spaces/${spaceId}/requests/${await idOf(sam)}/approve`);
     expect((await maya.get(`/spaces/${samSpace}/events?after=0`)).status).toBe(404);
   });
+
+  it("doesn't join back when blocked, deleted, or declined", async () => {
+    const offer = async () => {
+      const { maya, spaceId } = await listedSpace();
+      const sam = await signIn(`sam-${newId()}@example.com`);
+      const { id: samSpace } = (await (
+        await sam.post("/spaces", { name: "Shipnote", purpose: "Changelogs" })
+      ).json()) as {
+        id: string;
+      };
+      await sam.post(`/discover/${spaceId}/offer`, { mutualSpaceId: samSpace });
+      return { maya, spaceId, sam, samSpace, samId: await idOf(sam) };
+    };
+    // Blocked after offering: they join, but the owner isn't added back.
+    const a = await offer();
+    await a.sam.post("/me/blocks", { userId: await idOf(a.maya) });
+    await a.maya.post(`/spaces/${a.spaceId}/requests/${a.samId}/approve`, { supportBack: true });
+    expect((await a.maya.get(`/spaces/${a.samSpace}/events?after=0`)).status).toBe(404);
+    // Their space was deleted (they deleted their account): nothing breaks and nobody joins.
+    const b = await offer();
+    expect((await b.sam.post("/api/auth/delete-user", { password: PASSWORD })).status).toBe(200);
+    expect(
+      (await b.maya.post(`/spaces/${b.spaceId}/requests/${b.samId}/approve`, { supportBack: true })).status,
+    ).toBe(200);
+    expect((await b.maya.get(`/spaces/${b.samSpace}/events?after=0`)).status).toBe(404);
+    // Declined: nobody joins either space.
+    const d = await offer();
+    await d.maya.post(`/spaces/${d.spaceId}/requests/${d.samId}/decline`, { supportBack: true });
+    expect((await d.maya.get(`/spaces/${d.samSpace}/events?after=0`)).status).toBe(404);
+  }, 30_000);
 });
