@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LocalDate, TimeOfDay, Timestamp, Ulid } from "./ids";
-import { ItemKind, SpaceColor, Visibility } from "./model";
+import { ItemKind, Reflection, SpaceColor, Visibility } from "./model";
 
 const cmd = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
   z.object({ id: Ulid, type: z.literal(type), at: Timestamp, payload });
@@ -65,6 +65,8 @@ export const SendMessage = cmd(
   "message.send",
   z.object({ messageId: Ulid, body: z.string().trim().min(1).max(4000) }),
 );
+/** A weekly look back, posted to the space's chat. */
+export const PostReflection = cmd("reflection.post", Reflection.extend({ messageId: Ulid }));
 export const ToggleReaction = cmd(
   "reaction.toggle",
   z.object({ messageId: Ulid, emoji: z.string().min(1).max(16) }),
@@ -80,6 +82,7 @@ export const Command = z.discriminatedUnion("type", [
   WontDoItem,
   PostUpdate,
   SendMessage,
+  PostReflection,
   ToggleReaction,
 ]);
 export type Command = z.infer<typeof Command>;

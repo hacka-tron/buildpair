@@ -77,7 +77,8 @@ export default function Activity() {
                     {e.byEmoji.map(([emoji, names]) => `${namesLine(names)} reacted ${emoji}`).join(" · ")}
                   </Text>
                   <Text numberOfLines={1} style={{ fontSize: 13, color: colors.sub }}>
-                    "{e.message.body}" · {e.spaceName} · {ago(e.message.createdAt)}
+                    {e.message.kind === "reflection" ? "Your weekly reflection" : `"${e.message.body}"`} ·{" "}
+                    {e.spaceName} · {ago(e.message.createdAt)}
                   </Text>
                 </>
               )}

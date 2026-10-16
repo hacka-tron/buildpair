@@ -44,10 +44,14 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Nudges (2026-10-16):** in a space whose owner has been quiet for a week, supporters see "Alex has been quiet for 9 days. Send a nudge?" above the message box, with three suggestions built from the owner's last skip reason and what they're working on. Tapping one fills the box to edit. The strip can be hidden. Checked in the browser.
 
+**Weekly reflections (2026-10-16):** from Friday to Monday, Today asks owners "How did this week go?" for each space where they have something shared and open, unless they reflected there in the last six days. Three short prompts (went well, got in the way, next week's focus) post a reflection card to the chat for supporters to react and reply. "Not now" hides it until the app reloads. Protocol version 8 (new message kind). Checked in the browser.
+
+**Milestone 4 (people) is done.**
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: weekly reflections** (the last of milestone 4).
+3. **Build: milestone 6 basics that production needs:** privacy policy and terms pages, then the desktop extras (Cmd+K, Upcoming week view). Milestone 5 (Discover) after.
 4. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
@@ -71,6 +75,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Approve edge cases (review, minor):** if the space can't be reached during "Let in", the person ends up in the spaces list but the room refuses them, and approving again doesn't fix it. Fix: when the invite link finds a member, add them to the room again (it's safe to repeat). Any database error while approving drops the request without a join. A failed account deletion leaves its marker, so approvals for that person are undone until they finish deleting.
 - **Rate limit leftovers (review, minor):** after a "busy", new changes still go out at once, so a change that depends on the waiting one can be refused (pause sending while a retry waits). The "Too many tries" notice stays until another message replaces it. `::ffff:` IPv4-mapped addresses would share one key. Typing notices over the socket aren't limited. Every PR preview shares one auth limit. There's no limit per account on password guesses from many addresses (codes are capped at 5 guesses each).
 - **Report and block leftovers (review, minor):** people who left show as "Someone" on their old messages (the room doesn't keep former members' names). You can block any account ID, not only people you share a space with. Removing a user ID that isn't in the room leaves a harmless record (and an unknown ID answers "something failed" instead of "not found"). The 20-a-day report cap can be passed by a few with many requests at once. Narrow races: removing someone while their approval is still finishing can leave a member the room knows but the list doesn't (removing again fixes it), and a block landing at the same moment as their request can miss that request.
+- **Reflection leftovers (review, minor):** "Not now" isn't remembered across reloads. Tests don't cover the Friday/Monday and six-day edges. The room's new check that every event can be read back has no test that triggers it (the reflection length rule catches the one known case first).
 - **Inbox leftovers (review, minor):** resending waiting changes over HTTPS counts against the change limit (the socket doesn't count resends). Two screens showing the same space can drop it back to quiet when one closes. Catch-up stops after 50 batches (about 25,000 events) until the next poke. The room's `more` flag and `SpaceSync.catchUp` have no server-side or sync tests. A request from an ended HTTPS session failing late can show a 5-second offline blip. If a session expires and a different person signs in without signing out, their inbox may not start until they reload.
 - **Read positions are per device.** Reading on your phone doesn't clear the dot on the web. Move them to the room (or UserHub) when that matters.
 - **Activity has no "new" marker.** It shows the last two weeks of reactions and every waiting request, but doesn't remember what you've already seen, and only the bell's dot (for requests) hints at news. Reactions don't carry a time on the device, so they're ordered by the message they're on.
@@ -127,6 +132,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - People who leave or are removed keep their messages and items in the space. Their private items stay hidden. Blocks are one-way and silent (2026-10-16, Claude's call, reversible).
 - A declined person may ask again; stopping old links is the owner's way to end it (2026-10-16, Claude's call, reversible).
 - The Spaces tab lists only your own spaces; spaces others share are on Supporting. A space counts as quiet after 7 days with nothing from its owner (2026-10-16, Claude's call, reversible).
+- Reflections are prompted Friday to Monday and post to the chat as a card; "Not now" isn't remembered across reloads (2026-10-16, Claude's call, reversible).
 - Rate limits: 20 auth tries a minute per address, 120 changes a minute per person (2026-10-16, Claude's call, reversible in wrangler.jsonc).
 - Any member can make an invite link, but only the owner lets people in (2026-10-16, Claude's call, reversible).
 - Moving an item leaves its chat lines in the old chat if it was shared, and takes nothing with it into the new chat (2026-10-16, Claude's call, reversible).

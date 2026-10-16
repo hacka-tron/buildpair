@@ -1,4 +1,4 @@
-import { newId, parseQuickAdd, type SpaceState, weekProgress } from "@buildpair/domain";
+import { newId, parseQuickAdd, readReflection, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item, Message } from "@buildpair/protocol";
 import type { Change } from "@buildpair/sync";
 import { router, useLocalSearchParams } from "expo-router";
@@ -1065,6 +1065,55 @@ function MessageRow(props: {
     </View>
   );
   const time = props.pending ? "Sending…" : ago(m.createdAt);
+
+  const reflection = readReflection(m);
+  if (reflection) {
+    const parts = [
+      ["Went well", reflection.wins],
+      ["Got in the way", reflection.blockers],
+      ["Next week", reflection.next],
+    ].filter(([, text]) => text);
+    return (
+      <Pressable
+        onLongPress={props.onPick}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        style={{
+          flexDirection: "row",
+          gap: space.md,
+          paddingHorizontal: space.lg,
+          paddingVertical: 6,
+          opacity: props.pending ? 0.6 : 1,
+        }}
+      >
+        <Avatar id={m.authorId} name={props.authorName} size={28} />
+        <View style={{ flex: 1, minWidth: 0, gap: 6, alignItems: "flex-start" }}>
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: colors.line,
+              borderRadius: radius.card,
+              padding: 14,
+              gap: 10,
+              maxWidth: 560,
+              backgroundColor: "#fff",
+            }}
+          >
+            <Text style={{ fontSize: 13, color: colors.sub }}>
+              {props.author} wrote a weekly reflection · {time}
+            </Text>
+            {parts.map(([label, text]) => (
+              <View key={label} style={{ gap: 2 }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.ink }}>{label}</Text>
+                <Text style={{ fontSize: 15, color: colors.ink, lineHeight: 21 }}>{text}</Text>
+              </View>
+            ))}
+          </View>
+          {reactions}
+        </View>
+      </Pressable>
+    );
+  }
 
   if (m.kind !== "text") {
     const verb =

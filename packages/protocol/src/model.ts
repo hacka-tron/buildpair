@@ -37,8 +37,16 @@ export const Item = z.object({
 });
 export type Item = z.infer<typeof Item>;
 
-export const MessageKind = z.enum(["text", "update", "completion", "skip"]);
+/** "reflection": a weekly look back; its body is JSON with `wins`, `blockers` and `next` (see Reflection). */
+export const MessageKind = z.enum(["text", "update", "completion", "skip", "reflection"]);
 export type MessageKind = z.infer<typeof MessageKind>;
+
+export const Reflection = z.object({
+  wins: z.string().trim().max(1000),
+  blockers: z.string().trim().max(1000),
+  next: z.string().trim().max(1000),
+});
+export type Reflection = z.infer<typeof Reflection>;
 
 export const Message = z.object({
   id: Ulid,

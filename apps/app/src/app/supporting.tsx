@@ -135,5 +135,6 @@ function lastLine(who: string, kind: string, body: string): string {
   if (kind === "completion") return `${who} completed ${body}`;
   if (kind === "skip") return body ? `${who} skipped: ${body}` : `${who} skipped something`;
   if (kind === "update") return `${who} posted an update: ${body}`;
+  if (kind === "reflection") return `${who} wrote a weekly reflection`;
   return `${who}: ${body}`;
 }

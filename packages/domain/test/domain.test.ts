@@ -11,6 +11,8 @@ import {
   leavesWith,
   newId,
   normalizeSpace,
+  readReflection,
+  reflectionDue,
   type SpaceState,
   sequence,
   viewFor,
@@ -722,5 +724,66 @@ describe("leaving and removing people", () => {
     expect(decideRemove(s, "maya", "maya", AT)).toMatchObject({ ok: false });
     expect(decideRemove(s, "jordan", "stranger", AT)).toMatchObject({ ok: false });
     expect(decideRemove(s, "nobody", "maya", AT)).toEqual({ ok: true, events: [] });
+  });
+});
+
+describe("weekly reflections", () => {
+  const post = (wins: string, blockers = "", next = "") =>
+    cmd({ type: "reflection.post", payload: { messageId: newId(), wins, blockers, next } });
+
+  it("posts a reflection to the chat and reads it back", () => {
+    const r = run(space(), post("Shipped the invite flow", "Sick two days", "First 10 users"));
+    const message = r.state.messages.at(-1)!;
+    expect(message.kind).toBe("reflection");
+    expect(readReflection(message)).toEqual({
+      wins: "Shipped the invite flow",
+      blockers: "Sick two days",
+      next: "First 10 users",
+    });
+    expect(canSee(r.state, "jordan", r.events[0]!)).toBe(true);
+  });
+
+  it("needs at least one part, and a resend is a no-op", () => {
+    expect(decide(space(), post("", "", ""), "maya")).toMatchObject({ ok: false });
+    const c = post("Ran 3 times");
+    const r = run(space(), c);
+    expect(decide(r.state, c, "maya")).toEqual({ ok: true, events: [] });
+  });
+
+  it("is due on weekends for owners with something shared, once a week", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({ type: "item.create", payload: { itemId, kind: "goal", title: "Launch" } }),
+    ).state;
+    const saturday = new Date("2026-10-17T10:00:00");
+    const wednesday = new Date("2026-10-14T10:00:00");
+    expect(reflectionDue(s, "maya", saturday)).toBe(true);
+    expect(reflectionDue(s, "maya", wednesday)).toBe(false);
+    expect(reflectionDue(s, "jordan", saturday)).toBe(false);
+    s = run(
+      s,
+      cmd({
+        type: "reflection.post",
+        payload: { messageId: newId(), wins: "x", blockers: "", next: "" },
+        at: "2026-10-16T09:00:00.000Z",
+      } as never),
+    ).state;
+    expect(reflectionDue(s, "maya", saturday)).toBe(false);
+  });
+
+  it("refuses a reflection too long to save, counting quotes and line breaks", () => {
+    const heavy = '"\n'.repeat(450);
+    const c = cmd({
+      type: "reflection.post",
+      payload: { messageId: newId(), wins: heavy, blockers: heavy, next: heavy },
+    });
+    expect(decide(space(), c, "maya")).toMatchObject({ ok: false, reason: expect.stringContaining("long") });
+  });
+
+  it("doesn't read a broken body as a reflection", () => {
+    const r = run(space(), post("ok"));
+    const broken = { ...r.state.messages.at(-1)!, body: "not json" };
+    expect(readReflection(broken)).toBeNull();
   });
 });
