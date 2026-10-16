@@ -102,12 +102,14 @@ export function SelectionBar(props: {
         opacity: enabled ? 1 : 0.4,
       })}
     >
-      <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
-        {label}
+      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
+        <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{label}</Text>
         {key && props.wide ? (
-          <Text style={{ color: "rgba(255,255,255,0.55)", fontWeight: "500" }}> {key}</Text>
+          <Text accessibilityElementsHidden style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>
+            {key}
+          </Text>
         ) : null}
-      </Text>
+      </View>
     </Pressable>
   );
 
