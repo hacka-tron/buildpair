@@ -1,0 +1,1 @@
+ALTER TABLE `join_requests` ADD `mutual_space_id` text;

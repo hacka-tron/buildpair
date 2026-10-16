@@ -122,6 +122,8 @@ export const joinRequests = sqliteTable(
     name: text("name").notNull(),
     /** What they said when offering support from Discover. Invite-link requests have none. */
     note: text("note"),
+    /** One of their own spaces they'd like the owner to support in return ("support each other"). */
+    mutualSpaceId: text("mutual_space_id"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.spaceId, t.userId] })],

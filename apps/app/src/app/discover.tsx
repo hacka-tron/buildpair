@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { Card, SpaceTile, Tag } from "../components/kit";
 import { PageHeader, Shell, useWide } from "../components/shell";
 import { Button, ErrorText } from "../components/ui";
 import { type Listing, listDiscover, offerSupport } from "../lib/api";
+import { useSpaces } from "../lib/spaces";
 import { colors, radius, space } from "../lib/theme";
 
 /** Spaces other people chose to show, and a way to offer them support. */
@@ -93,6 +94,9 @@ export default function Discover() {
 }
 
 function ListingCard({ listing: l, onOffered }: { listing: Listing; onOffered: () => void }) {
+  const { spaces } = useSpaces();
+  const mine = (spaces ?? []).filter((s) => s.role === "owner");
+  const [mutual, setMutual] = useState<string | undefined>(undefined);
   const [writing, setWriting] = useState(false);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -101,7 +105,7 @@ function ListingCard({ listing: l, onOffered }: { listing: Listing; onOffered: (
     setBusy(true);
     setError("");
     try {
-      await offerSupport(l.spaceId, note.trim());
+      await offerSupport(l.spaceId, note.trim(), mutual);
       setWriting(false);
       onOffered();
     } catch (e) {
@@ -164,6 +168,47 @@ function ListingCard({ listing: l, onOffered }: { listing: Listing; onOffered: (
                 outlineColor: colors.royal,
               }}
             />
+            {mine.length ? (
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.ink }}>
+                  Support each other? (optional)
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.sub }}>
+                  Suggest one of your spaces. If {l.ownerName} agrees, they'll support it in return.
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  {mine.map((s) => {
+                    const on = mutual === s.id;
+                    return (
+                      <Pressable
+                        key={s.id}
+                        onPress={() => setMutual(on ? undefined : s.id)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: on }}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                          borderWidth: 1,
+                          borderColor: on ? colors.royal : colors.line,
+                          backgroundColor: on ? colors.tint : "#fff",
+                          borderRadius: 999,
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                        }}
+                      >
+                        <SpaceTile id={s.id} name={s.name} size={14} />
+                        <Text
+                          style={{ fontSize: 12, fontWeight: "600", color: on ? colors.blue : colors.sub }}
+                        >
+                          {s.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
             <ErrorText>{error}</ErrorText>
             <View style={{ flexDirection: "row", gap: space.sm }}>
               <View style={{ flex: 1 }}>

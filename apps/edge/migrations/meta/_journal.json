@@ -64,6 +64,13 @@
       "when": 1792168508685,
       "tag": "0008_blushing_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792169349501,
+      "tag": "0009_left_mandrill",
+      "breakpoints": true
     }
   ]
 }

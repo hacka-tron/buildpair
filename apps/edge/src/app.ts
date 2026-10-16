@@ -498,13 +498,54 @@ app.get("/spaces/:id/requests", async (c) => {
       name: joinRequests.name,
       note: joinRequests.note,
       createdAt: joinRequests.createdAt,
+      mutualSpaceId: joinRequests.mutualSpaceId,
+      mutualName: spaces.name,
+      mutualPurpose: spaces.purpose,
     })
     .from(joinRequests)
+    .leftJoin(spaces, eq(spaces.id, joinRequests.mutualSpaceId))
     .where(and(eq(joinRequests.spaceId, spaceId), gt(joinRequests.createdAt, weekAgo())))
     .orderBy(joinRequests.createdAt)
     .all();
-  return c.json({ requests });
+  return c.json({
+    requests: requests.map(({ mutualSpaceId, mutualName, mutualPurpose, ...r }) => ({
+      ...r,
+      mutual:
+        mutualSpaceId && mutualName
+          ? { spaceId: mutualSpaceId, name: mutualName, purpose: mutualPurpose ?? "" }
+          : null,
+    })),
+  });
 });
+
+/**
+ * Add someone to a space as a supporter, safely against account deletion running at the same moment: if
+ * their account (or, given `ownerId`, the owner's) started going away meanwhile, the join is undone so
+ * nothing of theirs stays behind. True when they're in.
+ */
+async function joinAsSupporter(env: Env, spaceId: string, userId: string, name: string, ownerId?: string) {
+  const db = drizzle(env.DB);
+  try {
+    await db
+      .insert(memberships)
+      .values({ spaceId, userId, role: "supporter", joinedAt: new Date() })
+      .onConflictDoNothing();
+  } catch {
+    // Their account, or the space, is already gone.
+    return false;
+  }
+  await room(env, spaceId).addMember({ userId, role: "supporter", name });
+  const going = async (id: string) =>
+    Boolean(await db.select().from(accountErasures).where(eq(accountErasures.userId, id)).get()) ||
+    !(await db.select({ id: user.id }).from(user).where(eq(user.id, id)).get());
+  const spaceGone = !(await db.select({ id: spaces.id }).from(spaces).where(eq(spaces.id, spaceId)).get());
+  if (spaceGone || (await going(userId)) || (ownerId !== undefined && (await going(ownerId)))) {
+    await room(env, spaceId).eraseMember(userId);
+    await db.delete(memberships).where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, userId)));
+    return false;
+  }
+  return true;
+}
 
 /** Owner only: let someone in as a supporter, or turn them down. Answering twice changes nothing. */
 app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
@@ -512,28 +553,28 @@ app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
   if ((await roleIn(c.env, spaceId, c.get("userId"))) !== "owner")
     return c.json(err("not_found", "Space not found."), 404);
   const db = drizzle(c.env.DB);
+  const options = z
+    .object({ supportBack: z.boolean().optional() })
+    .catch({})
+    .parse(await c.req.json().catch(() => ({})));
   const who = and(eq(joinRequests.spaceId, spaceId), eq(joinRequests.userId, c.req.param("userId")));
   // Taking the request is the claim: of two answers at once, only the one that gets it acts.
   const [request] = await db.delete(joinRequests).where(who).returning();
   if (!request || c.req.param("answer") === "decline" || request.createdAt < weekAgo())
     return c.json({ ok: true });
   const userId = request.userId;
-  try {
-    await db
-      .insert(memberships)
-      .values({ spaceId, userId, role: "supporter", joinedAt: new Date() })
-      .onConflictDoNothing();
-  } catch {
-    // Their account is already gone.
-    return c.json({ ok: true });
-  }
-  await room(c.env, spaceId).addMember({ userId, role: "supporter", name: request.name });
-  // If they started deleting their account meanwhile, that deletion may have missed this join. Undo it.
-  const leaving = await db.select().from(accountErasures).where(eq(accountErasures.userId, userId)).get();
-  const still = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).get();
-  if (leaving || !still) {
-    await room(c.env, spaceId).eraseMember(userId);
-    await db.delete(memberships).where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, userId)));
+  if (!(await joinAsSupporter(c.env, spaceId, userId, request.name))) return c.json({ ok: true });
+  // "Support each other": they suggested one of their spaces, so the owner joins it as a supporter. Only
+  // while they still own it, and not if either has blocked the other (sharing a space is a given here).
+  const me = c.get("userId");
+  const back = request.mutualSpaceId;
+  if (
+    options.supportBack &&
+    back &&
+    (await roleIn(c.env, back, userId)) === "owner" &&
+    (await shareASpace(c.env, me, userId))
+  ) {
+    await joinAsSupporter(c.env, back, me, c.get("userName"), userId);
   }
   return c.json({ ok: true });
 });
@@ -641,7 +682,10 @@ app.get("/discover", async (c) => {
 /** Offer to support a listed space. It becomes a request with your note; the owner decides. */
 app.post("/discover/:spaceId/offer", async (c) => {
   const body = z
-    .object({ note: z.string().trim().max(280).optional() })
+    .object({
+      note: z.string().trim().max(280).optional(),
+      mutualSpaceId: z.string().min(1).max(64).optional(),
+    })
     .safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json(err("invalid", "Keep your note under 280 characters."), 400);
   const me = c.get("userId");
@@ -656,6 +700,9 @@ app.post("/discover/:spaceId/offer", async (c) => {
     .get();
   if (iBlocked) return c.json(err("not_found", "That space isn't on Discover any more."), 404);
   if (await isMember(c.env, spaceId, me)) return c.json({ status: "member" });
+  const mutualSpaceId = body.data.mutualSpaceId ?? null;
+  if (mutualSpaceId && (await roleIn(c.env, mutualSpaceId, me)) !== "owner")
+    return c.json(err("invalid", "You can only suggest a space you own."), 400);
   const sent = await db
     .select({ n: count() })
     .from(joinRequests)
@@ -684,6 +731,7 @@ app.post("/discover/:spaceId/offer", async (c) => {
       userId: me,
       name: c.get("userName"),
       note: body.data.note || "",
+      mutualSpaceId,
       createdAt: new Date(),
     };
     await db
@@ -691,7 +739,7 @@ app.post("/discover/:spaceId/offer", async (c) => {
       .values(row)
       .onConflictDoUpdate({
         target: [joinRequests.spaceId, joinRequests.userId],
-        set: { note: row.note, createdAt: row.createdAt },
+        set: { note: row.note, mutualSpaceId: row.mutualSpaceId, createdAt: row.createdAt },
       });
   }
   return c.json({ status: "requested" });
