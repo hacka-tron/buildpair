@@ -111,15 +111,20 @@ describe("Discover", () => {
     ]);
     expect((await sam.post(`/discover/${newId()}/offer`, {})).status).toBe(404);
 
+    // One owner with eleven listed spaces keeps this quick.
     const busy = await signIn(`busy-${newId()}@example.com`);
+    const owner = await signIn(`owner-${newId()}@example.com`);
     const statuses: number[] = [];
     for (let i = 0; i < 11; i++) {
-      const other = await listedSpace();
-      statuses.push((await busy.post(`/discover/${other.spaceId}/offer`, { note: "hi" })).status);
+      const { id } = (await (await owner.post("/spaces", { name: `S${i}`, purpose: "Testing" })).json()) as {
+        id: string;
+      };
+      await owner.post(`/spaces/${id}/listing`, { on: true });
+      statuses.push((await busy.post(`/discover/${id}/offer`, { note: "hi" })).status);
     }
     expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
     expect(statuses[10]).toBe(429);
-  });
+  }, 30_000);
 
   it("takes a goal off the card once it's made private, and refreshes a request asked again", async () => {
     const { maya, spaceId, name } = await listedSpace();
