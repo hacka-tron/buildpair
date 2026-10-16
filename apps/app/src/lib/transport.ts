@@ -35,6 +35,8 @@ class SpaceConnection implements Connection {
   private queue: Promise<void> = Promise.resolve();
   private retry: ReturnType<typeof setTimeout> | null = null;
   private closed = false;
+  /** Bumped whenever the HTTPS session ends, so steps queued in an older one don't run. */
+  private generation = 0;
 
   constructor(
     private readonly spaceId: string,
@@ -47,7 +49,11 @@ class SpaceConnection implements Connection {
     if (this.closed) return;
     if (live.has(this.spaceId)) {
       if (this.ws) return;
-      this.httpOpen = false;
+      if (this.httpOpen) {
+        // Not connected until the socket opens; SpaceSync resends what's waiting then.
+        this.endHttp();
+        this.handlers.onClose();
+      }
       this.openSocket();
     } else {
       if (this.ws) this.closeSocket();
@@ -62,15 +68,20 @@ class SpaceConnection implements Connection {
     }
     if (!this.httpOpen) return;
     // In order: a step can't be ticked before the goal it belongs to exists.
-    this.queue = this.queue.then(() => this.http(msg)).catch(() => this.lost());
+    const generation = this.generation;
+    this.queue = this.queue
+      .then(() => (generation === this.generation ? this.http(msg) : undefined))
+      .catch(() => this.lost());
   }
 
   close() {
     this.closed = true;
     if (this.retry) clearTimeout(this.retry);
     this.closeSocket();
-    this.httpOpen = false;
-    connections.get(this.spaceId)?.delete(this);
+    this.endHttp();
+    const set = connections.get(this.spaceId);
+    set?.delete(this);
+    if (set?.size === 0) connections.delete(this.spaceId);
   }
 
   private deliver(msg: ServerMessage) {
@@ -121,11 +132,19 @@ class SpaceConnection implements Connection {
     queueMicrotask(() => this.httpOpen && !this.closed && this.handlers.onOpen());
   }
 
-  /** A request failed to reach us: look offline, then try again in a little while. */
+  private endHttp() {
+    this.httpOpen = false;
+    this.generation++;
+    this.queue = Promise.resolve();
+  }
+
+  /**
+   * A request didn't get through (offline, or the server failed): stop here so nothing after it goes out
+   * of order, look offline, and try again in a little while. Reopening resends everything waiting.
+   */
   private lost() {
     if (!this.httpOpen) return;
-    this.httpOpen = false;
-    this.queue = Promise.resolve();
+    this.endHttp();
     this.handlers.onClose();
     if (this.retry) clearTimeout(this.retry);
     this.retry = setTimeout(() => {
@@ -160,7 +179,11 @@ class SpaceConnection implements Connection {
       if (e instanceof ApiError && e.status === 404) return this.gone();
       if (e instanceof ApiError && e.status === 429 && msg.t === "cmd")
         return this.deliver({ t: "busy", id: msg.cmd.id, reason: e.message });
-      if (e instanceof ApiError && e.status > 0) return;
+      // A change the server can't read won't get better by resending it.
+      if (e instanceof ApiError && e.status === 400 && msg.t === "cmd")
+        return this.deliver({ t: "reject", id: msg.cmd.id, reason: e.message });
+      // Signed out: nothing to do until they sign in again.
+      if (e instanceof ApiError && e.status === 401) return;
       throw e;
     }
   }

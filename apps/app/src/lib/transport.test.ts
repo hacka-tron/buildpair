@@ -100,4 +100,25 @@ describe("syncing a space that isn't on screen", () => {
     expect(handlers.onClose).toHaveBeenCalledTimes(1);
     c.close();
   });
+
+  it("stops at a failed change, so nothing after it goes out first", async () => {
+    let first = true;
+    respond = (path) => {
+      if (!path.endsWith("/commands")) return {};
+      if (first) {
+        first = false;
+        return new ApiError(503, "server_error", "Something failed on our side.");
+      }
+      return { results: [{ ok: false, reason: "That item no longer exists." }] };
+    };
+    const { c, got, handlers } = open();
+    await flush();
+    c.send({ t: "cmd", cmd: cmd(21) });
+    c.send({ t: "cmd", cmd: cmd(22) });
+    await flush();
+    expect(calls.filter((x) => x.path.endsWith("/commands"))).toHaveLength(1);
+    expect(got).toEqual([]);
+    expect(handlers.onClose).toHaveBeenCalledTimes(1);
+    c.close();
+  });
 });

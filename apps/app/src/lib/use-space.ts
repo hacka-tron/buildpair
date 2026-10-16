@@ -26,17 +26,23 @@ export function stopAllSyncs() {
 
 let stopInbox: (() => void) | null = null;
 
-/** Listen for news from every space through the person's inbox, once per signed-in session. */
+/** Listen for news from every space through the person's inbox, while they're signed in. */
 export function useInbox(userId: string) {
   useEffect(() => {
-    if (!userId || stopInbox) return;
+    if (!userId) return;
     const forSpace = (spaceId: string) => syncs.get(`${userId}:${spaceId}`);
-    stopInbox = connectInbox({
+    stopInbox?.();
+    const stop = connectInbox({
       onPoke: (spaceId, seq) => forSpace(spaceId)?.catchUp(seq),
       onOpen: () => {
         for (const [key, s] of syncs) if (key.startsWith(`${userId}:`)) s.catchUp();
       },
     });
+    stopInbox = stop;
+    return () => {
+      stop();
+      if (stopInbox === stop) stopInbox = null;
+    };
   }, [userId]);
 }
 
