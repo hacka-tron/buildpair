@@ -47,7 +47,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 ## Known gaps (not bugs, just not built yet)
 
-- **App Store requirements before any store release:** in-app account deletion, report and block, Sign in with Apple (needed once Google sign-in ships on iOS).
+- **App Store requirements before any store release:** report and block, Sign in with Apple (needed once Google sign-in ships on iOS).
 - **Universal Links / App Links** need `apple-app-site-association` and `assetlinks.json` served from `buildpair.app/.well-known/` once the Apple Team ID and Android signing key exist.
 - **Invites** let anyone with the link join right away; the design calls for the owner to approve each request.
 - **The app doesn't use the UserHub inbox socket yet**, so spaces you don't have open don't update live (they catch up when opened).
@@ -60,16 +60,23 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Production deploys go straight to 100%** with a health check and one-command rollback; add gradual rollout after confirming it works with Durable Objects on staging.
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.
 - **Repository license:** none yet (all rights reserved).
-- **Before production opens to the public:** rate limiting on sign-in and commands, report and block, in-app account deletion, owner-approved join requests. Until then, release only the landing page publicly if anything.
+- **Before production opens to the public:** rate limiting on sign-in and commands, report and block, owner-approved join requests. Until then, release only the landing page publicly if anything.
 - **Staging is open to anyone.** Anyone can make an account there (one email each) or request password-reset codes, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Still to do: a Cloudflare rate-limiting rule on the auth endpoints and `noindex` on staging pages.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
 - **Plain-words adding reads full weekday names and "today" anywhere** ("watch Friday Night Lights", "watch Today show" get a date). The add box shows what it read and one tap keeps the words as typed. Short names (fri, sat, sun) only count after on, next, this, by or due, or right before a time. "daily", "weekly" and "weekends" only count as the last words. Numeric dates need on, by, due or before ("on 10/20"). "At 7:30" stays in the words (morning or evening is unclear). A time with no day means today.
 - **Quick add small cases (review of PR #18):** "SAT 3pm prep" reads as Saturday 3pm; a trailing "due" stays in the title ("pay bill due 11/20" keeps "due"); a period after a date stays ("call friday." becomes "call ."). Lookbehind in the parser is untested on a phone (Hermes).
+- **"order 2 jan prints" reads as January 2.** A number next to a month name counts as a date anywhere in the words. The add box shows it and one tap undoes it.
 - **"Every monday" becomes 1 time a week**, not specific days. Habits only know times per week for now.
 - **Still to build in milestone 3:** moving an item to another space, "only visible to me" after creating, reminders and push.
 - **Confirm step polish (review of PR #16, minor):** check the 128-character password maximum in the verify-email wrapper, and hash the password before confirming so a failed database write can't leave the old password in place.
 - **No rate limiting on auth routes yet.** Codes allow 5 guesses each. Add a Cloudflare rate-limiting rule on `/api/auth/*` before production.
 - **The test account `bagel` is shared and public.** Anyone who reads the repo can sign in as it on staging. Fine for test data; keep real things out of it. Remove `TEST_LOGIN` from `wrangler.jsonc` to turn it off.
+- **A space's color can't go back to automatic** once the owner picks one. The protocol would need a "none" value.
+- **The spaces list (D1) isn't retried** if updating it after a rename or recolor fails. It stays out of date until the next edit, and the space screen corrects it when opened.
+- **The `bagel` password can't be changed for long.** It goes back to `bagel` the next time anyone signs in as it, by design, so the shared account keeps working.
+- **DMARC isn't set** for `buildpair.app`. Some inboxes trust its email less without it. Owner: add a `_dmarc` TXT record in Cloudflare DNS (start with `v=DMARC1; p=none`).
+- **Portfolio screenshots in `docs/portfolio` are out of date.** The app has changed a lot since they were taken.
+- **Account deletion leftovers (review of PR #26, minor):** pending email codes for the address aren't deleted (they expire within 10 minutes). If the person joins or makes a space while the delete runs, the delete can stop partway or leave their join in the space, and deleting again finishes it. Accounts with no password are told to set one with "Forgot your password?" first. Typing notices still go to every open connection without a member check (erased people's connections are already closed).
 - **Accounts made with email codes before 2026-10-15 have no password.** They set one with "Forgot your password?".
 - **Today and Spaces open a live socket per space** to show their contents. Fine for a few spaces; move to the UserHub inbox (see above) before people have many.
 
