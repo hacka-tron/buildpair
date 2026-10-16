@@ -94,6 +94,15 @@ export class SpaceSync {
     return { ok: true, id: command.id };
   }
 
+  /**
+   * Fetch what's new, if anything: the inbox said this space reached `seq`, or (with no seq) a
+   * connection came back and pokes may have been missed.
+   */
+  catchUp(seq?: number): void {
+    if (!this.connected || (seq !== undefined && seq <= this.confirmed.seq)) return;
+    this.connection?.send({ t: "hello", v: PROTOCOL_VERSION, afterSeq: this.confirmed.seq });
+  }
+
   typing(): void {
     if (this.connected) this.connection?.send({ t: "typing" });
   }

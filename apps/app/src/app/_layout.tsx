@@ -5,9 +5,11 @@ import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { authClient } from "../lib/auth";
 import { colors } from "../lib/theme";
+import { useInbox } from "../lib/use-space";
 
 export default function RootLayout() {
   const { data: session, isPending } = authClient.useSession();
+  useInbox(session?.user.id ?? "");
   // Only the first check shows the spinner. Later checks (after signing up, say) keep the screen and its state.
   const loaded = useRef(false);
   if (!isPending) loaded.current = true;
@@ -29,6 +31,8 @@ export default function RootLayout() {
           <Stack.Screen name="spaces/[id]" />
           <Stack.Screen name="join/[token]" />
           <Stack.Screen name="profile" />
+          <Stack.Screen name="supporting" options={{ animation: "none" }} />
+          <Stack.Screen name="activity" />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="sign-in" />
