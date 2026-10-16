@@ -12,6 +12,12 @@
     ]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SpaceRoom", "UserHub"] }],
+  "ratelimits": [
+    // Sign-in, sign-up and email codes: per network address.
+    { "name": "AUTH_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } },
+    // Changes (commands, invites, moves, new spaces): per signed-in person.
+    { "name": "WRITE_LIMIT", "namespace_id": "1002", "simple": { "limit": 120, "period": 60 } }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
@@ -41,6 +47,12 @@
           { "name": "USER_HUB", "class_name": "UserHub" }
         ]
       },
+      "ratelimits": [
+        // Sign-in, sign-up and email codes: per network address.
+        { "name": "AUTH_LIMIT", "namespace_id": "1101", "simple": { "limit": 20, "period": 60 } },
+        // Changes (commands, invites, moves, new spaces): per signed-in person.
+        { "name": "WRITE_LIMIT", "namespace_id": "1102", "simple": { "limit": 120, "period": 60 } }
+      ],
       "d1_databases": [
         {
           "binding": "DB",
@@ -67,6 +79,12 @@
           { "name": "USER_HUB", "class_name": "UserHub" }
         ]
       },
+      "ratelimits": [
+        // Sign-in, sign-up and email codes: per network address.
+        { "name": "AUTH_LIMIT", "namespace_id": "1201", "simple": { "limit": 20, "period": 60 } },
+        // Changes (commands, invites, moves, new spaces): per signed-in person.
+        { "name": "WRITE_LIMIT", "namespace_id": "1202", "simple": { "limit": 120, "period": 60 } }
+      ],
       "d1_databases": [
         {
           "binding": "DB",

@@ -8,7 +8,7 @@ import { cors } from "hono/cors";
 import { z } from "zod";
 import { createAuth, MIN_PASSWORD, NOT_INVITED, USE_PASSWORD } from "./auth";
 import { accountErasures, invites, joinRequests, memberships, spaces, user } from "./db/schema";
-import { assertConfig, type Env, isEmailAllowed, testLogin } from "./env";
+import { assertConfig, type Env, isEmailAllowed, SLOW_DOWN, testLogin, withinLimit } from "./env";
 import { USER_HEADER } from "./space-room";
 import { signTicket, verifyTicket } from "./tickets";
 
@@ -51,8 +51,30 @@ app.post("/api/auth/*", async (c, next) => {
   const type = c.req.header("content-type") ?? "";
   if (!type.toLowerCase().startsWith("application/json"))
     return c.json(err("UNSUPPORTED_BODY", "Send this as JSON."), 415);
+  // Cloudflare always sets the caller's address; without it (tests, some local runs) there's nothing to key on.
+  const ip = c.req.header("cf-connecting-ip");
+  if (ip && !(await withinLimit(c.env.AUTH_LIMIT, `auth:${addressKey(ip)}`)))
+    return c.json(err("TOO_MANY_REQUESTS", SLOW_DOWN), 429);
   return next();
 });
+
+/**
+ * What a limit counts by: the whole IPv4 address, or the first 64 bits of an IPv6 one (one connection
+ * usually gets a whole /64, so counting single addresses would hardly limit anything).
+ */
+export function addressKey(ip: string): string {
+  if (!ip.includes(":")) return ip;
+  const [head = "", tail = ""] = ip.toLowerCase().split("::");
+  const left = head ? head.split(":") : [];
+  const right = tail ? tail.split(":") : [];
+  const full = ip.includes("::")
+    ? [...left, ...Array(8 - left.length - right.length).fill("0"), ...right]
+    : left;
+  return `${full
+    .slice(0, 4)
+    .map((g) => g.replace(/^0+(?=.)/, ""))
+    .join(":")}::/64`;
+}
 
 const jsonBody = (c: { req: { raw: Request } }): Promise<Record<string, unknown> | null> =>
   c.req.raw
@@ -248,6 +270,10 @@ app.use("*", async (c, next) => {
   if (!session) return c.json(err("unauthenticated", "Please sign in."), 401);
   c.set("userId", session.user.id);
   c.set("userName", session.user.name || session.user.email.split("@")[0] || "Someone");
+  // Tickets only open a connection (whose commands are counted in the room), so they don't count.
+  const counts = c.req.method === "POST" && !c.req.path.endsWith("/ticket");
+  if (counts && !(await withinLimit(c.env.WRITE_LIMIT, `write:${session.user.id}`)))
+    return c.json(err("too_many_requests", SLOW_DOWN), 429);
   await next();
 });
 
@@ -346,7 +372,12 @@ app.post("/spaces/:id/commands", async (c) => {
   if (!body.success) return c.json(err("invalid", "Send up to 100 changes at a time."), 400);
   const stub = room(c.env, c.req.param("id"));
   const results = [];
-  for (const cmd of body.data.commands) results.push(await stub.runCommand(cmd, c.get("userId")));
+  // The request itself counted once; each further change counts too, as it would over the socket.
+  for (const [i, cmd] of body.data.commands.entries()) {
+    if (i > 0 && !(await withinLimit(c.env.WRITE_LIMIT, `write:${c.get("userId")}`)))
+      results.push({ ok: false, reason: SLOW_DOWN });
+    else results.push(await stub.runCommand(cmd, c.get("userId")));
+  }
   return c.json({ results });
 });
 

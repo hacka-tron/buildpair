@@ -188,4 +188,26 @@ describe("SpaceSync", () => {
     await settle();
     expect(jordan.sync.getSnapshot().view.items[itemId]).toMatchObject({ title: "Therapy" });
   });
+
+  it("keeps a change the server is too busy for and sends it again later", async () => {
+    const room = new FakeRoom(["maya", "jordan"]);
+    const maya = device(room, "maya");
+    await maya.sync.start();
+    await settle();
+    const before = SpaceSync.retryMs;
+    SpaceSync.retryMs = 300;
+    try {
+      room.busyFor = 1;
+      maya.sync.dispatch({ type: "message.send", payload: { messageId: newId(), body: "later" } });
+      await settle();
+      expect(maya.sync.getSnapshot().pendingIds.size).toBe(1);
+      expect(maya.sync.getSnapshot().error?.reason).toContain("Wait");
+      await new Promise((r) => setTimeout(r, 400));
+      await settle();
+      expect(maya.sync.getSnapshot().pendingIds.size).toBe(0);
+      expect(room.state.messages.map((m) => m.body)).toEqual(["later"]);
+    } finally {
+      SpaceSync.retryMs = before;
+    }
+  });
 });

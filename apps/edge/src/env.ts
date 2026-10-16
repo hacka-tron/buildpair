@@ -1,8 +1,17 @@
 import type { SpaceRoom } from "./space-room";
 import type { UserHub } from "./user-hub";
 
+/** A Workers rate limiting binding. */
+export interface Limiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 export interface Env {
   DB: D1Database;
+  /** Sign-in, sign-up and email codes, per network address. */
+  AUTH_LIMIT?: Limiter;
+  /** Changes, per signed-in person (HTTP and socket). */
+  WRITE_LIMIT?: Limiter;
   SPACE_ROOM: DurableObjectNamespace<SpaceRoom>;
   USER_HUB: DurableObjectNamespace<UserHub>;
   /** Cloudflare Email Sending binding (Workers Paid). Only present where configured. */
@@ -61,4 +70,12 @@ export function assertConfig(env: Env): void {
     throw new Error("RESEND_API_KEY is required for EMAIL_PROVIDER=resend.");
   if (env.EMAIL_PROVIDER === "cloudflare" && !env.EMAIL)
     throw new Error("EMAIL binding is required for EMAIL_PROVIDER=cloudflare.");
+}
+
+export const SLOW_DOWN = "Too many tries in a short time. Wait a minute, then try again.";
+
+/** False when this key is over its limit. Missing bindings (some local setups) never limit. */
+export async function withinLimit(limiter: Limiter | undefined, key: string): Promise<boolean> {
+  if (!limiter) return true;
+  return (await limiter.limit({ key })).success;
 }

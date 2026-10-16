@@ -42,6 +42,9 @@ export class SpaceSync {
   private listeners = new Set<() => void>();
   private snapshot: SyncSnapshot;
   private saving: Promise<void> = Promise.resolve();
+  private retry: ReturnType<typeof setTimeout> | null = null;
+  /** How long to wait before resending changes the server was too busy to take. */
+  static retryMs = 20_000;
 
   constructor(
     readonly spaceId: string,
@@ -72,6 +75,8 @@ export class SpaceSync {
   }
 
   stop(): void {
+    if (this.retry) clearTimeout(this.retry);
+    this.retry = null;
     this.connection?.close();
     this.connection = null;
     this.connected = false;
@@ -152,6 +157,16 @@ export class SpaceSync {
         this.error = { commandId: msg.id, reason: msg.reason };
         this.recompute();
         this.persist();
+        return;
+      case "busy":
+        // Kept, not dropped: send everything still waiting again in a little while.
+        this.error = { commandId: msg.id, reason: msg.reason };
+        this.emit();
+        if (!this.retry)
+          this.retry = setTimeout(() => {
+            this.retry = null;
+            if (this.connected) for (const cmd of this.pending) this.connection?.send({ t: "cmd", cmd });
+          }, SpaceSync.retryMs);
         return;
       case "presence":
         this.online = msg.online;
