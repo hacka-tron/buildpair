@@ -8,6 +8,7 @@ import {
   decideRemove,
   emptySpace,
   leavesWith,
+  normalizeSpace,
   type SpaceState,
   sequence,
   viewFor,
@@ -28,7 +29,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { listings, profileStats, spaces, user } from "./db/schema";
 import { type Env, SLOW_DOWN, withinLimit } from "./env";
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const MAX_EVENTS_PER_BATCH = 500;
 /** The Worker sets this after verifying a ticket; Durable Objects are not reachable from the internet directly. */
 export const USER_HEADER = "x-buildpair-user";
@@ -119,15 +120,58 @@ export class SpaceRoom extends DurableObject<Env> {
       )`);
       sql.exec("CREATE TABLE IF NOT EXISTS arrivals (move_id TEXT PRIMARY KEY, key TEXT NOT NULL)");
     }
+    if (version < 3) {
+      // The state as of `seq`, so waking up replays only what came after. One row at most.
+      sql.exec(`CREATE TABLE IF NOT EXISTS snapshot (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        seq INTEGER NOT NULL,
+        v INTEGER NOT NULL,
+        data TEXT NOT NULL
+      )`);
+    }
     sql.exec("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)", String(SCHEMA_VERSION));
   }
 
   /** Current state, rebuilt from the log after the room wakes up. */
   private load(): SpaceState {
     if (!this.state) {
-      this.state = applyEvents(emptySpace(), this.readLog());
+      // Start from the snapshot if it was made by this version of the rules; otherwise replay everything.
+      const snap = this.ctx.storage.sql
+        .exec<{ seq: number; data: string }>(
+          "SELECT seq, data FROM snapshot WHERE id = 1 AND v = ?",
+          PROTOCOL_VERSION,
+        )
+        .toArray()[0];
+      const base = snap ? normalizeSpace(JSON.parse(snap.data) as SpaceState) : emptySpace();
+      this.snapshotSeq = snap?.seq ?? 0;
+      this.state = applyEvents(base, this.readLog(base.seq));
     }
     return this.state;
+  }
+
+  private snapshotSeq = 0;
+
+  /** Save the state now and then, so a long history isn't replayed on every wake. */
+  private maybeSnapshot() {
+    const state = this.state;
+    const every = Number(this.env.SNAPSHOT_EVERY) || 500;
+    if (!state || state.seq - this.snapshotSeq < every) return;
+    const data = JSON.stringify(state);
+    // Very large spaces stay replay-only rather than risk a row that's too big to store.
+    if (data.length > 1_500_000) return;
+    this.ctx.storage.sql.exec(
+      "INSERT OR REPLACE INTO snapshot (id, seq, v, data) VALUES (1, ?, ?, ?)",
+      state.seq,
+      PROTOCOL_VERSION,
+      data,
+    );
+    this.snapshotSeq = state.seq;
+  }
+
+  /** The log was rewritten (someone erased, an item moved out): the old snapshot would bring things back. */
+  private dropSnapshot() {
+    this.ctx.storage.sql.exec("DELETE FROM snapshot");
+    this.snapshotSeq = 0;
   }
 
   private readLog(afterSeq = 0, limit = -1): SpaceEvent[] {
@@ -185,6 +229,7 @@ export class SpaceRoom extends DurableObject<Env> {
       }
     });
     this.state = applyEvents(current, events);
+    this.maybeSnapshot();
     return events;
   }
 
@@ -283,6 +328,7 @@ export class SpaceRoom extends DurableObject<Env> {
         if (command_id) sql.exec("DELETE FROM commands WHERE id = ?", command_id);
     });
     // Rebuild from the trimmed log, the same way a new device would.
+    this.dropSnapshot();
     this.state = null;
     this.publish([left!]);
   }
@@ -292,6 +338,7 @@ export class SpaceRoom extends DurableObject<Env> {
     for (const ws of this.ctx.getWebSockets()) closeQuietly(ws, 4004, "This space was deleted.");
     await this.ctx.storage.deleteAll();
     this.state = null;
+    this.snapshotSeq = 0;
     // Leave empty tables behind so any late request finds an empty space instead of failing.
     this.migrate();
   }
@@ -415,6 +462,7 @@ export class SpaceRoom extends DurableObject<Env> {
         JSON.stringify(d.items),
       );
     });
+    this.dropSnapshot();
     this.state = null;
     this.publish([moved!]);
     return { ok: true, delivered: await this.deliver() };

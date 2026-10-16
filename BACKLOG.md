@@ -58,10 +58,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Support each other (2026-10-16):** when offering support from Discover, you can suggest one of your own spaces. The owner sees "Suggests supporting each other: <space>" in their requests, and can choose "Let in and support <space> back", which also adds them as a supporter of your space. A plain "Let in" doesn't. Checked in the browser.
 
+**Room snapshots (2026-10-16):** each space saves its state every 500 events (room schema 3), and waking up loads the snapshot and replays only what came after. A snapshot made under another protocol version is ignored. Erasing someone or moving an item out drops the snapshot, and spaces too big to snapshot (over about 1.5 MB) keep replaying. Tests snapshot every 3 events, so every server test runs with snapshots on, and a test checks that waking from a snapshot equals a full replay.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: room snapshots** (spaces rebuild by replaying their whole log on wake), then dark mode in the app, then the desktop keyboard shortcuts. Milestone 7 (Jira) needs a Jira app registration from the owner first.
+3. **Build: dark mode in the app, then the desktop keyboard shortcuts.** Milestone 7 (Jira) needs a Jira app registration from the owner first.
 4. **Owner: read the privacy and terms pages before production** (`staging.buildpair.app/privacy` and `/terms`). They're plain-words drafts I wrote, not legal advice. Decide the minimum age (I put 16), the governing law, and whether a lawyer should look before the public launch.
 5. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 6. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
@@ -93,7 +95,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Read positions are per device.** Reading on your phone doesn't clear the dot on the web. Move them to the room (or UserHub) when that matters.
 - **Activity has no "new" marker.** It shows the last two weeks of reactions and every waiting request, but doesn't remember what you've already seen, and only the bell's dot (for requests) hints at news. Reactions don't carry a time on the device, so they're ordered by the message they're on.
 - **Owners only find out about join requests when they open the app.** The count shows on the Spaces tab and in the space, but nothing notifies them. Activity and push will.
-- **SpaceRoom rebuilds its state by replaying the whole log on wake.** Add snapshots before spaces get long histories.
+- **Very large spaces (over about 1.5 MB of state) aren't snapshotted** and replay their whole log on wake. Split the snapshot or trim old chat when that matters.
 - **The list of your spaces lives in D1**; the architecture moves it (with unread counts) into UserHub later.
 - **Analytics and error tracking** (PostHog EU cookieless, Sentry) are decided but not wired in.
 - **Desktop leftovers:** Today's right-hand margin, drag to reschedule on Upcoming, keyboard shortcuts beyond ⌘K (Q to add, X to select, S/W/U/M), right-click menus, and the habit detail view from `docs/design/buildpair-web.html` aren't built.
