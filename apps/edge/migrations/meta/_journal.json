@@ -43,6 +43,13 @@
       "when": 1792159818273,
       "tag": "0005_worthless_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792160204006,
+      "tag": "0006_real_blizzard",
+      "breakpoints": true
     }
   ]
 }

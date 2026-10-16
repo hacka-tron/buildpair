@@ -1,7 +1,7 @@
 import { newId } from "@buildpair/domain";
 import { Ulid } from "@buildpair/protocol";
 import { APIError } from "better-auth/api";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
@@ -13,6 +13,7 @@ import {
   invites,
   joinRequests,
   memberships,
+  pastMemberships,
   reports,
   spaces,
   user,
@@ -523,9 +524,20 @@ app.post("/spaces/:id/members/:userId/remove", async (c) => {
   const target = c.req.param("userId");
   if (!(await isMember(c.env, spaceId, c.get("userId"))))
     return c.json(err("not_found", "Space not found."), 404);
+  const db = drizzle(c.env.DB);
+  // Recorded first, so deleting their account later still reaches this room.
+  await db
+    .insert(pastMemberships)
+    .values({ spaceId, userId: target, leftAt: new Date() })
+    .onConflictDoNothing();
   const result = await room(c.env, spaceId).removeMember(target, c.get("userId"));
-  if (!result.ok) return c.json(err("rejected", result.reason), 409);
-  await drizzle(c.env.DB)
+  if (!result.ok) {
+    await db
+      .delete(pastMemberships)
+      .where(and(eq(pastMemberships.spaceId, spaceId), eq(pastMemberships.userId, target)));
+    return c.json(err("rejected", result.reason), 409);
+  }
+  await db
     .delete(memberships)
     .where(
       and(
@@ -593,6 +605,19 @@ app.post("/reports", async (c) => {
   const { spaceId, userId, messageId, reason, note } = body.data;
   if (userId === me) return c.json(err("invalid", "You can't report yourself."), 400);
   if (!(await isMember(c.env, spaceId, me))) return c.json(err("not_found", "Space not found."), 404);
+  if (!(await room(c.env, spaceId).knows(userId, me)))
+    return c.json(err("not_found", "That person isn't in this space."), 404);
+  const db = drizzle(c.env.DB);
+  const today = await db
+    .select({ n: count() })
+    .from(reports)
+    .where(and(eq(reports.reporterId, me), gt(reports.createdAt, new Date(Date.now() - 86_400_000))))
+    .get();
+  if ((today?.n ?? 0) >= 20)
+    return c.json(
+      err("too_many_requests", "You've sent a lot of reports today. We're on them; try again tomorrow."),
+      429,
+    );
   let reported: string | null = null;
   if (messageId) {
     const message = await room(c.env, spaceId).messageFor(messageId, me);
@@ -600,9 +625,20 @@ app.post("/reports", async (c) => {
       return c.json(err("not_found", "That message is gone, so it can't be reported."), 404);
     reported = message.body;
   }
-  const db = drizzle(c.env.DB);
   const exists = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).get();
   if (!exists) return c.json(err("not_found", "That person isn't on Buildpair any more."), 404);
+  // The same report again is kept, but not emailed again.
+  const repeat = await db
+    .select({ id: reports.id })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.reporterId, me),
+        eq(reports.targetId, userId),
+        messageId ? eq(reports.messageId, messageId) : isNull(reports.messageId),
+      ),
+    )
+    .get();
   const id = newId();
   await db.insert(reports).values({
     id,
@@ -615,7 +651,7 @@ app.post("/reports", async (c) => {
     note: note || null,
     createdAt: new Date(),
   });
-  if (c.env.MODERATION_EMAIL) {
+  if (c.env.MODERATION_EMAIL && !repeat) {
     const text = [
       `Report ${id}`,
       `Reason: ${reason}`,

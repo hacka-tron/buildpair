@@ -1,7 +1,7 @@
 import { newId } from "@buildpair/domain";
 import type { SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
-import { type Client, command, join, signIn } from "./helpers";
+import { type Client, command, join, PASSWORD, signIn } from "./helpers";
 
 type Batch = { events: SpaceEvent[] };
 const idOf = async (c: Client) => ((await (await c.get("/me")).json()) as { id: string }).id;
@@ -121,5 +121,31 @@ describe("reporting", () => {
       reason: "spam",
     });
     expect(res.status).toBe(404);
+  });
+
+  it("caps reports at 20 a day and only reports people in the space", async () => {
+    const { maya, spaceId, jordanId } = await setup();
+    const stranger = await signIn(`stranger-${newId()}@example.com`);
+    expect(
+      (await maya.post("/reports", { spaceId, userId: await idOf(stranger), reason: "spam" })).status,
+    ).toBe(404);
+    const statuses: number[] = [];
+    for (let i = 0; i < 21; i++)
+      statuses.push((await maya.post("/reports", { spaceId, userId: jordanId, reason: "spam" })).status);
+    expect(statuses.slice(0, 20).every((s) => s === 201)).toBe(true);
+    expect(statuses[20]).toBe(429);
+  });
+});
+
+describe("deleting an account after leaving", () => {
+  it("still erases everything they left behind", async () => {
+    const { maya, jordan, spaceId, jordanId } = await setup();
+    await jordan.post(`/spaces/${spaceId}/commands`, {
+      commands: [command({ type: "message.send", payload: { messageId: newId(), body: "Jordan was here" } })],
+    });
+    expect((await jordan.post(`/spaces/${spaceId}/members/${jordanId}/remove`)).status).toBe(200);
+    expect((await jordan.post("/api/auth/delete-user", { password: PASSWORD })).status).toBe(200);
+    const log = await (await maya.get(`/spaces/${spaceId}/events?after=0`)).text();
+    expect(log).not.toContain("Jordan was here");
   });
 });

@@ -1,6 +1,6 @@
 import { and, eq, ne } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { accountErasures, invites, joinRequests, memberships, spaces } from "./db/schema";
+import { accountErasures, invites, joinRequests, memberships, pastMemberships, spaces } from "./db/schema";
 import type { Env } from "./env";
 
 /**
@@ -20,7 +20,14 @@ export async function eraseAccount(env: Env, userId: string): Promise<void> {
     .from(memberships)
     .where(and(eq(memberships.userId, userId), ne(memberships.role, "owner")))
     .all();
-  for (const { spaceId } of joined) await room(spaceId).eraseMember(userId);
+  // Spaces they left still hold their messages and items.
+  const left = await db
+    .select({ spaceId: pastMemberships.spaceId })
+    .from(pastMemberships)
+    .where(eq(pastMemberships.userId, userId))
+    .all();
+  const rooms = new Set([...joined, ...left].map((r) => r.spaceId));
+  for (const spaceId of rooms) await room(spaceId).eraseMember(userId);
 
   const owned = await db.select({ id: spaces.id }).from(spaces).where(eq(spaces.ownerId, userId)).all();
   for (const { id } of owned) {

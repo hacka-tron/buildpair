@@ -311,6 +311,15 @@ export class SpaceRoom extends DurableObject<Env> {
     return { ok: true, removed: true };
   }
 
+  /** Whether `viewerId` (a member) shares this space with `userId`: they're in it, or wrote something the viewer sees. */
+  async knows(userId: string, viewerId: string): Promise<boolean> {
+    const state = this.load();
+    if (!state.members[viewerId]) return false;
+    return (
+      Boolean(state.members[userId]) || viewFor(state, viewerId).messages.some((m) => m.authorId === userId)
+    );
+  }
+
   /** A message as the person reporting it sees it, or null if they can't see it. */
   async messageFor(messageId: string, userId: string): Promise<{ authorId: string; body: string } | null> {
     const state = this.load();

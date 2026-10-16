@@ -165,3 +165,18 @@ export const reports = sqliteTable("reports", {
   note: text("note"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+/** Spaces someone left or was removed from. Deleting their account still reaches those rooms. */
+export const pastMemberships = sqliteTable(
+  "past_memberships",
+  {
+    spaceId: text("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    leftAt: integer("left_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.spaceId, t.userId] })],
+);
