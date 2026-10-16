@@ -124,3 +124,11 @@ export const joinRequests = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.spaceId, t.userId] })],
 );
+
+/** Accounts being deleted right now. Written first, so a join approved at the same moment can tell and undo itself. */
+export const accountErasures = sqliteTable("account_erasures", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
+});

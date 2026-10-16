@@ -7,7 +7,7 @@ import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
 import { createAuth, MIN_PASSWORD, NOT_INVITED, USE_PASSWORD } from "./auth";
-import { invites, joinRequests, memberships, spaces } from "./db/schema";
+import { accountErasures, invites, joinRequests, memberships, spaces, user } from "./db/schema";
 import { assertConfig, type Env, isEmailAllowed, testLogin } from "./env";
 import { USER_HEADER } from "./space-room";
 import { signTicket, verifyTicket } from "./tickets";
@@ -435,23 +435,26 @@ app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
     return c.json(err("not_found", "Space not found."), 404);
   const db = drizzle(c.env.DB);
   const who = and(eq(joinRequests.spaceId, spaceId), eq(joinRequests.userId, c.req.param("userId")));
-  const request = await db.select().from(joinRequests).where(who).get();
-  if (!request) return c.json({ ok: true });
-  if (c.req.param("answer") === "approve") {
+  // Taking the request is the claim: of two answers at once, only the one that gets it acts.
+  const [request] = await db.delete(joinRequests).where(who).returning();
+  if (!request || c.req.param("answer") === "decline") return c.json({ ok: true });
+  const userId = request.userId;
+  try {
     await db
       .insert(memberships)
-      .values({ spaceId, userId: request.userId, role: "supporter", joinedAt: new Date() })
+      .values({ spaceId, userId, role: "supporter", joinedAt: new Date() })
       .onConflictDoNothing();
-    await room(c.env, spaceId).addMember({ userId: request.userId, role: "supporter", name: request.name });
+  } catch {
+    // Their account is already gone.
+    return c.json({ ok: true });
   }
-  const answered = await db.delete(joinRequests).where(who).returning({ userId: joinRequests.userId });
-  if (c.req.param("answer") === "approve" && answered.length === 0) {
-    // The request vanished while we let them in: they deleted their account (which removes requests
-    // first). Undo the join so nothing of theirs stays in the space.
-    await room(c.env, spaceId).eraseMember(request.userId);
-    await db
-      .delete(memberships)
-      .where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, request.userId)));
+  await room(c.env, spaceId).addMember({ userId, role: "supporter", name: request.name });
+  // If they started deleting their account meanwhile, that deletion may have missed this join. Undo it.
+  const leaving = await db.select().from(accountErasures).where(eq(accountErasures.userId, userId)).get();
+  const still = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).get();
+  if (leaving || !still) {
+    await room(c.env, spaceId).eraseMember(userId);
+    await db.delete(memberships).where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, userId)));
   }
   return c.json({ ok: true });
 });

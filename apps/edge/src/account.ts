@@ -1,6 +1,6 @@
 import { and, eq, ne } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { invites, joinRequests, memberships, spaces } from "./db/schema";
+import { accountErasures, invites, joinRequests, memberships, spaces } from "./db/schema";
 import type { Env } from "./env";
 
 /**
@@ -12,7 +12,8 @@ import type { Env } from "./env";
 export async function eraseAccount(env: Env, userId: string): Promise<void> {
   const db = drizzle(env.DB);
   const room = (id: string) => env.SPACE_ROOM.get(env.SPACE_ROOM.idFromName(id));
-  // First, so an owner approving one of their requests right now can tell and undo the join.
+  // First, so a join approved at this moment can tell and undo itself. Removed with the account row.
+  await db.insert(accountErasures).values({ userId, startedAt: new Date() }).onConflictDoNothing();
   await db.delete(joinRequests).where(eq(joinRequests.userId, userId));
   const joined = await db
     .select({ spaceId: memberships.spaceId })

@@ -78,16 +78,15 @@ describe("joining by request", () => {
     expect(await requests(maya, spaceId)).toEqual([]);
   });
 
-  it("undoes a join when the request disappears while it's being approved", async () => {
+  it("undoes a join when the person starts deleting their account while it's approved", async () => {
     const { maya, spaceId, token } = await setup();
     const jordan = await signIn(`jordan-${newId()}@example.com`);
     await jordan.post(`/invites/${token}/accept`);
     const jordanId = await idOf(jordan);
-    // Stand in for an account deletion that removes the request between the read and the delete.
     const { env } = await import("cloudflare:test");
-    // A trigger removes the request the moment the membership is written.
+    // A trigger marks the account as being deleted the moment the membership is written.
     await env.DB.prepare(
-      "CREATE TRIGGER IF NOT EXISTS vanish AFTER INSERT ON memberships WHEN NEW.role = 'supporter' BEGIN DELETE FROM join_requests WHERE user_id = NEW.user_id; END",
+      "CREATE TRIGGER IF NOT EXISTS vanish AFTER INSERT ON memberships WHEN NEW.role = 'supporter' BEGIN INSERT OR IGNORE INTO account_erasures (user_id, started_at) VALUES (NEW.user_id, 0); END",
     ).run();
     try {
       expect((await maya.post(`/spaces/${spaceId}/requests/${jordanId}/approve`)).status).toBe(200);
@@ -99,5 +98,17 @@ describe("joining by request", () => {
       events: { type: string; actorId: string }[];
     };
     expect(events.some((e) => e.type === "member.joined" && e.actorId === jordanId)).toBe(false);
+  });
+
+  it("treats two approvals at once like one", async () => {
+    const { maya, spaceId, token } = await setup();
+    const jordan = await signIn(`jordan-${newId()}@example.com`);
+    await jordan.post(`/invites/${token}/accept`);
+    const jordanId = await idOf(jordan);
+    const answers = await Promise.all(
+      [1, 2].map(() => maya.post(`/spaces/${spaceId}/requests/${jordanId}/approve`)),
+    );
+    expect(answers.map((a) => a.status)).toEqual([200, 200]);
+    expect((await jordan.get(`/spaces/${spaceId}/events?after=0`)).status).toBe(200);
   });
 });
