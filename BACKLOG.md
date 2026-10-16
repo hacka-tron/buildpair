@@ -94,6 +94,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 ## Decisions (owner)
 
+- The agent drives the project and decides; the owner reviews "Claude's call" entries later (2026-10-16). See "Who decides" in CLAUDE.md.
 - Domain `buildpair.app`: landing at `buildpair.app`, web app at `app.buildpair.app`, API at `api.buildpair.app` (staging: `staging.`, `app-staging.`, `api-staging.`).
 - Public repository, no license for now.
 - Sign-in: email and password, with an emailed code only to confirm a new account or reset a password (2026-10-15, to save Resend email). Then Google; add Sign in with Apple alongside Google on iOS.
