@@ -82,7 +82,9 @@ export function ItemSheet(props: {
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm }}>
         <Tag tone="blue">{live.kind === "todo" ? "To-do" : live.kind === "habit" ? "Habit" : "Goal"}</Tag>
         <Text style={{ fontSize: 14, color: colors.sub }}>{describe(live, steps, props.today)}</Text>
-        {!shared ? <Text style={{ fontSize: 14, color: colors.sub }}>· Only you can see this</Text> : null}
+        {!shared && live.parentId ? (
+          <Text style={{ fontSize: 14, color: colors.sub }}>· Only you can see this</Text>
+        ) : null}
         {!mine ? <Text style={{ fontSize: 14, color: colors.sub }}>· Added by {owner}</Text> : null}
         {mine && open ? (
           <Pressable
