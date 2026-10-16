@@ -75,35 +75,41 @@ export function ErrorText({ children }: { children: ReactNode }) {
   ) : null;
 }
 
-export const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  button: {
-    borderRadius: radius.control,
-    minHeight: 46,
-    paddingVertical: 12,
-    paddingHorizontal: space.lg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primary: { backgroundColor: colors.blue },
-  secondary: { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.line },
-  buttonText: { fontSize: type.body, fontWeight: "600" },
-  label: { fontSize: 13, fontWeight: "600", color: colors.sub },
-  field: {
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.control,
-    paddingHorizontal: space.md,
-    paddingVertical: 12,
-    // 16px keeps iOS from zooming into the field.
-    fontSize: 16,
-    color: colors.ink,
-    backgroundColor: "#fff",
-    outlineColor: colors.royal,
-  },
-  error: { color: colors.danger, fontSize: type.secondary },
-  title: { fontSize: type.title, fontWeight: "700", letterSpacing: -0.4, color: colors.ink },
-  sub: { fontSize: type.secondary, color: colors.sub },
+const makeStyles = () =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.bg },
+    button: {
+      borderRadius: radius.control,
+      minHeight: 46,
+      paddingVertical: 12,
+      paddingHorizontal: space.lg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    primary: { backgroundColor: colors.blue },
+    secondary: { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.line },
+    buttonText: { fontSize: type.body, fontWeight: "600" },
+    label: { fontSize: 13, fontWeight: "600", color: colors.sub },
+    field: {
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: radius.control,
+      paddingHorizontal: space.md,
+      paddingVertical: 12,
+      // 16px keeps iOS from zooming into the field.
+      fontSize: 16,
+      color: colors.ink,
+      backgroundColor: colors.card,
+      outlineColor: colors.royal,
+    },
+    error: { color: colors.danger, fontSize: type.secondary },
+    title: { fontSize: type.title, fontWeight: "700", letterSpacing: -0.4, color: colors.ink },
+    sub: { fontSize: type.secondary, color: colors.sub },
+  });
+
+/** Shared styles. Read fresh from the current palette, so light and dark both apply. */
+export const styles = new Proxy({} as ReturnType<typeof makeStyles>, {
+  get: (_, key) => makeStyles()[key as keyof ReturnType<typeof makeStyles>],
 });
 
 /** Links to the privacy and terms pages on the landing site. */

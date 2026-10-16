@@ -97,7 +97,7 @@ export function SelectionBar(props: {
           right: props.wide ? undefined : space.md,
           bottom: space.lg,
           maxWidth: 720,
-          backgroundColor: colors.ink,
+          backgroundColor: colors.bar,
           borderRadius: radius.card,
           paddingVertical: space.sm,
           paddingHorizontal: space.sm,

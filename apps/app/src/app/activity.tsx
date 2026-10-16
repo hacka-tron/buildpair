@@ -59,7 +59,7 @@ export default function Activity() {
               paddingVertical: space.md,
               paddingHorizontal: space.sm,
               borderRadius: 10,
-              backgroundColor: hovered ? "#F4F5F8" : "transparent",
+              backgroundColor: hovered ? colors.hover : "transparent",
             })}
           >
             <SpaceTile id={e.spaceId} name={e.spaceName} size={36} />

@@ -120,7 +120,7 @@ export function CommandPalette() {
           style={{
             width: 560,
             maxWidth: "92%",
-            backgroundColor: "#fff",
+            backgroundColor: colors.card,
             borderRadius: 14,
             overflow: "hidden",
             boxShadow: "0 30px 70px -20px rgba(15,20,40,0.55)",
@@ -219,7 +219,7 @@ export function CommandPalette() {
               paddingVertical: 9,
               borderTopWidth: 1,
               borderColor: colors.line,
-              backgroundColor: "#fafbfc",
+              backgroundColor: colors.surface,
             }}
           >
             <Text style={{ fontSize: 11, color: colors.sub }}>↑↓ to move</Text>

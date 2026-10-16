@@ -1,13 +1,24 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useRef } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Platform, useColorScheme, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { authClient } from "../lib/auth";
-import { colors } from "../lib/theme";
+import { colors, type Scheme, setScheme } from "../lib/theme";
 import { useInbox } from "../lib/use-space";
 
+/** On the web, `?theme=dark` or `?theme=light` overrides the device setting (handy for checking both). */
+const forced: Scheme | null = (() => {
+  if (Platform.OS !== "web" || typeof location === "undefined") return null;
+  const t = new URLSearchParams(location.search).get("theme");
+  return t === "dark" || t === "light" ? t : null;
+})();
+
 export default function RootLayout() {
+  const device = useColorScheme();
+  const scheme: Scheme = forced ?? (device === "dark" ? "dark" : "light");
+  // Set before anything renders, so every screen reads the right palette.
+  setScheme(scheme);
   const { data: session, isPending } = authClient.useSession();
   useInbox(session?.user.id ?? "");
   // Only the first check shows the spinner. Later checks (after signing up, say) keep the screen and its state.
@@ -23,8 +34,11 @@ export default function RootLayout() {
   const signedIn = Boolean(session);
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      <Stack
+        key={scheme}
+        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}
+      >
         <Stack.Protected guard={signedIn}>
           <Stack.Screen name="index" options={{ animation: "none" }} />
           <Stack.Screen name="spaces/index" options={{ animation: "none" }} />

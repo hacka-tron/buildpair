@@ -39,7 +39,7 @@ export default function Upcoming() {
         gap: 8,
         padding: 8,
         borderRadius: radius.control,
-        backgroundColor: hovered ? colors.surface : "#fff",
+        backgroundColor: hovered ? colors.surface : colors.card,
         borderWidth: 1,
         borderColor: colors.line,
       })}

@@ -114,7 +114,7 @@ export function Avatar({
             borderRadius: size,
             backgroundColor: colors.online,
             borderWidth: 2,
-            borderColor: "#fff",
+            borderColor: colors.bg,
           }}
         />
       ) : null}
@@ -141,7 +141,7 @@ export function Faces({
             marginLeft: i === 0 ? 0 : -size * 0.28,
             borderRadius: size,
             borderWidth: 2,
-            borderColor: "#fff",
+            borderColor: colors.bg,
           }}
         >
           <Avatar id={p.id} name={p.name} size={size} />
@@ -293,7 +293,7 @@ export function ItemRow({
             height: 22,
             borderRadius: 11,
             borderWidth: done ? 0 : 1.6,
-            borderColor: "#B4BAC8",
+            borderColor: colors.control,
             backgroundColor: done ? colors.blue : "transparent",
             alignItems: "center",
             justifyContent: "center",
@@ -374,7 +374,7 @@ export function Card({ children, style }: { children: ReactNode; style?: ViewSty
           borderColor: colors.line,
           borderRadius: radius.card,
           paddingHorizontal: space.lg,
-          backgroundColor: "#fff",
+          backgroundColor: colors.card,
         },
         style,
       ]}
@@ -448,7 +448,7 @@ export function Sheet({
           />
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: colors.card,
               borderRadius: radius.sheet,
               borderBottomLeftRadius: wide ? radius.sheet : 0,
               borderBottomRightRadius: wide ? radius.sheet : 0,
@@ -514,7 +514,7 @@ export function Chip({
         borderRadius: 999,
         borderWidth: 1,
         borderColor: on ? colors.royal : colors.line,
-        backgroundColor: on ? colors.tint : "#fff",
+        backgroundColor: on ? colors.tint : colors.card,
       }}
     >
       {leading}

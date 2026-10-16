@@ -65,7 +65,7 @@ export default function Discover() {
             paddingVertical: 11,
             fontSize: 16,
             color: colors.ink,
-            backgroundColor: "#fff",
+            backgroundColor: colors.card,
             outlineColor: colors.royal,
           }}
         />
@@ -191,7 +191,7 @@ function ListingCard({ listing: l, onOffered }: { listing: Listing; onOffered: (
                           gap: 6,
                           borderWidth: 1,
                           borderColor: on ? colors.royal : colors.line,
-                          backgroundColor: on ? colors.tint : "#fff",
+                          backgroundColor: on ? colors.tint : colors.card,
                           borderRadius: 999,
                           paddingHorizontal: 10,
                           paddingVertical: 5,

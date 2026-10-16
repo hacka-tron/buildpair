@@ -117,7 +117,7 @@ export function ProfileSummary({ userId, self }: { userId: string; self: boolean
                   style={{
                     borderWidth: 1,
                     borderColor: mine ? colors.royal : colors.line,
-                    backgroundColor: mine ? colors.tint : "#fff",
+                    backgroundColor: mine ? colors.tint : colors.card,
                     borderRadius: 999,
                     paddingHorizontal: 10,
                     paddingVertical: 5,
