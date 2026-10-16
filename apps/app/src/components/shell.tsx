@@ -10,7 +10,8 @@ import { stopAllSyncs } from "../lib/use-space";
 import type { HoverState } from "./kit";
 import { Avatar, Icon, type IconName, SpaceTile, Wordmark } from "./kit";
 
-export type Section = "today" | "spaces" | "profile" | { spaceId: string };
+export type Section = "today" | "spaces" | "supporting" | "activity" | "profile" | { spaceId: string };
+type Href = "/" | "/spaces" | "/supporting" | "/activity";
 
 export const TAB_BAR_HEIGHT = 58;
 
@@ -27,7 +28,7 @@ export async function signOut() {
 
 /**
  * The frame around every signed-in screen. Wide screens get the sidebar (navigation, then your
- * spaces); phones get the bottom tab bar on Today and Spaces, and nothing extra inside a space.
+ * spaces); phones get the bottom tab bar on Today, Spaces and Supporting, and nothing extra inside a space.
  */
 export function Shell({
   active,
@@ -63,9 +64,10 @@ function BottomInset() {
   return <View style={{ height: insets.bottom }} />;
 }
 
-const TABS: { key: "today" | "spaces"; label: string; icon: IconName; href: "/" | "/spaces" }[] = [
+const TABS: { key: "today" | "spaces" | "supporting"; label: string; icon: IconName; href: Href }[] = [
   { key: "today", label: "Today", icon: "check", href: "/" },
   { key: "spaces", label: "Spaces", icon: "grid", href: "/spaces" },
+  { key: "supporting", label: "Supporting", icon: "users", href: "/supporting" },
 ];
 
 function TabBar({ active }: { active: Section }) {
@@ -125,6 +127,8 @@ function Sidebar({ active }: { active: Section }) {
         </View>
         <NavRow icon="check" label="Today" href="/" on={active === "today"} />
         <NavRow icon="grid" label="Spaces" href="/spaces" on={active === "spaces"} />
+        <NavRow icon="users" label="Supporting" href="/supporting" on={active === "supporting"} />
+        <NavRow icon="bell" label="Activity" href="/activity" on={active === "activity"} />
         <View
           style={{
             flexDirection: "row",
@@ -207,17 +211,7 @@ function Sidebar({ active }: { active: Section }) {
   );
 }
 
-function NavRow({
-  icon,
-  label,
-  href,
-  on,
-}: {
-  icon: IconName;
-  label: string;
-  href: "/" | "/spaces";
-  on: boolean;
-}) {
+function NavRow({ icon, label, href, on }: { icon: IconName; label: string; href: Href; on: boolean }) {
   return (
     <Pressable
       accessibilityRole="link"
