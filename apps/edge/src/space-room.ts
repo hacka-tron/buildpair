@@ -5,10 +5,12 @@ import {
   decide,
   decideArrive,
   decideMoveOut,
+  decideRemove,
   emptySpace,
   leavesWith,
   type SpaceState,
   sequence,
+  viewFor,
 } from "@buildpair/domain";
 import {
   ClientMessage,
@@ -292,6 +294,29 @@ export class SpaceRoom extends DurableObject<Env> {
     this.state = null;
     // Leave empty tables behind so any late request finds an empty space instead of failing.
     this.migrate();
+  }
+
+  /** Someone leaves, or the owner removes them. Their open connections close. */
+  async removeMember(
+    userId: string,
+    actorId: string,
+  ): Promise<{ ok: true; removed: boolean } | { ok: false; reason: string }> {
+    const d = decideRemove(this.load(), userId, actorId, new Date().toISOString());
+    if (!d.ok) return d;
+    if (d.events.length === 0) return { ok: true, removed: false };
+    const events = this.commit(d.events);
+    for (const ws of this.ctx.getWebSockets(userId))
+      closeQuietly(ws, 4003, "You're no longer in this space.");
+    this.publish(events);
+    return { ok: true, removed: true };
+  }
+
+  /** A message as the person reporting it sees it, or null if they can't see it. */
+  async messageFor(messageId: string, userId: string): Promise<{ authorId: string; body: string } | null> {
+    const state = this.load();
+    if (!state.members[userId]) return null;
+    const message = viewFor(state, userId).messages.find((m) => m.id === messageId);
+    return message ? { authorId: message.authorId, body: message.body } : null;
   }
 
   async isMember(userId: string): Promise<boolean> {

@@ -42,6 +42,11 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
     case "member.joined":
       next.members = { ...state.members, [event.payload.member.userId]: event.payload.member };
       break;
+    case "member.removed": {
+      const { [event.payload.userId]: _, ...members } = state.members;
+      next.members = members;
+      break;
+    }
     case "member.erased": {
       const gone = event.payload.userId;
       const { [gone]: _, ...members } = state.members;

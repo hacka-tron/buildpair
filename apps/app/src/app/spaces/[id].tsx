@@ -20,10 +20,20 @@ import { SelectionBar, useSelection } from "../../components/selection";
 import { Shell, useWide } from "../../components/shell";
 import { SpaceSettings } from "../../components/space-settings";
 import { Button, ErrorText } from "../../components/ui";
-import { answerRequest, createInvite, type JoinRequest, listRequests, resetInvites } from "../../lib/api";
+import {
+  answerRequest,
+  createInvite,
+  type JoinRequest,
+  listRequests,
+  type ReportReason,
+  removeMember,
+  resetInvites,
+  sendReport,
+} from "../../lib/api";
 import { authClient } from "../../lib/auth";
+import { block, unblock, useBlocked } from "../../lib/blocks";
 import { ago, localToday, peopleLine } from "../../lib/format";
-import { applyChange, patchSpace, refreshSpaces, useSpaces } from "../../lib/spaces";
+import { applyChange, markSpaceGone, patchSpace, refreshSpaces, useSpaces } from "../../lib/spaces";
 import { colors, radius, space } from "../../lib/theme";
 import { useSpace } from "../../lib/use-space";
 
@@ -53,6 +63,10 @@ export default function SpaceScreen() {
       patchSpace(id, { name: view.name, purpose: view.purpose, color });
   }, [id, summary, connected, view.name, view.purpose, view.color]);
   const [opened, setOpened] = useState<Item | null>(null);
+  const blocked = useBlocked();
+  /** The person whose sheet is open (report, block, remove), and the message being reported if any. */
+  const [person, setPerson] = useState<{ userId: string; messageId?: string } | null>(null);
+  const [peopleOpen, setPeopleOpen] = useState(false);
 
   const nameOf = (uid: string) => (uid === userId ? "You" : (view.members[uid]?.name ?? "Someone"));
   const members = Object.values(view.members);
@@ -114,6 +128,8 @@ export default function SpaceScreen() {
       nameOf={nameOf}
       spaceName={name}
       header={wide ? undefined : itemsPanel}
+      blocked={blocked}
+      onReport={(m) => setPerson({ userId: m.authorId, messageId: m.id })}
       onReact={(messageId, emoji) => run({ type: "reaction.toggle", payload: { messageId, emoji } })}
       onSend={(body) => run({ type: "message.send", payload: { messageId: newId(), body } })}
       onTyping={() => sync.typing()}
@@ -159,6 +175,38 @@ export default function SpaceScreen() {
         apply={(change) => applyChange(id, userId, change)}
       />
       {inviteSheet}
+      {person ? (
+        <PersonSheet
+          key={`${person.userId}-${person.messageId ?? ""}`}
+          spaceId={id}
+          userId={person.userId}
+          messageId={person.messageId}
+          name={view.members[person.userId]?.name ?? "Someone"}
+          member={Boolean(view.members[person.userId])}
+          isOwner={isOwner}
+          blocked={blocked.has(person.userId)}
+          wide={wide}
+          onClose={() => setPerson(null)}
+        />
+      ) : null}
+      {peopleOpen && !wide ? (
+        <Sheet visible onClose={() => setPeopleOpen(false)} title="People" wide={false}>
+          <People
+            members={members}
+            online={online}
+            userId={userId}
+            spaceId={id}
+            onInvite={() => {
+              setPeopleOpen(false);
+              setInviting(true);
+            }}
+            onPerson={(uid) => {
+              setPeopleOpen(false);
+              setPerson({ userId: uid });
+            }}
+          />
+        </Sheet>
+      ) : null}
       {settings ? (
         <SpaceSettings
           spaceId={id}
@@ -255,7 +303,14 @@ export default function SpaceScreen() {
             contentContainerStyle={{ padding: space.xl, gap: space.xl }}
           >
             {itemsPanel}
-            <People members={members} online={online} userId={userId} onInvite={() => setInviting(true)} />
+            <People
+              members={members}
+              online={online}
+              userId={userId}
+              spaceId={id}
+              onInvite={() => setInviting(true)}
+              onPerson={(uid) => setPerson({ userId: uid })}
+            />
           </ScrollView>
         </View>
         {sheets}
@@ -347,10 +402,16 @@ export default function SpaceScreen() {
               ) : null}
             </Pressable>
           </View>
-          <Text numberOfLines={1} style={{ fontSize: 13, color: colors.sub }}>
-            {peopleLine(["You", ...others.map((m) => m.name)])}
-            {status ? ` · ${status}` : ""}
-          </Text>
+          <Pressable
+            onPress={() => setPeopleOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="People"
+          >
+            <Text numberOfLines={1} style={{ fontSize: 13, color: colors.sub }}>
+              {peopleLine(["You", ...others.map((m) => m.name)])}
+              {status ? ` · ${status}` : ""}
+            </Text>
+          </Pressable>
         </View>
         {errorBar}
         {chat}
@@ -464,36 +525,230 @@ function People(props: {
   members: { userId: string; name: string; role: string }[];
   online: readonly string[];
   userId: string;
+  spaceId: string;
   onInvite: () => void;
+  onPerson: (userId: string) => void;
 }) {
+  const me = props.members.find((m) => m.userId === props.userId);
+  const [leaving, setLeaving] = useState(false);
+  const [error, setError] = useState("");
+  const leave = async () => {
+    setError("");
+    try {
+      await removeMember(props.spaceId, props.userId);
+      markSpaceGone(props.spaceId);
+      void refreshSpaces();
+      router.replace("/");
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
   return (
     <View style={{ gap: space.sm }}>
       <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink }}>People</Text>
       {props.members.map((m) => {
         const here = props.online.includes(m.userId);
+        const self = m.userId === props.userId;
         return (
-          <View
+          <Pressable
             key={m.userId}
+            disabled={self}
+            onPress={() => props.onPerson(m.userId)}
+            accessibilityRole={self ? undefined : "button"}
+            accessibilityLabel={self ? undefined : `${m.name}: report, block or remove`}
             style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 }}
           >
             <Avatar id={m.userId} name={m.name} size={28} online={here} />
             <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: colors.ink }}>
-              {m.userId === props.userId ? `${m.name} (you)` : m.name}
+              {self ? `${m.name} (you)` : m.name}
             </Text>
             <Text style={{ fontSize: 12, color: here ? colors.online : colors.faint }}>
               {here ? "Here now" : m.role === "owner" ? "Owner" : "Supporter"}
             </Text>
-          </View>
+          </Pressable>
         );
       })}
       <Pressable onPress={props.onInvite} accessibilityRole="button" style={{ paddingVertical: 6 }}>
         <Text style={{ fontSize: 14, fontWeight: "600", color: colors.blue }}>+ Invite people</Text>
       </Pressable>
+      {me?.role === "supporter" ? (
+        leaving ? (
+          <View style={{ gap: space.sm }}>
+            <Text style={{ fontSize: 13, color: colors.sub }}>
+              Leave this space? You'll stop seeing it. Your messages stay in its chat.
+            </Text>
+            <View style={{ flexDirection: "row", gap: space.sm }}>
+              <View style={{ flex: 1 }}>
+                <Button label="Stay" kind="secondary" onPress={() => setLeaving(false)} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button label="Leave" onPress={leave} />
+              </View>
+            </View>
+            <ErrorText>{error}</ErrorText>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => setLeaving(true)}
+            accessibilityRole="button"
+            style={{ paddingVertical: 6 }}
+          >
+            <Text style={{ fontSize: 13, color: colors.sub }}>Leave this space</Text>
+          </Pressable>
+        )
+      ) : null}
     </View>
   );
 }
 
+const REASONS: { value: ReportReason; label: string }[] = [
+  { value: "harassment", label: "Harassment or bullying" },
+  { value: "inappropriate", label: "Inappropriate or offensive" },
+  { value: "spam", label: "Spam" },
+  { value: "other", label: "Something else" },
+];
+
+/** Someone in the space: report them (or one of their messages), block them, or as the owner remove them. */
+function PersonSheet(props: {
+  spaceId: string;
+  userId: string;
+  messageId?: string;
+  name: string;
+  member: boolean;
+  isOwner: boolean;
+  blocked: boolean;
+  wide: boolean;
+  onClose: () => void;
+}) {
+  const [mode, setMode] = useState<null | "report">(props.messageId ? "report" : null);
+  const [reason, setReason] = useState<ReportReason | null>(null);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState("");
+  const act = async (work: () => Promise<unknown>, message: string) => {
+    setBusy(true);
+    setError("");
+    try {
+      await work();
+      setDone(message);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const title =
+    mode === "report" ? (props.messageId ? "Report this message" : `Report ${props.name}`) : props.name;
+  return (
+    <Sheet visible onClose={props.onClose} title={title} wide={props.wide}>
+      {done ? (
+        <>
+          <Text style={{ fontSize: 14, color: colors.ink, lineHeight: 20 }}>{done}</Text>
+          <Button label="Done" onPress={props.onClose} />
+        </>
+      ) : mode === "report" ? (
+        <>
+          <Text style={{ fontSize: 14, color: colors.sub }}>
+            What's wrong? We look at every report within a day.
+          </Text>
+          {REASONS.map((r) => (
+            <Button
+              key={r.value}
+              label={r.label}
+              kind={reason === r.value ? "primary" : "secondary"}
+              onPress={() => setReason(r.value)}
+            />
+          ))}
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            placeholder="Anything else we should know (optional)"
+            placeholderTextColor={colors.faint}
+            multiline
+            maxLength={1000}
+            style={{
+              borderWidth: 1,
+              borderColor: colors.line,
+              borderRadius: radius.control,
+              paddingHorizontal: space.md,
+              paddingVertical: 12,
+              fontSize: 16,
+              minHeight: 70,
+              textAlignVertical: "top",
+              color: colors.ink,
+              outlineColor: colors.royal,
+            }}
+          />
+          <ErrorText>{error}</ErrorText>
+          <Button
+            label="Send report"
+            busy={busy}
+            disabled={!reason}
+            onPress={() =>
+              act(
+                () =>
+                  sendReport({
+                    spaceId: props.spaceId,
+                    userId: props.userId,
+                    messageId: props.messageId,
+                    reason: reason!,
+                    note: note.trim() || undefined,
+                  }),
+                props.blocked
+                  ? "Thanks for telling us. We'll look at it within a day."
+                  : `Thanks for telling us. We'll look at it within a day. You can also block ${props.name} so you don't see their messages.`,
+              )
+            }
+          />
+        </>
+      ) : (
+        <>
+          <Button label={`Report ${props.name}`} kind="secondary" onPress={() => setMode("report")} />
+          <Button
+            label={props.blocked ? `Unblock ${props.name}` : `Block ${props.name}`}
+            kind="secondary"
+            busy={busy}
+            onPress={() =>
+              act(
+                () => (props.blocked ? unblock(props.userId) : block(props.userId)),
+                props.blocked
+                  ? `${props.name} is unblocked. You'll see their messages again.`
+                  : `${props.name} is blocked. You won't see their messages or reactions, and they can't ask to join your spaces.`,
+              )
+            }
+          />
+          {props.isOwner && props.member ? (
+            <Button
+              label={`Remove ${props.name} from this space`}
+              kind="secondary"
+              busy={busy}
+              onPress={() =>
+                act(
+                  () => removeMember(props.spaceId, props.userId),
+                  `${props.name} is out of this space. Their messages stay in the chat.`,
+                )
+              }
+            />
+          ) : null}
+          <ErrorText>{error}</ErrorText>
+        </>
+      )}
+    </Sheet>
+  );
+}
+
 type Row = { kind: "message"; message: Message } | { kind: "day"; label: string; key: string };
+
+/** Reactions with blocked people taken out (and emoji nobody else used dropped). */
+function withoutBlocked(byEmoji: Record<string, string[]>, blocked: ReadonlySet<string>) {
+  if (blocked.size === 0) return byEmoji;
+  return Object.fromEntries(
+    Object.entries(byEmoji)
+      .map(([emoji, users]) => [emoji, users.filter((u) => !blocked.has(u))] as const)
+      .filter(([, users]) => users.length > 0),
+  );
+}
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
@@ -511,6 +766,9 @@ function Chat(props: {
   nameOf: (uid: string) => string;
   spaceName: string;
   header?: React.ReactElement;
+  /** People this person blocked: their messages and reactions don't show. */
+  blocked: ReadonlySet<string>;
+  onReport: (message: Message) => void;
   onReact: (messageId: string, emoji: string) => void;
   /** Returns false when the message didn't go through, so the draft stays. */
   onSend: (body: string) => boolean;
@@ -523,6 +781,7 @@ function Chat(props: {
     const out: Row[] = [];
     let lastDay = "";
     for (const m of props.view.messages) {
+      if (props.blocked.has(m.authorId)) continue;
       const day = localToday(new Date(m.createdAt));
       if (day !== lastDay) {
         out.push({ kind: "day", label: dayLabel(m.createdAt), key: `day-${day}` });
@@ -531,7 +790,7 @@ function Chat(props: {
       out.push({ kind: "message", message: m });
     }
     return out.reverse();
-  }, [props.view.messages]);
+  }, [props.view.messages, props.blocked]);
   const send = () => {
     const body = draft.trim();
     if (!body) return;
@@ -573,7 +832,7 @@ function Chat(props: {
               author={props.nameOf(r.message.authorId)}
               authorName={props.view.members[r.message.authorId]?.name ?? "Someone"}
               pending={props.pendingIds.has(r.message.id)}
-              reactions={props.view.reactions[r.message.id] ?? {}}
+              reactions={withoutBlocked(props.view.reactions[r.message.id] ?? {}, props.blocked)}
               userId={props.userId}
               picking={picker === r.message.id}
               onPick={() => setPicker((p) => (p === r.message.id ? null : r.message.id))}
@@ -581,6 +840,14 @@ function Chat(props: {
                 setPicker(null);
                 props.onReact(r.message.id, emoji);
               }}
+              onReport={
+                r.message.authorId === props.userId
+                  ? undefined
+                  : () => {
+                      setPicker(null);
+                      props.onReport(r.message);
+                    }
+              }
             />
           )
         }
@@ -654,6 +921,8 @@ function MessageRow(props: {
   picking: boolean;
   onPick: () => void;
   onReact: (emoji: string) => void;
+  /** Missing for your own messages. */
+  onReport?: () => void;
 }) {
   const { message: m } = props;
   const [hovered, setHovered] = useState(false);
@@ -728,6 +997,16 @@ function MessageRow(props: {
             </Pressable>
           ))}
         </View>
+      ) : null}
+      {props.picking && props.onReport ? (
+        <Pressable
+          onPress={props.onReport}
+          accessibilityRole="button"
+          hitSlop={8}
+          style={{ paddingHorizontal: 6 }}
+        >
+          <Text style={{ fontSize: 12, fontWeight: "600", color: colors.sub }}>Report</Text>
+        </Pressable>
       ) : null}
     </View>
   );
