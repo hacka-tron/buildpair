@@ -99,6 +99,30 @@ export function ItemSheet(props: {
         ) : null}
       </View>
 
+      {mine && !live.parentId ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+          <Text style={{ flex: 1, fontSize: 13, color: colors.sub }}>
+            {shared
+              ? "Everyone in this space can see this."
+              : "Only you can see this. Its check-offs don't post to the chat."}
+          </Text>
+          <Pressable
+            onPress={() =>
+              run({
+                type: "item.visibility",
+                payload: { itemId: live.id, visibility: shared ? "owner" : "space" },
+              })
+            }
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.blue }}>
+              {shared ? "Make private" : "Share with the space"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {live.kind === "goal" ? (
         <View>
           <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 4 }}>Steps</Text>

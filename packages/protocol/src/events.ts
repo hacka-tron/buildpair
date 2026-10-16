@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LocalDate, TimeOfDay, Timestamp, Ulid, UserId } from "./ids";
-import { Item, Member, Message, SpaceColor } from "./model";
+import { Item, Member, Message, SpaceColor, Visibility } from "./model";
 
 const ev = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
   z.object({
@@ -43,6 +43,21 @@ export const ItemEdited = ev(
     }),
   }),
 );
+/**
+ * An item (and a goal's steps) became private or shared. Going private names the items only, so it
+ * can go to everyone and their devices drop them. Going shared carries the items as they are now,
+ * with the chat lines and reactions about them, because the other members never received them.
+ */
+export const ItemVisibilitySet = ev(
+  "item.visibility",
+  z.object({
+    itemIds: z.array(Ulid).min(1),
+    visibility: Visibility,
+    items: z.array(Item),
+    messages: z.array(Message),
+    reactions: z.record(z.string(), z.record(z.string(), z.array(UserId))),
+  }),
+);
 export const ItemCompleted = ev("item.completed", z.object({ itemId: Ulid, on: LocalDate }));
 export const ItemSkipped = ev("item.skipped", z.object({ itemId: Ulid, on: LocalDate }));
 export const ItemWontDo = ev("item.wont", z.object({ itemId: Ulid }));
@@ -59,6 +74,7 @@ export const SpaceEvent = z.discriminatedUnion("type", [
   MemberErased,
   ItemCreated,
   ItemEdited,
+  ItemVisibilitySet,
   ItemCompleted,
   ItemSkipped,
   ItemWontDo,

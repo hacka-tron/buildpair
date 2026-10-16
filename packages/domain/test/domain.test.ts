@@ -350,3 +350,140 @@ describe("a member deleting their account", () => {
     expect(canSee(applyEvents(s, [e]), "maya", e)).toBe(true);
   });
 });
+
+describe("making an item private or shared after creating it", () => {
+  function withGoal() {
+    const goalId = newId();
+    const stepId = newId();
+    let s = run(
+      space(),
+      cmd({ type: "item.create", payload: { itemId: goalId, kind: "goal", title: "Launch v1" } }),
+    ).state;
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: stepId, kind: "todo", title: "Ship", parentId: goalId },
+      }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: stepId, on: "2026-10-10" } })).state;
+    const line = s.messages.at(-1)!;
+    s = run(
+      s,
+      cmd({ type: "reaction.toggle", payload: { messageId: line.id, emoji: "🎉" } }),
+      "jordan",
+    ).state;
+    return { s, goalId, stepId, line };
+  }
+
+  it("going private takes the goal's steps, chat lines and reactions off other members' view", () => {
+    const { s, goalId, stepId, line } = withGoal();
+    const r = run(s, cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } }));
+    expect(r.events).toHaveLength(1);
+    const e = r.events[0]!;
+    expect(e.type === "item.visibility" && e.payload).toMatchObject({
+      itemIds: [goalId, stepId],
+      items: [],
+      messages: [],
+    });
+    // The event names IDs only, so it goes to everyone and their devices drop the items.
+    expect(canSee(r.state, "jordan", e)).toBe(true);
+    const jordan = viewFor(applyEvents(s, r.events), "jordan");
+    expect(jordan.items[goalId]).toBeUndefined();
+    expect(jordan.items[stepId]).toBeUndefined();
+    expect(jordan.messages.some((m) => m.id === line.id)).toBe(false);
+    expect(jordan.reactions[line.id]).toBeUndefined();
+    expect(viewFor(r.state, "maya").items[stepId]?.visibility).toBe("owner");
+    // Jordan can't react to the hidden line any more.
+    expect(
+      decide(
+        r.state,
+        cmd({ type: "reaction.toggle", payload: { messageId: line.id, emoji: "👍" } }),
+        "jordan",
+      ),
+    ).toMatchObject({ ok: false });
+  });
+
+  it("going shared again brings back the items, lines and reactions for a device that dropped them", () => {
+    const { s, goalId, stepId, line } = withGoal();
+    const hidden = run(s, cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } }));
+    const jordanDevice = viewFor(hidden.state, "jordan");
+    const shown = run(
+      hidden.state,
+      cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "space" } }),
+    );
+    const e = shown.events[0]!;
+    expect(canSee(shown.state, "jordan", e)).toBe(true);
+    const after = viewFor(applyEvents(jordanDevice, shown.events), "jordan");
+    expect(after.items[goalId]).toMatchObject({ title: "Launch v1", visibility: "space" });
+    expect(after.items[stepId]).toMatchObject({ status: "done", visibility: "space" });
+    expect(after.messages.find((m) => m.id === line.id)).toMatchObject({ kind: "completion" });
+    expect(after.reactions[line.id]).toEqual({ "🎉": ["jordan"] });
+    // The same as a new device that reads the whole log now.
+    expect(after.items).toEqual(viewFor(shown.state, "jordan").items);
+    expect(after.messages).toEqual(viewFor(shown.state, "jordan").messages);
+  });
+
+  it("an item created private and shared later reaches the others whole", () => {
+    const itemId = newId();
+    let r = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId, kind: "habit", title: "Run", timesPerWeek: 3, visibility: "owner" },
+      }),
+    );
+    const created = r.events;
+    r = run(r.state, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-09" } }));
+    const jordanDevice = viewFor(applyEvents(r.state, []), "jordan");
+    expect(jordanDevice.items[itemId]).toBeUndefined();
+    const shared = run(r.state, cmd({ type: "item.visibility", payload: { itemId, visibility: "space" } }));
+    const after = applyEvents(jordanDevice, shared.events);
+    expect(after.items[itemId]).toMatchObject({ doneOn: ["2026-10-09"], visibility: "space" });
+    expect(canSee(shared.state, "jordan", created[0]!)).toBe(true);
+  });
+
+  it("while private, a shared-again event isn't sent to the others", () => {
+    const { s, goalId } = withGoal();
+    let r = run(s, cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } }));
+    r = run(r.state, cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "space" } }));
+    const sharedEvent = r.events[0]!;
+    r = run(r.state, cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } }));
+    // Read later (on a new device), the shared event would carry titles of an item that's private now.
+    expect(canSee(r.state, "jordan", sharedEvent)).toBe(false);
+    expect(canSee(r.state, "maya", sharedEvent)).toBe(true);
+  });
+
+  it("only the owner changes it, steps follow their goal, and no change means no event", () => {
+    const { s, goalId, stepId } = withGoal();
+    expect(
+      decide(s, cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } }), "jordan"),
+    ).toMatchObject({ ok: false });
+    expect(
+      decide(s, cmd({ type: "item.visibility", payload: { itemId: stepId, visibility: "owner" } }), "maya"),
+    ).toMatchObject({ ok: false, reason: expect.stringContaining("goal") });
+    expect(
+      decide(s, cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "space" } }), "maya"),
+    ).toEqual({ ok: true, events: [] });
+  });
+
+  it("a new step under a private goal is private too", () => {
+    const goalId = newId();
+    const stepId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId: goalId, kind: "goal", title: "Raise", visibility: "owner" },
+      }),
+    ).state;
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: stepId, kind: "todo", title: "Deck", parentId: goalId },
+      }),
+    ).state;
+    expect(s.items[stepId]?.visibility).toBe("owner");
+  });
+});

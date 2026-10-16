@@ -103,6 +103,44 @@ describe("API", () => {
     expect(seen.upTo).toBe(ownerView.upTo);
   });
 
+  it("takes an item off other members' devices when it's made private, and back when shared", async () => {
+    const { maya, spaceId } = await makeSpace();
+    const { token } = (await (await maya.post(`/spaces/${spaceId}/invites`)).json()) as { token: string };
+    const jordan = await signIn(`jordan-${newId()}@example.com`);
+    await jordan.post(`/invites/${token}/accept`);
+    const itemId = newId();
+    await maya.post(`/spaces/${spaceId}/commands`, {
+      commands: [
+        command({ type: "item.create", payload: { itemId, kind: "todo", title: "See therapist" } }),
+        command({ type: "item.complete", payload: { itemId, on: "2026-10-16" } }),
+      ],
+    });
+    const b = await openSocket(jordan, spaceId);
+    b.send({ t: "hello", v: PROTOCOL_VERSION, afterSeq: 0 });
+    await b.waitFor((m) => m.t === "events");
+
+    await maya.post(`/spaces/${spaceId}/commands`, {
+      commands: [command({ type: "item.visibility", payload: { itemId, visibility: "owner" } })],
+    });
+    const live = await b.waitFor(
+      (m) => m.t === "events" && m.events.some((e) => e.type === "item.visibility"),
+    );
+    expect(JSON.stringify(live)).not.toContain("See therapist");
+    const fresh = await (await jordan.get(`/spaces/${spaceId}/events?after=0`)).text();
+    expect(fresh).not.toContain("See therapist");
+
+    await maya.post(`/spaces/${spaceId}/commands`, {
+      commands: [command({ type: "item.visibility", payload: { itemId, visibility: "space" } })],
+    });
+    const back = await b.waitFor(
+      (m) =>
+        m.t === "events" &&
+        m.events.some((e) => e.type === "item.visibility" && e.payload.visibility === "space"),
+    );
+    expect(JSON.stringify(back)).toContain("See therapist");
+    b.ws.close();
+  });
+
   it("tells a client that's too old to update instead of sending it events it can't read", async () => {
     const { maya, spaceId } = await makeSpace();
     const a = await openSocket(maya, spaceId);

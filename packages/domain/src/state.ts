@@ -72,6 +72,22 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
       if (item) next.items = { ...state.items, [item.id]: { ...item, ...event.payload.changes } };
       break;
     }
+    case "item.visibility": {
+      const { itemIds, visibility, items, messages, reactions } = event.payload;
+      const nextItems = { ...state.items };
+      for (const id of itemIds) {
+        const item = nextItems[id];
+        if (item) nextItems[id] = { ...item, visibility };
+      }
+      // Going shared: members who never had these items get them, with their chat lines and reactions.
+      for (const item of items) nextItems[item.id] = normalizeItem(item);
+      next.items = nextItems;
+      const known = new Set(state.messages.map((m) => m.id));
+      const added = messages.filter((m) => !known.has(m.id));
+      if (added.length) next.messages = [...state.messages, ...added].sort((a, b) => a.seq - b.seq);
+      if (Object.keys(reactions).length) next.reactions = { ...state.reactions, ...reactions };
+      break;
+    }
     case "item.completed": {
       const item = state.items[event.payload.itemId];
       if (!item) break;
