@@ -10,11 +10,14 @@ import { createAuth, MIN_PASSWORD, NOT_INVITED, USE_PASSWORD } from "./auth";
 import {
   accountErasures,
   blocks,
+  COMPLIMENTS,
+  compliments,
   invites,
   joinRequests,
   listings,
   memberships,
   pastMemberships,
+  profileStats,
   reports,
   spaces,
   user,
@@ -709,6 +712,15 @@ app.post("/me/blocks", async (c) => {
     .insert(blocks)
     .values({ blockerId: me, blockedId: body.data.userId, createdAt: new Date() })
     .onConflictDoNothing();
+  // Compliments between you go, both ways.
+  await db
+    .delete(compliments)
+    .where(
+      or(
+        and(eq(compliments.fromId, me), eq(compliments.toId, body.data.userId)),
+        and(eq(compliments.fromId, body.data.userId), eq(compliments.toId, me)),
+      ),
+    );
   // Any request they have waiting on your spaces goes too.
   const mine = db.select({ id: spaces.id }).from(spaces).where(eq(spaces.ownerId, me));
   await db
@@ -805,6 +817,111 @@ app.post("/reports", async (c) => {
     }
   }
   return c.json({ ok: true }, 201);
+});
+
+/** Whether two people are both in at least one space right now, and neither has blocked the other. */
+async function shareASpace(env: Env, a: string, b: string): Promise<boolean> {
+  const db = drizzle(env.DB);
+  const blocked = await db
+    .select({ id: blocks.blockerId })
+    .from(blocks)
+    .where(
+      or(
+        and(eq(blocks.blockerId, a), eq(blocks.blockedId, b)),
+        and(eq(blocks.blockerId, b), eq(blocks.blockedId, a)),
+      ),
+    )
+    .get();
+  if (blocked) return false;
+  const theirs = db.select({ id: memberships.spaceId }).from(memberships).where(eq(memberships.userId, b));
+  const row = await db
+    .select({ id: memberships.spaceId })
+    .from(memberships)
+    .where(and(eq(memberships.userId, a), inArray(memberships.spaceId, theirs)))
+    .get();
+  return Boolean(row);
+}
+
+const DAY_MS = 86_400_000;
+
+/** Someone's profile, for themselves and for people who share a space with them. */
+app.get("/people/:userId", async (c) => {
+  const me = c.get("userId");
+  const them = c.req.param("userId");
+  if (them !== me && !(await shareASpace(c.env, me, them)))
+    return c.json(err("not_found", "Profile not found."), 404);
+  const db = drizzle(c.env.DB);
+  const person = await db
+    .select({ name: user.name, building: user.building })
+    .from(user)
+    .where(eq(user.id, them))
+    .get();
+  if (!person) return c.json(err("not_found", "Profile not found."), 404);
+  const theirMemberships = await db
+    .select({ spaceId: memberships.spaceId, role: memberships.role, joinedAt: memberships.joinedAt })
+    .from(memberships)
+    .where(eq(memberships.userId, them))
+    .all();
+  const owned = theirMemberships.filter((m) => m.role === "owner").map((m) => m.spaceId);
+  const supporters = owned.length
+    ? await db
+        .selectDistinct({ userId: memberships.userId })
+        .from(memberships)
+        .where(and(inArray(memberships.spaceId, owned), eq(memberships.role, "supporter")))
+        .all()
+    : [];
+  const stats = await db.select().from(profileStats).where(eq(profileStats.userId, them)).get();
+  const goalsFinished = stats?.goalsFinished ?? 0;
+  const supporting = theirMemberships.filter((m) => m.role === "supporter");
+  const badges: string[] = [];
+  if (goalsFinished >= 5) badges.push("finisher");
+  if (supporting.some((m) => m.joinedAt.getTime() <= Date.now() - 28 * DAY_MS))
+    badges.push("reliable_supporter");
+  const given = await db
+    .select({ tag: compliments.tag, n: count() })
+    .from(compliments)
+    .where(eq(compliments.toId, them))
+    .groupBy(compliments.tag)
+    .all();
+  const mine = await db
+    .select({ tag: compliments.tag })
+    .from(compliments)
+    .where(and(eq(compliments.fromId, me), eq(compliments.toId, them)))
+    .all();
+  return c.json({
+    userId: them,
+    name: person.name,
+    building: person.building ?? "",
+    stats: { supporting: supporting.length, supportedBy: supporters.length, goalsFinished },
+    badges,
+    compliments: given.map((g) => ({ tag: g.tag, count: g.n })),
+    mine: mine.map((m) => m.tag),
+  });
+});
+
+/** Give someone you share a space with a compliment, or take yours back. */
+app.post("/people/:userId/compliments", async (c) => {
+  const body = z
+    .object({ tag: z.enum(COMPLIMENTS), on: z.boolean() })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json(err("invalid", "Pick a compliment."), 400);
+  const me = c.get("userId");
+  const them = c.req.param("userId");
+  if (them === me) return c.json(err("invalid", "Compliments are for other people."), 400);
+  if (!(await shareASpace(c.env, me, them))) return c.json(err("not_found", "Profile not found."), 404);
+  const db = drizzle(c.env.DB);
+  const pair = and(
+    eq(compliments.fromId, me),
+    eq(compliments.toId, them),
+    eq(compliments.tag, body.data.tag),
+  );
+  if (body.data.on)
+    await db
+      .insert(compliments)
+      .values({ fromId: me, toId: them, tag: body.data.tag, createdAt: new Date() })
+      .onConflictDoNothing();
+  else await db.delete(compliments).where(pair);
+  return c.json({ ok: true });
 });
 
 app.onError((e, c) => {

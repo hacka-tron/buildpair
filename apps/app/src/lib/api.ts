@@ -110,3 +110,17 @@ export const offerSupport = (spaceId: string, note: string) =>
   api<{ status: "requested" | "member" }>(`/discover/${spaceId}/offer`, { method: "POST", body: { note } });
 export const setListing = (spaceId: string, on: boolean) =>
   api<{ ok: true }>(`/spaces/${spaceId}/listing`, { method: "POST", body: { on } });
+export type ComplimentTag = "honest" | "keeps_me_going" | "friendly" | "great_advice" | "checks_in";
+export interface PersonProfile {
+  userId: string;
+  name: string;
+  building: string;
+  stats: { supporting: number; supportedBy: number; goalsFinished: number };
+  badges: string[];
+  compliments: { tag: ComplimentTag; count: number }[];
+  /** The compliments you gave this person. */
+  mine: ComplimentTag[];
+}
+export const getProfile = (userId: string) => api<PersonProfile>(`/people/${userId}`);
+export const setCompliment = (userId: string, tag: ComplimentTag, on: boolean) =>
+  api<{ ok: true }>(`/people/${userId}/compliments`, { method: "POST", body: { tag, on } });
