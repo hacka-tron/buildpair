@@ -46,7 +46,9 @@ describe("rate limits", () => {
     socket.send({ t: "hello", v: PROTOCOL_VERSION, afterSeq: 0 });
     const cmd = command({ type: "message.send", payload: { messageId: newId(), body: "again" } });
     socket.send({ t: "cmd", cmd });
-    const answer = await socket.waitFor((m) => (m.t === "reject" || m.t === "ack") && m.id === cmd.id);
+    const answer = await socket.waitFor(
+      (m) => (m.t === "reject" || m.t === "ack" || m.t === "busy") && m.id === cmd.id,
+    );
     // Over the limit the change is kept for later, not refused.
     expect(answer).toMatchObject({ t: "busy", reason: expect.stringContaining("Wait a minute") });
     // A change that already landed can still be resent (a reconnect does that) and is acknowledged.
