@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Avatar, Card, Icon } from "../components/kit";
+import { ProfileSummary } from "../components/profile-summary";
 import { PageHeader, Shell, signOut, useWide } from "../components/shell";
 import { Button, ErrorText, Field, LegalLinks } from "../components/ui";
 import { authClient } from "../lib/auth";
@@ -74,6 +75,7 @@ export default function Profile() {
           </Pressable>
         ) : null}
         <PageHeader title="Profile" />
+        {user?.id ? <ProfileSummary key={user.id} userId={user.id} self /> : null}
         <View style={{ flexDirection: "row", alignItems: "center", gap: space.lg }}>
           <Avatar id={user?.id ?? "me"} name={user?.name || "?"} size={64} />
           <View style={{ flex: 1, minWidth: 0 }}>

@@ -54,10 +54,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Discover, first version (2026-10-16):** owners can turn on "Show on Discover" in a space's settings. Strangers then see its name, what it's for, the owner's first name, up to five shared open goals and habits, and how many people are in it. Never private items or the chat. The Discover tab (phones) and sidebar entry list these, newest first, with search. Your own spaces, spaces you're in, and anyone blocked either way are left out. "Offer support" sends a join request with an optional note, which the owner sees in the invite sheet and approves or declines. Offers and requests expire after a week, and each person can send 10 offers a day. A space on Discover shows an "On Discover" tag on the Spaces tab. Checked in the browser.
 
+**Profiles, badges and compliments (2026-10-16):** tapping someone in a space shows what they're building, a stats line (supporting, supported by, goals finished) and earned badges (Finisher at 5 goals, Reliable supporter after four weeks supporting someone). It also has compliment chips (Honest takes, Keeps me going, Friendly, Great advice, Always checks in) you can give or take back. Your own profile shows the same, with the compliments you've received. Only people who share a space with you can see your profile. Finished goals are counted by the spaces as they happen. Checked in the browser.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: the rest of milestone 5:** "support each other" (offering one of your own spaces in return), public profiles, badges and compliments.
+3. **Build: "support each other"** (offering one of your own spaces in return when offering support), and a Fast responder badge. Then milestone 7 (Jira first).
 4. **Owner: read the privacy and terms pages before production** (`staging.buildpair.app/privacy` and `/terms`). They're plain-words drafts I wrote, not legal advice. Decide the minimum age (I put 16), the governing law, and whether a lawyer should look before the public launch.
 5. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 6. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
@@ -142,6 +144,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - The Spaces tab lists only your own spaces; spaces others share are on Supporting. A space counts as quiet after 7 days with nothing from its owner (2026-10-16, Claude's call, reversible).
 - Reflections are prompted Friday to Monday and post to the chat as a card; "Not now" isn't remembered across reloads (2026-10-16, Claude's call, reversible).
 - Rate limits: 20 auth tries a minute per address, 120 changes a minute per person (2026-10-16, Claude's call, reversible in wrangler.jsonc).
+- Profiles are visible only to people who share a space with you. Two badges for now, Finisher (5 goals) and Reliable supporter (4 weeks). Compliments are one of each kind per pair and can be taken back (2026-10-16, Claude's call, reversible).
 - Discover is opt-in per space, shows only shared open goals and habits (up to five), and turns offers into ordinary join requests with a note. Join requests from any source expire after a week (2026-10-16, Claude's call, reversible).
 - Any member can make an invite link, but only the owner lets people in (2026-10-16, Claude's call, reversible).
 - Moving an item leaves its chat lines in the old chat if it was shared, and takes nothing with it into the new chat (2026-10-16, Claude's call, reversible).

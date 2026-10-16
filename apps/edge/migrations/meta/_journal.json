@@ -57,6 +57,13 @@
       "when": 1792165348678,
       "tag": "0007_empty_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792168508685,
+      "tag": "0008_blushing_paladin",
+      "breakpoints": true
     }
   ]
 }

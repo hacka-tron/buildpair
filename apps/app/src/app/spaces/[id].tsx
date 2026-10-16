@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { ItemSheet } from "../../components/item-sheet";
 import { Avatar, Card, Faces, Icon, ItemRow, SectionHeader, Sheet, SpaceTile } from "../../components/kit";
+import { ProfileSummary } from "../../components/profile-summary";
 import { SelectionBar, useSelection } from "../../components/selection";
 import { Shell, useWide } from "../../components/shell";
 import { SpaceSettings } from "../../components/space-settings";
@@ -722,6 +723,7 @@ function PersonSheet(props: {
         </>
       ) : (
         <>
+          <ProfileSummary userId={props.userId} self={false} />
           <Button label={`Report ${props.name}`} kind="secondary" onPress={() => setMode("report")} />
           <Button
             label={props.blocked ? `Unblock ${props.name}` : `Block ${props.name}`}

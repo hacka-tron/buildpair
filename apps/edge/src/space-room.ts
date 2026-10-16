@@ -23,9 +23,9 @@ import {
   SpaceEvent,
   type UnsequencedEvent,
 } from "@buildpair/protocol";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { listings, spaces, user } from "./db/schema";
+import { listings, profileStats, spaces, user } from "./db/schema";
 import { type Env, SLOW_DOWN, withinLimit } from "./env";
 
 const SCHEMA_VERSION = 2;
@@ -621,6 +621,20 @@ export class SpaceRoom extends DurableObject<Env> {
     return { ok: true };
   }
 
+  private async countGoal(userId: string) {
+    try {
+      await drizzle(this.env.DB)
+        .insert(profileStats)
+        .values({ userId, goalsFinished: 1 })
+        .onConflictDoUpdate({
+          target: profileStats.userId,
+          set: { goalsFinished: sql`${profileStats.goalsFinished} + 1` },
+        });
+    } catch {
+      console.error("goal count failed", { spaceId: this.spaceId() });
+    }
+  }
+
   private listingQueue: Promise<unknown> = Promise.resolve();
   /** What was last written to Discover ("" for removed), so unchanged listings aren't rewritten. Lost on wake. */
   private lastListing: string | null = null;
@@ -701,6 +715,11 @@ export class SpaceRoom extends DurableObject<Env> {
     const state = this.load();
     // A listed space's Discover card follows its changes.
     if (this.listed()) this.ctx.waitUntil(this.syncListing());
+    // Finished goals count toward the owner's profile.
+    for (const e of events) {
+      const item = e.type === "item.completed" ? state.items[e.payload.itemId] : undefined;
+      if (item?.kind === "goal" && item.status === "done") this.ctx.waitUntil(this.countGoal(item.ownerId));
+    }
     const after = events[0]!.seq - 1;
     for (const ws of this.ctx.getWebSockets()) {
       const { userId } = ws.deserializeAttachment() as SocketInfo;

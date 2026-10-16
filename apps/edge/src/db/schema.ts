@@ -207,3 +207,29 @@ export const listings = sqliteTable(
   },
   (t) => [index("listings_updated_idx").on(t.updatedAt)],
 );
+
+/** Counts kept as things happen, for profiles. */
+export const profileStats = sqliteTable("profile_stats", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  goalsFinished: integer("goals_finished").notNull().default(0),
+});
+
+export const COMPLIMENTS = ["honest", "keeps_me_going", "friendly", "great_advice", "checks_in"] as const;
+
+/** Positive tags people who share a space give each other. One of each kind per pair. */
+export const compliments = sqliteTable(
+  "compliments",
+  {
+    fromId: text("from_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    toId: text("to_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tag: text("tag", { enum: COMPLIMENTS }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.fromId, t.toId, t.tag] }), index("compliments_to_idx").on(t.toId)],
+);
