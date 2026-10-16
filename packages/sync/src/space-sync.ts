@@ -43,6 +43,8 @@ export class SpaceSync {
   private snapshot: SyncSnapshot;
   private saving: Promise<void> = Promise.resolve();
   private retry: ReturnType<typeof setTimeout> | null = null;
+  /** The change the server was last too busy for. Its notice goes once it lands. */
+  private busyId: string | null = null;
   /** How long to wait before resending changes the server was too busy to take. */
   static retryMs = 20_000;
 
@@ -90,7 +92,8 @@ export class SpaceSync {
     this.pending.push(command);
     this.recompute();
     this.persist();
-    if (this.connected) this.connection?.send({ t: "cmd", cmd: command });
+    // While a busy retry waits, new changes wait with it, so they reach the server in order.
+    if (this.connected && !this.retry) this.connection?.send({ t: "cmd", cmd: command });
     return { ok: true, id: command.id };
   }
 
@@ -146,6 +149,7 @@ export class SpaceSync {
         this.confirmed = { ...next, seq: Math.max(next.seq, msg.upTo) };
         const confirmedIds = new Set(fresh.map((e) => e.commandId).filter(Boolean));
         this.pending = this.pending.filter((c) => !confirmedIds.has(c.id));
+        if (this.busyId && confirmedIds.has(this.busyId)) this.clearBusy();
         this.recompute();
         this.persist();
         return;
@@ -157,6 +161,7 @@ export class SpaceSync {
           return;
         }
         this.pending = this.pending.filter((c) => c.id !== msg.id);
+        if (msg.id === this.busyId) this.clearBusy();
         this.recompute();
         this.persist();
         return;
@@ -170,6 +175,7 @@ export class SpaceSync {
       case "busy":
         // Kept, not dropped: send everything still waiting again in a little while.
         this.error = { commandId: msg.id, reason: msg.reason };
+        this.busyId = msg.id;
         this.emit();
         if (!this.retry)
           this.retry = setTimeout(() => {
@@ -188,6 +194,11 @@ export class SpaceSync {
         this.emit();
         return;
     }
+  }
+
+  private clearBusy() {
+    if (this.error?.commandId === this.busyId) this.error = null;
+    this.busyId = null;
   }
 
   /** Confirmed state with pending changes replayed on top, numbered after the confirmed cursor. */
