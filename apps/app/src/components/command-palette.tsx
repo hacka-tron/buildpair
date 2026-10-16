@@ -225,6 +225,7 @@ export function CommandPalette() {
             <Text style={{ fontSize: 11, color: colors.sub }}>↑↓ to move</Text>
             <Text style={{ fontSize: 11, color: colors.sub }}>↵ to open</Text>
             <Text style={{ fontSize: 11, color: colors.sub }}>Esc to close</Text>
+            <Text style={{ fontSize: 11, color: colors.sub, marginLeft: "auto" }}>Q to add on Today</Text>
           </View>
         </Pressable>
       </Pressable>

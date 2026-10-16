@@ -62,10 +62,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Dark mode (2026-10-16):** the app follows the device's light or dark setting, and redraws when it changes. On the web, `?theme=dark` or `?theme=light` forces one, which is handy for checking. Every surface color is now a theme token (card, hover, control, dangerBg, bar). Checked Today, a space and an item sheet in both themes, at phone width.
 
+**Keyboard shortcuts (2026-10-16):** on the web, Q on Today opens quick add. With items selected, D (done), S (skip today), W (won't do) and R (reschedule) act on them, and Esc stops selecting. The bar shows the keys on wide screens. Shortcuts never fire while typing in a field or with ⌘, Ctrl or Alt held.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: desktop keyboard shortcuts** (Q to add, X to select, S/W/U/M on a selection). Milestone 7 (Jira) needs a Jira app registration from the owner first.
+3. **Build: the polish list** from the known gaps below (move refusals reported, busy retries paused, read positions shared across devices), or anything the owner asks for. The big remaining features (reminders and push, Jira, Sign in with Apple, analytics) each need something only the owner can set up first. Milestone 7 (Jira) needs a Jira app registration from the owner first.
 4. **Owner: read the privacy and terms pages before production** (`staging.buildpair.app/privacy` and `/terms`). They're plain-words drafts I wrote, not legal advice. Decide the minimum age (I put 16), the governing law, and whether a lawyer should look before the public launch.
 5. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 6. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
@@ -100,7 +102,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Very large spaces (over about 1.5 MB of state) aren't snapshotted** and replay their whole log on wake. Split the snapshot or trim old chat when that matters.
 - **The list of your spaces lives in D1**; the architecture moves it (with unread counts) into UserHub later.
 - **Analytics and error tracking** (PostHog EU cookieless, Sentry) are decided but not wired in.
-- **Desktop leftovers:** Today's right-hand margin, drag to reschedule on Upcoming, keyboard shortcuts beyond ⌘K (Q to add, X to select, S/W/U/M), right-click menus, and the habit detail view from `docs/design/buildpair-web.html` aren't built.
+- **Desktop leftovers:** Today's right-hand margin, drag to reschedule on Upcoming, X to start selecting and U/M on a selection, right-click menus, and the habit detail view from `docs/design/buildpair-web.html` aren't built.
 - **Switching between light and dark while the app is open redraws every screen,** so an open sheet or a half-typed message is lost at that moment.
 - **Production deploys go straight to 100%** with a health check and one-command rollback; add gradual rollout after confirming it works with Durable Objects on staging.
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.

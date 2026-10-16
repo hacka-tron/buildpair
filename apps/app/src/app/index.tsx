@@ -24,6 +24,7 @@ import { Button, ErrorText } from "../components/ui";
 import type { SpaceSummary } from "../lib/api";
 import { authClient } from "../lib/auth";
 import { localToday, longDate } from "../lib/format";
+import { useShortcuts } from "../lib/shortcuts";
 import { applyChange, useSpaces, useSpaceViews } from "../lib/spaces";
 import { TEMPLATES, type Template } from "../lib/templates";
 import { colors, radius, space } from "../lib/theme";
@@ -75,6 +76,8 @@ export default function Today() {
   const [problem, setProblem] = useState("");
   const [opened, setOpened] = useState<{ spaceId: string; item: Item } | null>(null);
   const [reviewHidden, setReviewHidden] = useState(false);
+  // Q adds something from anywhere on Today (on the web, when you're not typing).
+  useShortcuts({ q: () => setAdding(true) }, !adding);
   const reviewDue = (spaces ?? []).filter(
     (s) => views[s.id] && reflectionDue(views[s.id]!, userId, new Date()),
   );
