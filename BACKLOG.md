@@ -50,13 +50,15 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Privacy and terms (2026-10-16):** the privacy page now says what's really kept, including reports, blocks, network addresses for rate limits, and what stays on the device. It no longer claims analytics we don't have. A new plain-words terms page (`/terms`) covers age 16+, owning your content, conduct rules, reports reviewed within a day, no warranty, and changes. The app links both from the sign-in screen and the profile.
 
+**Desktop extras (2026-10-16):** ⌘K (Ctrl K) opens a command palette on wide screens. It searches pages, spaces and open items, and offers New space, Add something and Weekly review, all from the keyboard. Upcoming (sidebar, or the calendar icon on phones) shows your dated things for the next seven days, with late ones on today and habits in their own lane. Weekly review walks through every due space in one sitting, with this week's done and skipped counts. On Today a single "Your weekly review is ready" banner replaces the per-space cards. Opening an item from Upcoming or ⌘K opens its sheet in its space. Checked in the browser at 1440 wide.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: the desktop extras** (Cmd+K, Upcoming week view, weekly review). Milestone 5 (Discover) after.
+3. **Build: milestone 5 (Discover):** listings built from a space's purpose and goals, offers to support (or support each other), and their requests. Then profiles, badges and compliments.
 4. **Owner: read the privacy and terms pages before production** (`staging.buildpair.app/privacy` and `/terms`). They're plain-words drafts I wrote, not legal advice. Decide the minimum age (I put 16), the governing law, and whether a lawyer should look before the public launch.
-5. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
-5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
+6. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
+7. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
 ## What exists now
 
@@ -86,7 +88,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **SpaceRoom rebuilds its state by replaying the whole log on wake.** Add snapshots before spaces get long histories.
 - **The list of your spaces lives in D1**; the architecture moves it (with unread counts) into UserHub later.
 - **Analytics and error tracking** (PostHog EU cookieless, Sentry) are decided but not wired in.
-- **Desktop web layouts** (sidebar, margin, Cmd+K, Upcoming, weekly review) from `docs/design/buildpair-web.html` aren't built; the web app uses the simple responsive layout for now.
+- **Desktop leftovers:** Today's right-hand margin, drag to reschedule on Upcoming, keyboard shortcuts beyond ⌘K (Q to add, X to select, S/W/U/M), right-click menus, and the habit detail view from `docs/design/buildpair-web.html` aren't built.
 - **Dark mode** in the app (the landing page already has it).
 - **Production deploys go straight to 100%** with a health check and one-command rollback; add gradual rollout after confirming it works with Durable Objects on staging.
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.

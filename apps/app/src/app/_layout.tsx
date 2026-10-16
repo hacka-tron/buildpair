@@ -33,6 +33,8 @@ export default function RootLayout() {
           <Stack.Screen name="profile" />
           <Stack.Screen name="supporting" options={{ animation: "none" }} />
           <Stack.Screen name="activity" />
+          <Stack.Screen name="upcoming" options={{ animation: "none" }} />
+          <Stack.Screen name="review" />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="sign-in" />

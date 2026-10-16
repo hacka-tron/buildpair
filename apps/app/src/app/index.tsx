@@ -1,6 +1,6 @@
 import { newId, parseQuickAdd, reflectionDue, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item } from "@buildpair/protocol";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ItemSheet } from "../components/item-sheet";
@@ -57,7 +57,11 @@ export default function Today() {
   const ids = useMemo(() => (spaces ?? []).map((s) => s.id), [spaces]);
   const views = useSpaceViews(ids, userId);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [adding, setAdding] = useState(false);
+  const params = useLocalSearchParams<{ add?: string }>();
+  const [adding, setAdding] = useState(params.add === "1");
+  useEffect(() => {
+    if (params.add === "1") setAdding(true);
+  }, [params.add]);
   const [showUpcoming, setShowUpcoming] = useState(true);
   const selection = useSelection();
   // A goal just made from a template opens as soon as it shows up in the space.
@@ -70,8 +74,10 @@ export default function Today() {
   }, [toOpen, views]);
   const [problem, setProblem] = useState("");
   const [opened, setOpened] = useState<{ spaceId: string; item: Item } | null>(null);
-  const [reflecting, setReflecting] = useState<string | null>(null);
-  const [skippedReflections, setSkippedReflections] = useState<string[]>([]);
+  const [reviewHidden, setReviewHidden] = useState(false);
+  const reviewDue = (spaces ?? []).filter(
+    (s) => views[s.id] && reflectionDue(views[s.id]!, userId, new Date()),
+  );
 
   const groups = (spaces ?? []).map((s) => {
     const view = views[s.id];
@@ -130,6 +136,14 @@ export default function Today() {
             ) : (
               <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
                 <Pressable
+                  onPress={() => router.push("/upcoming")}
+                  accessibilityRole="link"
+                  accessibilityLabel="Upcoming"
+                  hitSlop={8}
+                >
+                  <Icon name="calendar" size={21} color={colors.ink} />
+                </Pressable>
+                <Pressable
                   onPress={() => router.push("/activity")}
                   accessibilityRole="link"
                   accessibilityLabel={waiting ? `Activity, ${waiting} asking to join` : "Activity"}
@@ -164,42 +178,32 @@ export default function Today() {
         />
         <ErrorText>{error || problem}</ErrorText>
         {spaces && spaces.length === 0 ? <FirstRun /> : null}
-        {(spaces ?? [])
-          .filter(
-            (s) =>
-              !skippedReflections.includes(s.id) &&
-              views[s.id] &&
-              reflectionDue(views[s.id]!, userId, new Date()),
-          )
-          .map((s) => (
-            <View key={`reflect-${s.id}`} style={{ marginTop: space.md }}>
-              <Card>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-                  <SpaceTile id={s.id} name={s.name} size={32} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>
-                      How did this week go?
-                    </Text>
-                    <Text style={{ fontSize: 13, color: colors.sub }}>
-                      A short reflection for {s.name}. Your supporters see it in the chat.
-                    </Text>
-                  </View>
+        {reviewDue.length && !reviewHidden ? (
+          <View style={{ marginTop: space.md }}>
+            <Card>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+                <Icon name="edit-3" size={20} color={colors.blue} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>
+                    Your weekly review is ready
+                  </Text>
+                  <Text style={{ fontSize: 13, color: colors.sub }}>
+                    {reviewDue.length} shared {reviewDue.length === 1 ? "space" : "spaces"}, a few minutes.
+                    Your supporters see it in the chat.
+                  </Text>
                 </View>
-                <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.md }}>
-                  <View style={{ flex: 1 }}>
-                    <Button
-                      label="Not now"
-                      kind="secondary"
-                      onPress={() => setSkippedReflections((list) => [...list, s.id])}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Button label="Write it" onPress={() => setReflecting(s.id)} />
-                  </View>
+              </View>
+              <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.md }}>
+                <View style={{ flex: 1 }}>
+                  <Button label="Not now" kind="secondary" onPress={() => setReviewHidden(true)} />
                 </View>
-              </Card>
-            </View>
-          ))}
+                <View style={{ flex: 1 }}>
+                  <Button label="Start" onPress={() => router.push("/review")} />
+                </View>
+              </View>
+            </Card>
+          </View>
+        ) : null}
         {groups.map(({ space: s, view, open, doneToday }) => {
           const isOpen = !collapsed[s.id];
           const people = Object.values(view?.members ?? {})
@@ -344,19 +348,6 @@ export default function Today() {
           return null;
         }}
       />
-      {reflecting ? (
-        <ReflectionSheet
-          spaceName={(spaces ?? []).find((s) => s.id === reflecting)?.name ?? ""}
-          wide={wide}
-          onClose={() => setReflecting(null)}
-          post={(parts) =>
-            applyChange(reflecting, userId, {
-              type: "reflection.post",
-              payload: { messageId: newId(), ...parts },
-            })
-          }
-        />
-      ) : null}
       <ItemSheet
         key={opened?.item.id ?? "none"}
         item={opened?.item ?? null}
@@ -595,62 +586,6 @@ function QuickAdd(props: {
           <Button label="Add" onPress={add} disabled={!title} />
         </>
       )}
-    </Sheet>
-  );
-}
-
-/** Three short prompts for a weekly look back, posted to the space's chat. */
-function ReflectionSheet(props: {
-  spaceName: string;
-  wide: boolean;
-  onClose: () => void;
-  post: (parts: { wins: string; blockers: string; next: string }) => string | null;
-}) {
-  const [wins, setWins] = useState("");
-  const [blockers, setBlockers] = useState("");
-  const [next, setNext] = useState("");
-  const [error, setError] = useState("");
-  const field = (label: string, value: string, set: (v: string) => void, placeholder: string) => (
-    <View style={{ gap: 4 }}>
-      <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink }}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={set}
-        placeholder={placeholder}
-        placeholderTextColor={colors.faint}
-        multiline
-        maxLength={1000}
-        style={{
-          borderWidth: 1,
-          borderColor: colors.line,
-          borderRadius: radius.control,
-          paddingHorizontal: space.md,
-          paddingVertical: 10,
-          fontSize: 16,
-          minHeight: 60,
-          textAlignVertical: "top",
-          color: colors.ink,
-          outlineColor: colors.royal,
-        }}
-      />
-    </View>
-  );
-  const send = () => {
-    const problem = props.post({ wins: wins.trim(), blockers: blockers.trim(), next: next.trim() });
-    if (problem) return setError(problem);
-    props.onClose();
-  };
-  return (
-    <Sheet visible onClose={props.onClose} title={`This week in ${props.spaceName}`} wide={props.wide}>
-      {field("What went well?", wins, setWins, "Shipped the invite flow")}
-      {field("What got in the way?", blockers, setBlockers, "Two days sick")}
-      {field("Next week's focus", next, setNext, "First 10 users")}
-      <ErrorText>{error}</ErrorText>
-      <Button
-        label="Post to the chat"
-        onPress={send}
-        disabled={!wins.trim() && !blockers.trim() && !next.trim()}
-      />
     </Sheet>
   );
 }
