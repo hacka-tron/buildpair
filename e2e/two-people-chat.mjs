@@ -72,10 +72,10 @@ try {
   await maya.getByText(/Invite · 1 waiting/).click();
   await maya.getByText("Let in", { exact: true }).click();
   await maya.getByText("Asking to join").waitFor({ state: "detached" });
-  await maya
-    .getByLabel("Close")
-    .last()
-    .click({ position: { x: 5, y: 5 } });
+  // The sheet shrinks once the request is answered, so clicking near its edge can land on another control.
+  // Reloading closes it for sure.
+  await maya.reload();
+  await maya.getByText(/\(you\)/).waitFor();
   await jordan.goto(`${WEB}/spaces/${spaceId}`);
   await jordan.getByPlaceholder("Message Life…").waitFor();
 
