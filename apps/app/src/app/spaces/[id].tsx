@@ -148,6 +148,7 @@ export default function SpaceScreen() {
       <ItemSheet
         key={opened?.id ?? "none"}
         item={opened}
+        spaceId={id}
         view={view}
         userId={userId}
         today={today}

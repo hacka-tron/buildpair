@@ -88,6 +88,28 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
       if (Object.keys(reactions).length) next.reactions = { ...state.reactions, ...reactions };
       break;
     }
+    case "item.moved": {
+      const gone = new Set(event.payload.itemIds);
+      // Someone else's step under a goal that left (older data) stays here, on its own.
+      next.items = Object.fromEntries(
+        Object.entries(state.items)
+          .filter(([id]) => !gone.has(id))
+          .map(([id, i]) => [id, i.parentId && gone.has(i.parentId) ? { ...i, parentId: null } : i]),
+      );
+      // A private item's lines leave with it, as they do from the log.
+      if (event.payload.visibility === "owner") {
+        next.messages = state.messages.filter((m) => !m.itemId || !gone.has(m.itemId));
+        const kept = new Set(next.messages.map((m) => m.id));
+        next.reactions = Object.fromEntries(Object.entries(state.reactions).filter(([id]) => kept.has(id)));
+      }
+      break;
+    }
+    case "item.arrived": {
+      const items = { ...state.items };
+      for (const item of event.payload.items) items[item.id] = normalizeItem(item);
+      next.items = items;
+      break;
+    }
     case "item.completed": {
       const item = state.items[event.payload.itemId];
       if (!item) break;

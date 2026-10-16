@@ -24,6 +24,10 @@ export function canSee(state: SpaceState, userId: UserId, event: SpaceEvent): bo
       // Going private carries only IDs, so everyone gets it and drops the items. Going shared carries
       // the items, so it goes only to people who may see them now.
       return event.payload.visibility === "owner" || visibleTo(state, userId, event.payload.itemIds[0]);
+    case "item.moved":
+      return event.payload.visibility === "space" || event.actorId === userId;
+    case "item.arrived":
+      return visibleTo(state, userId, event.payload.items[0]?.id);
     case "message.posted":
       return visibleTo(state, userId, event.payload.message.itemId);
     case "reaction.toggled": {

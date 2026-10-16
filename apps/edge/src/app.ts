@@ -1,4 +1,5 @@
 import { newId } from "@buildpair/domain";
+import { Ulid } from "@buildpair/protocol";
 import { APIError } from "better-auth/api";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
@@ -332,6 +333,26 @@ app.post("/spaces/:id/commands", async (c) => {
   const results = [];
   for (const cmd of body.data.commands) results.push(await stub.runCommand(cmd, c.get("userId")));
   return c.json({ results });
+});
+
+/**
+ * Move an item (a goal with its steps) to another of your spaces. The space it's in takes it out and
+ * delivers it; sending the same moveId again resumes a delivery that hasn't landed yet.
+ */
+app.post("/spaces/:id/items/:itemId/move", async (c) => {
+  const body = z
+    .object({ moveId: Ulid, toSpaceId: z.string().min(1).max(64) })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json(err("invalid", "Pick a space to move it to."), 400);
+  const userId = c.get("userId");
+  const from = c.req.param("id");
+  const { moveId, toSpaceId } = body.data;
+  if (toSpaceId === from) return c.json(err("invalid", "It's already in this space."), 400);
+  if (!(await isMember(c.env, from, userId)) || !(await isMember(c.env, toSpaceId, userId)))
+    return c.json(err("not_found", "Space not found."), 404);
+  const result = await room(c.env, from).moveOut(moveId, c.req.param("itemId"), toSpaceId, userId);
+  if (!result.ok) return c.json(err("rejected", result.reason), 409);
+  return c.json({ ok: true, delivered: result.delivered });
 });
 
 app.post("/spaces/:id/invites", async (c) => {

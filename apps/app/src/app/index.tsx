@@ -285,6 +285,7 @@ export default function Today() {
       <ItemSheet
         key={opened?.item.id ?? "none"}
         item={opened?.item ?? null}
+        spaceId={opened?.spaceId ?? ""}
         view={opened ? views[opened.spaceId] : undefined}
         userId={userId}
         today={today}

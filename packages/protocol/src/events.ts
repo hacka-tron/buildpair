@@ -58,6 +58,16 @@ export const ItemVisibilitySet = ev(
     reactions: z.record(z.string(), z.record(z.string(), z.array(UserId))),
   }),
 );
+/**
+ * Items left this space for another one (a goal with its steps). Their earlier events are deleted from
+ * this space's log; chat lines about shared items stay. Says only IDs, so the other space stays unnamed.
+ */
+export const ItemMoved = ev(
+  "item.moved",
+  z.object({ itemIds: z.array(Ulid).min(1), visibility: Visibility }),
+);
+/** Items moved here from another space, as they were there (done days, skips, visibility). */
+export const ItemArrived = ev("item.arrived", z.object({ items: z.array(Item).min(1) }));
 export const ItemCompleted = ev("item.completed", z.object({ itemId: Ulid, on: LocalDate }));
 export const ItemSkipped = ev("item.skipped", z.object({ itemId: Ulid, on: LocalDate }));
 export const ItemWontDo = ev("item.wont", z.object({ itemId: Ulid }));
@@ -75,6 +85,8 @@ export const SpaceEvent = z.discriminatedUnion("type", [
   ItemCreated,
   ItemEdited,
   ItemVisibilitySet,
+  ItemMoved,
+  ItemArrived,
   ItemCompleted,
   ItemSkipped,
   ItemWontDo,

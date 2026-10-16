@@ -4,12 +4,12 @@ import { SpaceEvent } from "./events";
 import { Ulid, UserId } from "./ids";
 
 /** Bump when a change would break older clients. */
-export const PROTOCOL_VERSION = 5;
+export const PROTOCOL_VERSION = 6;
 /**
  * The oldest version the server still talks to; older clients are told to update. Clients before 3
  * drop a whole batch when one event is new to them, so they can't stay connected safely.
  */
-export const MIN_PROTOCOL_VERSION = 5;
+export const MIN_PROTOCOL_VERSION = 6;
 
 export const ClientMessage = z.discriminatedUnion("t", [
   z.object({ t: z.literal("hello"), v: z.number().int(), afterSeq: z.number().int().nonnegative() }),

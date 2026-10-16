@@ -11,7 +11,7 @@ Autonomy: autonomous. Since 2026-10-16 the agent drives the project to completio
 | Path | Owns |
 |---|---|
 | `packages/protocol` | Zod schemas for commands, events, socket messages. Clients read server messages with `parseServerMessage`, which skips single events they don't know. Adding an event type that changes space state: bump `PROTOCOL_VERSION` and raise `MIN_PROTOCOL_VERSION` to it, so older clients are told to update instead of silently missing it. |
-| `packages/domain` | `decide(state, command, actor)` and `applyEvent(state, event)`: the rules, pure functions, used by both app and server. All rule changes go here, with tests. |
+| `packages/domain` | `decide(state, command, actor)` and `applyEvent(state, event)`: the rules, pure functions, used by both app and server. `move.ts` holds the two halves of moving an item between spaces. All rule changes go here, with tests. |
 | `packages/sync` | `SpaceSync`: optimistic updates, persisted pending queue, sequence cursor, gap catch-up. |
 | `apps/edge/src/space-room.ts` | One Durable Object per space: the only writer, numbers every event, stores the log in its SQLite, runs sockets. |
 | `apps/edge/src/user-hub.ts` | One Durable Object per person: inbox socket, pokes from spaces. |
