@@ -62,12 +62,22 @@ export interface JoinRequest {
   name: string;
   /** What they wrote when offering support from Discover. */
   note: string | null;
+  /** One of their spaces they'd like you to support in return. */
+  mutual: { spaceId: string; name: string; purpose: string } | null;
   createdAt: string;
 }
 export const listRequests = (spaceId: string) =>
   api<{ requests: JoinRequest[] }>(`/spaces/${spaceId}/requests`);
-export const answerRequest = (spaceId: string, userId: string, answer: "approve" | "decline") =>
-  api<{ ok: true }>(`/spaces/${spaceId}/requests/${userId}/${answer}`, { method: "POST" });
+export const answerRequest = (
+  spaceId: string,
+  userId: string,
+  answer: "approve" | "decline",
+  supportBack = false,
+) =>
+  api<{ ok: true }>(`/spaces/${spaceId}/requests/${userId}/${answer}`, {
+    method: "POST",
+    body: { supportBack },
+  });
 export const resetInvites = (spaceId: string) =>
   api<{ ok: true }>(`/spaces/${spaceId}/invites/reset`, { method: "POST" });
 /** Move an item (a goal with its steps) to another of your spaces. Reuse `moveId` when retrying. */
@@ -106,8 +116,11 @@ export interface Listing {
 }
 export const listDiscover = (q = "") =>
   api<{ listings: Listing[] }>(`/discover${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`);
-export const offerSupport = (spaceId: string, note: string) =>
-  api<{ status: "requested" | "member" }>(`/discover/${spaceId}/offer`, { method: "POST", body: { note } });
+export const offerSupport = (spaceId: string, note: string, mutualSpaceId?: string) =>
+  api<{ status: "requested" | "member" }>(`/discover/${spaceId}/offer`, {
+    method: "POST",
+    body: { note, ...(mutualSpaceId ? { mutualSpaceId } : {}) },
+  });
 export const setListing = (spaceId: string, on: boolean) =>
   api<{ ok: true }>(`/spaces/${spaceId}/listing`, { method: "POST", body: { on } });
 export type ComplimentTag = "honest" | "keeps_me_going" | "friendly" | "great_advice" | "checks_in";

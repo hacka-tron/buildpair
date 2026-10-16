@@ -56,10 +56,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Profiles, badges and compliments (2026-10-16):** tapping someone in a space shows what they're building, a stats line (supporting, supported by, goals finished) and earned badges (Finisher at 5 goals, Reliable supporter after four weeks supporting someone). It also has compliment chips (Honest takes, Keeps me going, Friendly, Great advice, Always checks in) you can give or take back. Your own profile shows the same, with the compliments you've received. Only people who share a space with you can see your profile. Finished goals are counted by the spaces as they happen. Checked in the browser.
 
+**Support each other (2026-10-16):** when offering support from Discover, you can suggest one of your own spaces. The owner sees "Suggests supporting each other: <space>" in their requests, and can choose "Let in and support <space> back", which also adds them as a supporter of your space. A plain "Let in" doesn't. Checked in the browser.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: "support each other"** (offering one of your own spaces in return when offering support), and a Fast responder badge. Then milestone 7 (Jira first).
+3. **Build: room snapshots** (spaces rebuild by replaying their whole log on wake), then dark mode in the app, then the desktop keyboard shortcuts. Milestone 7 (Jira) needs a Jira app registration from the owner first.
 4. **Owner: read the privacy and terms pages before production** (`staging.buildpair.app/privacy` and `/terms`). They're plain-words drafts I wrote, not legal advice. Decide the minimum age (I put 16), the governing law, and whether a lawyer should look before the public launch.
 5. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 6. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.

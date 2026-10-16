@@ -1250,11 +1250,11 @@ function InviteSheet(props: {
       setBusy(false);
     }
   };
-  const answer = async (who: string, choice: "approve" | "decline") => {
+  const answer = async (who: string, choice: "approve" | "decline", supportBack = false) => {
     setAnswering(who);
     setError("");
     try {
-      await answerRequest(props.spaceId, who, choice);
+      await answerRequest(props.spaceId, who, choice, supportBack);
       setRequests((r) => r.filter((x) => x.userId !== who));
       void refreshSpaces();
     } catch (e) {
@@ -1340,6 +1340,23 @@ function InviteSheet(props: {
                   <Text numberOfLines={3} style={{ fontSize: 12, color: colors.sub }}>
                     From Discover: "{r.note}"
                   </Text>
+                ) : null}
+                {r.mutual ? (
+                  <Text numberOfLines={2} style={{ fontSize: 12, color: colors.sub }}>
+                    Suggests supporting each other: {r.mutual.name}, {r.mutual.purpose}
+                  </Text>
+                ) : null}
+                {r.mutual ? (
+                  <Pressable
+                    onPress={() => answer(r.userId, "approve", true)}
+                    disabled={answering === r.userId}
+                    accessibilityRole="button"
+                    hitSlop={6}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.blue }}>
+                      Let in and support {r.mutual.name} back
+                    </Text>
+                  </Pressable>
                 ) : null}
               </View>
               <Button

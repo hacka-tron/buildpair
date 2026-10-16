@@ -159,4 +159,45 @@ describe("Discover", () => {
     // Test accounts are named after their email's first part, so that's the account name here.
     expect(found?.ownerName).toMatch(/^maya-/);
   });
+
+  it("supports each other: the owner can let them in and join their space back", async () => {
+    const { maya, spaceId } = await listedSpace();
+    const sam = await signIn(`sam-${newId()}@example.com`);
+    const { id: samSpace } = (await (
+      await sam.post("/spaces", { name: "Shipnote", purpose: "Changelogs" })
+    ).json()) as {
+      id: string;
+    };
+    const stranger = await signIn(`x-${newId()}@example.com`);
+    const { id: notSams } = (await (
+      await stranger.post("/spaces", { name: "Other", purpose: "Other" })
+    ).json()) as {
+      id: string;
+    };
+    expect(
+      (await sam.post(`/discover/${spaceId}/offer`, { note: "swap?", mutualSpaceId: notSams })).status,
+    ).toBe(400);
+    await sam.post(`/discover/${spaceId}/offer`, { note: "swap?", mutualSpaceId: samSpace });
+    const { requests } = (await (await maya.get(`/spaces/${spaceId}/requests`)).json()) as {
+      requests: { userId: string; mutual: { spaceId: string; name: string } | null }[];
+    };
+    expect(requests[0]?.mutual).toMatchObject({ spaceId: samSpace, name: "Shipnote" });
+    const samId = await idOf(sam);
+    await maya.post(`/spaces/${spaceId}/requests/${samId}/approve`, { supportBack: true });
+    expect((await sam.get(`/spaces/${spaceId}/events?after=0`)).status).toBe(200);
+    expect((await maya.get(`/spaces/${samSpace}/events?after=0`)).status).toBe(200);
+  });
+
+  it("only joins back when asked to", async () => {
+    const { maya, spaceId } = await listedSpace();
+    const sam = await signIn(`sam-${newId()}@example.com`);
+    const { id: samSpace } = (await (
+      await sam.post("/spaces", { name: "Shipnote", purpose: "Changelogs" })
+    ).json()) as {
+      id: string;
+    };
+    await sam.post(`/discover/${spaceId}/offer`, { mutualSpaceId: samSpace });
+    await maya.post(`/spaces/${spaceId}/requests/${await idOf(sam)}/approve`);
+    expect((await maya.get(`/spaces/${samSpace}/events?after=0`)).status).toBe(404);
+  });
 });
