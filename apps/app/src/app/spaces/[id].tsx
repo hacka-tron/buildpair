@@ -42,7 +42,7 @@ import { useSpace } from "../../lib/use-space";
 const REACTIONS = ["🔥", "👏", "❤️", "🙌", "😂"];
 
 export default function SpaceScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, item: itemParam } = useLocalSearchParams<{ id: string; item?: string }>();
   const wide = useWide();
   const today = localToday();
   const { data: session } = authClient.useSession();
@@ -65,6 +65,15 @@ export default function SpaceScreen() {
       patchSpace(id, { name: view.name, purpose: view.purpose, color });
   }, [id, summary, connected, view.name, view.purpose, view.color]);
   const [opened, setOpened] = useState<Item | null>(null);
+  // Opened from Upcoming or ⌘K with an item in mind: show it once the space has loaded.
+  const pendingItem = useRef(itemParam);
+  useEffect(() => {
+    const want = pendingItem.current;
+    if (want && view.items[want]) {
+      pendingItem.current = undefined;
+      setOpened(view.items[want]!);
+    }
+  }, [view.items]);
   const blocked = useBlocked();
   // Everything in the chat counts as seen while the space is open.
   useReadPositions(userId);

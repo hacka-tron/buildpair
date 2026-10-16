@@ -8,11 +8,20 @@ import { resetSpaces, useSpaces, useSpaceViews } from "../lib/spaces";
 import { colors, space, WIDE } from "../lib/theme";
 import { useUnread } from "../lib/unread";
 import { stopAllSyncs } from "../lib/use-space";
+import { CommandPalette } from "./command-palette";
 import type { HoverState } from "./kit";
 import { Avatar, Icon, type IconName, SpaceTile, UnreadDot, Wordmark } from "./kit";
 
-export type Section = "today" | "spaces" | "supporting" | "activity" | "profile" | { spaceId: string };
-type Href = "/" | "/spaces" | "/supporting" | "/activity";
+export type Section =
+  | "today"
+  | "upcoming"
+  | "spaces"
+  | "supporting"
+  | "activity"
+  | "review"
+  | "profile"
+  | { spaceId: string };
+type Href = "/" | "/upcoming" | "/spaces" | "/supporting" | "/activity";
 
 export const TAB_BAR_HEIGHT = 58;
 
@@ -49,6 +58,7 @@ export function Shell({
       >
         <Sidebar active={active} />
         <View style={{ flex: 1, minWidth: 0 }}>{children}</View>
+        <CommandPalette />
       </SafeAreaView>
     );
   }
@@ -130,6 +140,7 @@ function Sidebar({ active }: { active: Section }) {
           <Wordmark size={19} />
         </View>
         <NavRow icon="check" label="Today" href="/" on={active === "today"} />
+        <NavRow icon="calendar" label="Upcoming" href="/upcoming" on={active === "upcoming"} />
         <NavRow icon="grid" label="Spaces" href="/spaces" on={active === "spaces"} />
         <NavRow icon="users" label="Supporting" href="/supporting" on={active === "supporting"} />
         <NavRow icon="bell" label="Activity" href="/activity" on={active === "activity"} />
