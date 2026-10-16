@@ -35,6 +35,7 @@ import { block, unblock, useBlocked } from "../../lib/blocks";
 import { ago, localToday, peopleLine } from "../../lib/format";
 import { applyChange, markSpaceGone, patchSpace, refreshSpaces, useSpaces } from "../../lib/spaces";
 import { colors, radius, space } from "../../lib/theme";
+import { markRead, useReadPositions } from "../../lib/unread";
 import { useSpace } from "../../lib/use-space";
 
 const REACTIONS = ["🔥", "👏", "❤️", "🙌", "😂"];
@@ -64,6 +65,12 @@ export default function SpaceScreen() {
   }, [id, summary, connected, view.name, view.purpose, view.color]);
   const [opened, setOpened] = useState<Item | null>(null);
   const blocked = useBlocked();
+  // Everything in the chat counts as seen while the space is open.
+  useReadPositions(userId);
+  const lastSeq = view.messages.at(-1)?.seq ?? 0;
+  useEffect(() => {
+    if (view.seq > 0) markRead(id, lastSeq);
+  }, [id, lastSeq, view.seq]);
   /** The person whose sheet is open (report, block, remove), and the message being reported if any. */
   const [person, setPerson] = useState<{ userId: string; messageId?: string } | null>(null);
   const [peopleOpen, setPeopleOpen] = useState(false);

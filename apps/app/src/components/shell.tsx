@@ -1,14 +1,15 @@
 import { router } from "expo-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { authClient } from "../lib/auth";
-import { resetBlocks } from "../lib/blocks";
-import { resetSpaces, useSpaces } from "../lib/spaces";
+import { resetBlocks, useBlocked } from "../lib/blocks";
+import { resetSpaces, useSpaces, useSpaceViews } from "../lib/spaces";
 import { colors, space, WIDE } from "../lib/theme";
+import { useUnread } from "../lib/unread";
 import { stopAllSyncs } from "../lib/use-space";
 import type { HoverState } from "./kit";
-import { Avatar, Icon, type IconName, SpaceTile, Wordmark } from "./kit";
+import { Avatar, Icon, type IconName, SpaceTile, UnreadDot, Wordmark } from "./kit";
 
 export type Section = "today" | "spaces" | "supporting" | "activity" | "profile" | { spaceId: string };
 type Href = "/" | "/spaces" | "/supporting" | "/activity";
@@ -115,6 +116,9 @@ function TabBar({ active }: { active: Section }) {
 function Sidebar({ active }: { active: Section }) {
   const { spaces } = useSpaces();
   const { data: session } = authClient.useSession();
+  const ids = useMemo(() => (spaces ?? []).map((s) => s.id), [spaces]);
+  const views = useSpaceViews(ids, session?.user.id ?? "");
+  const unread = useUnread(ids, views, session?.user.id ?? "", useBlocked());
   const activeSpace = typeof active === "object" ? active.spaceId : null;
   const name = session?.user.name || session?.user.email || "";
   return (
@@ -170,6 +174,7 @@ function Sidebar({ active }: { active: Section }) {
             <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: colors.ink }}>
               {s.name}
             </Text>
+            {unread.has(s.id) && activeSpace !== s.id ? <UnreadDot /> : null}
             {s.role === "supporter" ? <Icon name="users" size={13} color={colors.faint} /> : null}
           </Pressable>
         ))}

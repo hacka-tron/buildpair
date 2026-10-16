@@ -2,13 +2,15 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import type { HoverState } from "../../components/kit";
-import { Fab, Faces, Sheet, SpaceTile, Tag } from "../../components/kit";
+import { Fab, Faces, Sheet, SpaceTile, Tag, UnreadDot } from "../../components/kit";
 import { PageHeader, Shell, signOut, useWide } from "../../components/shell";
 import { Button, ErrorText, Field } from "../../components/ui";
 import { authClient } from "../../lib/auth";
+import { useBlocked } from "../../lib/blocks";
 import { ago } from "../../lib/format";
 import { addSpace, refreshSpaces, useSpaces, useSpaceViews } from "../../lib/spaces";
 import { colors, space } from "../../lib/theme";
+import { useUnread } from "../../lib/unread";
 
 export default function Spaces() {
   const wide = useWide();
@@ -18,6 +20,8 @@ export default function Spaces() {
   const { spaces, error } = useSpaces();
   const ids = useMemo(() => (spaces ?? []).map((s) => s.id), [spaces]);
   const views = useSpaceViews(ids, userId);
+  const blocked = useBlocked();
+  const unread = useUnread(ids, views, userId, blocked);
   const [creating, setCreating] = useState(params.new === "1");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -108,8 +112,11 @@ export default function Spaces() {
                 ) : null}
                 <View style={{ flex: 1 }} />
                 {last ? (
-                  <Text style={{ fontSize: 12, color: colors.faint }}>{ago(last.createdAt)}</Text>
+                  <Text style={{ fontSize: 12, color: unread.has(s.id) ? colors.blue : colors.faint }}>
+                    {ago(last.createdAt)}
+                  </Text>
                 ) : null}
+                {unread.has(s.id) ? <UnreadDot /> : null}
               </View>
               <Text numberOfLines={1} style={{ fontSize: 13, color: colors.sub }}>
                 {summary(open.length, s.purpose)}
