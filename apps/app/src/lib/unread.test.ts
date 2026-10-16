@@ -2,7 +2,10 @@ import { applyEvents, emptySpace } from "@buildpair/domain";
 import type { Message } from "@buildpair/protocol";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./storage", () => ({ kvStorage: { get: async () => null, set: async () => undefined } }));
+const stored = new Map<string, string>();
+vi.mock("./storage", () => ({
+  kvStorage: { get: async () => null, set: async (k: string, v: string) => void stored.set(k, v) },
+}));
 const { connectReads, isUnread, latestFromOthers, markRead, mergeReads, startReading } = await import(
   "./unread"
 );
@@ -64,7 +67,7 @@ describe("unread", () => {
     expect(sent).toHaveLength(2);
   });
 
-  it("sends a big backlog in chunks the server accepts", () => {
+  it("sends a big backlog in chunks the server accepts", async () => {
     const sent: { reads: Record<string, number>; all?: boolean }[] = [];
     let open = false;
     const send = (msg: { reads: Record<string, number>; all?: boolean }) => {
@@ -74,9 +77,13 @@ describe("unread", () => {
     };
     connectReads("me", send);
     for (let i = 0; i < 450; i++) markRead(`s${i}`, 1);
+    // Saved while offline, so a restart still sends them.
+    await Promise.resolve();
+    expect(Object.keys(JSON.parse(stored.get("read-unsent:me") ?? "{}"))).toHaveLength(450);
     open = true;
     connectReads("me", send);
     expect(sent.map((m) => Object.keys(m.reads).length)).toEqual([200, 200, 50]);
+    expect(JSON.parse(stored.get("read-unsent:me") ?? "")).toEqual({});
     expect(sent[0]?.all).toBe(true);
     expect(sent.slice(1).every((m) => !m.all)).toBe(true);
   });

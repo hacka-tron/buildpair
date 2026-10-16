@@ -95,9 +95,9 @@ export function isUnread(
 export function markRead(spaceId: string, seq: number) {
   if ((read[spaceId] ?? -1) >= seq) return;
   read[spaceId] = seq;
+  unsent[spaceId] = seq;
   emit();
   save();
-  unsent[spaceId] = seq;
   flush();
 }
 
