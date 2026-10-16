@@ -2,6 +2,10 @@
 
 Start with [BACKLOG.md](BACKLOG.md) (where work stands, what's next) and update it when something finishes. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing structure, and [docs/PRODUCT.md](docs/PRODUCT.md) for what the product is. Design mockups: `docs/design/`.
 
+## Who decides
+
+Autonomy: autonomous. Since 2026-10-16 the agent drives the project to completion and the owner reviews later. Pick the next work from BACKLOG, make product, design and technical decisions yourself, and keep going without asking. Log each real decision in BACKLOG "Decisions" marked "Claude's call" with the date, so the owner can review and roll it back. Still stop and ask for: releasing to production (the approval click), anything that costs money or needs a new account or terms, new permissions, deleting data, and things only the owner can do (phones, DNS, store accounts). Leave those as "Owner:" steps in BACKLOG and keep working on everything else.
+
 ## Map
 
 | Path | Owns |
