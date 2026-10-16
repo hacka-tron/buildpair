@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { type HoverState, SectionHeader, SpaceTile } from "../components/kit";
+import { type HoverState, SectionHeader, SpaceTile, UnreadDot } from "../components/kit";
 import { PageHeader, Shell, useWide } from "../components/shell";
 import { ErrorText } from "../components/ui";
 import { authClient } from "../lib/auth";
@@ -10,6 +10,7 @@ import { ago } from "../lib/format";
 import { useSpaces, useSpaceViews } from "../lib/spaces";
 import { checkIns, supportedRows } from "../lib/supporting";
 import { colors, space } from "../lib/theme";
+import { useUnread } from "../lib/unread";
 
 /** Spaces other people share with you, and who could use a check-in. */
 export default function Supporting() {
@@ -21,6 +22,7 @@ export default function Supporting() {
   const theirs = useMemo(() => (spaces ?? []).filter((s) => s.role === "supporter"), [spaces]);
   const ids = useMemo(() => theirs.map((s) => s.id), [theirs]);
   const views = useSpaceViews(ids, userId);
+  const unread = useUnread(ids, views, userId, blocked);
   const [collapsed, setCollapsed] = useState(false);
   const quiet = checkIns(theirs, views);
   const rows = supportedRows(theirs, views, userId, blocked);
@@ -110,8 +112,11 @@ export default function Supporting() {
                 </Text>
                 <View style={{ flex: 1 }} />
                 {r.last ? (
-                  <Text style={{ fontSize: 12, color: colors.faint }}>{ago(r.last.createdAt)}</Text>
+                  <Text style={{ fontSize: 12, color: unread.has(r.spaceId) ? colors.blue : colors.faint }}>
+                    {ago(r.last.createdAt)}
+                  </Text>
                 ) : null}
+                {unread.has(r.spaceId) ? <UnreadDot /> : null}
               </View>
               <Text numberOfLines={1} style={{ fontSize: 13, color: colors.sub }}>
                 {r.last ? lastLine(r.lastBy, r.last.kind, r.last.body) : "Nothing here yet"}

@@ -38,3 +38,21 @@ export const spaceStorage: SpaceStorage = {
     }
   },
 };
+
+/** Small values kept on the device (read positions). Missing in private windows, which is fine. */
+export const kvStorage = {
+  async get(key: string): Promise<string | null> {
+    try {
+      return localStorage.getItem(`buildpair:${key}`);
+    } catch {
+      return null;
+    }
+  },
+  async set(key: string, value: string): Promise<void> {
+    try {
+      localStorage.setItem(`buildpair:${key}`, value);
+    } catch {
+      // Storage full or blocked: read positions just won't survive a reload.
+    }
+  },
+};

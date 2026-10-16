@@ -524,3 +524,14 @@ export function Chip({
     </Pressable>
   );
 }
+
+/** A small blue dot: something new in this space. */
+export function UnreadDot() {
+  return (
+    <View
+      accessible
+      accessibilityLabel="New messages"
+      style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.blue }}
+    />
+  );
+}
