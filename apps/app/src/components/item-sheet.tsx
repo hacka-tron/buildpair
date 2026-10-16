@@ -3,7 +3,7 @@ import type { Item } from "@buildpair/protocol";
 import type { Change } from "@buildpair/sync";
 import { useRef, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
-import { moveItem } from "../lib/api";
+import { ApiError, moveItem } from "../lib/api";
 import { dueLabel } from "../lib/format";
 import { useSpaces } from "../lib/spaces";
 import { colors, radius, space } from "../lib/theme";
@@ -83,6 +83,8 @@ export function ItemSheet(props: {
         await moveItem(props.spaceId, live.id, toSpaceId, moveIds.current[toSpaceId]);
         props.onClose();
       } catch (e) {
+        // Refused for good: a new try needs a new move ID. Anything else retries with the same one.
+        if (e instanceof ApiError && e.status === 409) delete moveIds.current[toSpaceId];
         setError(e instanceof Error ? e.message : "Couldn't move it. Try again.");
         setMoving(false);
       }

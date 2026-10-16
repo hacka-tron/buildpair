@@ -1,6 +1,8 @@
+import { env, runInDurableObject } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
 import { PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
+import { MOVE_MAX_TRIES, moveRetryDelay, type SpaceRoom } from "../src/space-room";
 import { type Client, command, join, openSocket, signIn } from "./helpers";
 
 type Batch = { after: number; upTo: number; events: SpaceEvent[] };
@@ -156,7 +158,7 @@ describe("moving an item to another space", () => {
     );
     const taken = newId();
     expect((await move(maya, third, other, work, taken)).status).toBe(200);
-    expect((await move(maya, home, two, work, taken)).status).toBe(200);
+    expect((await move(maya, home, two, work, taken)).status).toBe(409);
     expect(titles(await log(maya, home))).toEqual(["Second"]);
     expect(titles(await log(sam, work))).toEqual(["First", "Other"]);
   });
@@ -191,9 +193,62 @@ describe("moving an item to another space", () => {
     );
     const moveId = newId();
     expect((await move(maya, third, other, work, moveId)).status).toBe(200);
-    expect((await move(maya, home, itemId, work, moveId)).status).toBe(200);
+    const refused = await move(maya, home, itemId, work, moveId);
+    // It says so, and the item is already back.
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({
+      error: "The other space didn't take it, so it's back here.",
+    });
     const back = (await log(maya, home)).events.filter((e) => e.type === "item.arrived");
     expect(back).toHaveLength(1);
     expect(JSON.stringify(await log(maya, work))).not.toContain("Boomerang");
+    // A fresh try with a new ID goes through.
+    expect((await move(maya, home, itemId, work)).status).toBe(200);
+    expect(JSON.stringify(await log(maya, work))).toContain("Boomerang");
+  });
+
+  it("tries an unreachable space more slowly each time, then brings the item back", async () => {
+    const { maya, home, work } = await setup();
+    const itemId = newId();
+    await run(maya, home, command({ type: "item.create", payload: { itemId, kind: "todo", title: "Far" } }));
+    const mayaId = ((await (await maya.get("/me")).json()) as { id: string }).id;
+    const stub = env.SPACE_ROOM.get(env.SPACE_ROOM.idFromName(home));
+    const tries = await runInDurableObject(stub, async (room: SpaceRoom, state) => {
+      // Every other space is out of reach.
+      const unreachable = {
+        idFromName: () => ({}),
+        get: () => ({
+          receiveItems: () => Promise.reject(new Error("unreachable")),
+        }),
+      };
+      Object.defineProperty(room, "env", { value: { ...env, SPACE_ROOM: unreachable } });
+      const sql = state.storage.sql;
+      const triesNow = () => sql.exec<{ tries: number }>("SELECT tries FROM outbox").toArray()[0]?.tries;
+      const seen: (number | undefined)[] = [];
+      expect(await room.moveOut(newId(), itemId, work, mayaId)).toEqual({ ok: true, delivered: false });
+      seen.push(triesNow());
+      const before = Date.now();
+      await room.alarm();
+      seen.push(triesNow());
+      const wait = (await state.storage.getAlarm())! - before;
+      expect(wait).toBeGreaterThanOrEqual(55_000);
+      expect(wait).toBeLessThanOrEqual(65_000);
+      sql.exec("UPDATE outbox SET tries = ?", MOVE_MAX_TRIES - 1);
+      await room.alarm();
+      seen.push(triesNow());
+      return seen;
+    });
+    expect(tries).toEqual([0, 1, undefined]);
+    const titles = (await log(maya, home)).events.flatMap((e) =>
+      e.type === "item.arrived" ? e.payload.items.map((i) => i.title) : [],
+    );
+    expect(titles).toEqual(["Far"]);
+    expect(JSON.stringify(await log(maya, work))).not.toContain("Far");
+  });
+
+  it("waits 30 seconds, then doubles, up to an hour", () => {
+    expect([1, 2, 3, 7, 8, 30].map(moveRetryDelay)).toEqual([
+      30_000, 60_000, 120_000, 1_920_000, 3_600_000, 3_600_000,
+    ]);
   });
 });

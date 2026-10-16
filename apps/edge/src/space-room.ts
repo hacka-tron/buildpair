@@ -29,7 +29,11 @@ import { drizzle } from "drizzle-orm/d1";
 import { listings, profileStats, spaces, user } from "./db/schema";
 import { type Env, SLOW_DOWN, withinLimit } from "./env";
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
+/** A move whose space can't be reached is tried this many times (about a day in all), then comes back. */
+export const MOVE_MAX_TRIES = 30;
+/** 30 seconds, doubling, at most an hour. */
+export const moveRetryDelay = (tries: number) => Math.min(30_000 * 2 ** (tries - 1), 3_600_000);
 /**
  * What a saved snapshot was built with. Bump the last part whenever applyEvent's results change for the same
  * events, so rooms rebuild from their log instead of trusting an old snapshot.
@@ -134,6 +138,10 @@ export class SpaceRoom extends DurableObject<Env> {
         v INTEGER NOT NULL,
         data TEXT NOT NULL
       )`);
+    }
+    if (version < 4) {
+      // Failed delivery tries, so retries slow down and finally give up.
+      sql.exec("ALTER TABLE outbox ADD COLUMN tries INTEGER NOT NULL DEFAULT 0");
     }
     sql.exec("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)", String(SCHEMA_VERSION));
   }
@@ -424,6 +432,7 @@ export class SpaceRoom extends DurableObject<Env> {
    * between, and the copy is kept until the other space has it. Delivery is tried at once, then by alarm.
    * Chat lines about a shared item stay; lines about a private one go, with their reactions.
    * Sending the same moveId again only resumes delivery; a moveId used for something else is refused.
+   * If the other space refuses it, the item is already back here when this answers.
    */
   async moveOut(
     moveId: string,
@@ -442,7 +451,7 @@ export class SpaceRoom extends DurableObject<Env> {
       if (used.item_id !== itemId || used.to_space !== toSpaceId || used.actor_id !== actorId)
         return { ok: false, reason: "That move didn't go through. Try again." };
       // The same move sent again: finish delivering it if it hasn't landed yet.
-      return { ok: true, delivered: await this.deliver() };
+      return this.answer(moveId, await this.deliver());
     }
     const d = decideMoveOut(this.load(), itemId, actorId, {
       commandId: moveId,
@@ -479,7 +488,16 @@ export class SpaceRoom extends DurableObject<Env> {
     this.dropSnapshot();
     this.state = null;
     this.publish([moved!]);
-    return { ok: true, delivered: await this.deliver() };
+    return this.answer(moveId, await this.deliver());
+  }
+
+  private answer(
+    moveId: string,
+    sent: { waiting: boolean; refused: Set<string> },
+  ): { ok: true; delivered: boolean } | { ok: false; reason: string } {
+    if (sent.refused.has(moveId))
+      return { ok: false, reason: "The other space didn't take it, so it's back here." };
+    return { ok: true, delivered: !sent.waiting };
   }
 
   /**
@@ -506,16 +524,19 @@ export class SpaceRoom extends DurableObject<Env> {
 
   /**
    * Send waiting moves to their spaces. A space that refuses for good (it was deleted, or the person left)
-   * means the items come back here. If a space can't be reached, try again later. True when all landed.
+   * means the items come back here, and the move ID is freed. A space that can't be reached is tried again
+   * later, more slowly each time, and after about a day the items come back too. Only the alarm's tries
+   * count, so resending a move doesn't use them up.
    */
-  private async deliver(): Promise<boolean> {
+  private async deliver(byAlarm = false): Promise<{ waiting: boolean; refused: Set<string> }> {
     const sql = this.ctx.storage.sql;
     const rows = sql
-      .exec<{ move_id: string; to_space: string; actor_id: string; items: string }>(
-        "SELECT move_id, to_space, actor_id, items FROM outbox",
+      .exec<{ move_id: string; to_space: string; actor_id: string; items: string; tries: number }>(
+        "SELECT move_id, to_space, actor_id, items, tries FROM outbox",
       )
       .toArray();
-    let waiting = false;
+    const refused = new Set<string>();
+    let nextTry = Infinity;
     for (const row of rows) {
       const items = JSON.parse(row.items) as Item[];
       let result: { ok: true } | { ok: false; reason: string };
@@ -523,14 +544,24 @@ export class SpaceRoom extends DurableObject<Env> {
         const there = this.env.SPACE_ROOM.get(this.env.SPACE_ROOM.idFromName(row.to_space));
         result = await there.receiveItems(row.move_id, this.spaceId(), items, row.actor_id);
       } catch {
-        waiting = true;
-        continue;
+        const tries = byAlarm ? row.tries + 1 : row.tries;
+        if (tries < MOVE_MAX_TRIES) {
+          sql.exec("UPDATE outbox SET tries = ? WHERE move_id = ?", tries, row.move_id);
+          nextTry = Math.min(nextTry, moveRetryDelay(tries + 1));
+          continue;
+        }
+        result = { ok: false, reason: "unreachable" };
       }
-      if (!result.ok) this.takeBack(row.actor_id, items);
+      if (!result.ok) {
+        this.takeBack(row.actor_id, items);
+        sql.exec("DELETE FROM moves WHERE move_id = ?", row.move_id);
+        refused.add(row.move_id);
+      }
       sql.exec("DELETE FROM outbox WHERE move_id = ?", row.move_id);
     }
-    if (waiting) await this.ctx.storage.setAlarm(Date.now() + 30_000);
-    return !waiting;
+    const waiting = nextTry < Infinity;
+    if (waiting) await this.ctx.storage.setAlarm(Date.now() + nextTry);
+    return { waiting, refused };
   }
 
   /** A move the other space refused: the items return here, unless their owner has left. */
@@ -544,7 +575,7 @@ export class SpaceRoom extends DurableObject<Env> {
   }
 
   override async alarm(): Promise<void> {
-    await this.deliver();
+    await this.deliver(true);
   }
 
   /** Everything after `afterSeq` that this person may see. */
