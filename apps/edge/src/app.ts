@@ -1,13 +1,24 @@
 import { newId } from "@buildpair/domain";
 import { Ulid } from "@buildpair/protocol";
 import { APIError } from "better-auth/api";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
 import { createAuth, MIN_PASSWORD, NOT_INVITED, USE_PASSWORD } from "./auth";
-import { accountErasures, invites, joinRequests, memberships, spaces, user } from "./db/schema";
+import {
+  accountErasures,
+  blocks,
+  invites,
+  joinRequests,
+  memberships,
+  pastMemberships,
+  reports,
+  spaces,
+  user,
+} from "./db/schema";
+import { sendEmail } from "./email";
 import { assertConfig, type Env, isEmailAllowed, SLOW_DOWN, testLogin, withinLimit } from "./env";
 import { USER_HEADER } from "./space-room";
 import { signTicket, verifyTicket } from "./tickets";
@@ -438,10 +449,18 @@ app.post("/invites/:token/accept", async (c) => {
   if (!invite || invite.expiresAt.getTime() < Date.now()) {
     return c.json(err("invite_expired", "This invite link has expired. Ask for a new one."), 410);
   }
-  await db
-    .insert(joinRequests)
-    .values({ spaceId: invite.spaceId, userId, name: c.get("userName"), createdAt: new Date() })
-    .onConflictDoNothing();
+  // Someone the owner blocked gets the same answer, but their request goes nowhere.
+  const blocked = await db
+    .select({ id: blocks.blockedId })
+    .from(blocks)
+    .innerJoin(spaces, eq(spaces.ownerId, blocks.blockerId))
+    .where(and(eq(spaces.id, invite.spaceId), eq(blocks.blockedId, userId)))
+    .get();
+  if (!blocked)
+    await db
+      .insert(joinRequests)
+      .values({ spaceId: invite.spaceId, userId, name: c.get("userName"), createdAt: new Date() })
+      .onConflictDoNothing();
   return c.json({ spaceId: invite.spaceId, spaceName: invite.name, status: "requested" });
 });
 
@@ -497,6 +516,160 @@ app.post("/spaces/:id/invites/reset", async (c) => {
     return c.json(err("not_found", "Space not found."), 404);
   await drizzle(c.env.DB).delete(invites).where(eq(invites.spaceId, spaceId));
   return c.json({ ok: true });
+});
+
+/** Leave a space (your own ID), or as its owner remove someone from it. */
+app.post("/spaces/:id/members/:userId/remove", async (c) => {
+  const spaceId = c.req.param("id");
+  const target = c.req.param("userId");
+  if (!(await isMember(c.env, spaceId, c.get("userId"))))
+    return c.json(err("not_found", "Space not found."), 404);
+  const db = drizzle(c.env.DB);
+  // Recorded first, so deleting their account later still reaches this room.
+  await db
+    .insert(pastMemberships)
+    .values({ spaceId, userId: target, leftAt: new Date() })
+    .onConflictDoNothing();
+  const result = await room(c.env, spaceId).removeMember(target, c.get("userId"));
+  if (!result.ok) {
+    await db
+      .delete(pastMemberships)
+      .where(and(eq(pastMemberships.spaceId, spaceId), eq(pastMemberships.userId, target)));
+    return c.json(err("rejected", result.reason), 409);
+  }
+  await db
+    .delete(memberships)
+    .where(
+      and(
+        eq(memberships.spaceId, spaceId),
+        eq(memberships.userId, target),
+        eq(memberships.role, "supporter"),
+      ),
+    );
+  return c.json({ ok: true });
+});
+
+app.get("/me/blocks", async (c) => {
+  const rows = await drizzle(c.env.DB)
+    .select({ userId: blocks.blockedId, name: user.name })
+    .from(blocks)
+    .innerJoin(user, eq(user.id, blocks.blockedId))
+    .where(eq(blocks.blockerId, c.get("userId")))
+    .all();
+  return c.json({ blocks: rows });
+});
+
+/** Block someone you share a space with. Their messages and reactions are hidden from you. */
+app.post("/me/blocks", async (c) => {
+  const body = z
+    .object({ userId: z.string().min(1).max(64) })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json(err("invalid", "Pick someone to block."), 400);
+  const me = c.get("userId");
+  if (body.data.userId === me) return c.json(err("invalid", "You can't block yourself."), 400);
+  const db = drizzle(c.env.DB);
+  const exists = await db.select({ id: user.id }).from(user).where(eq(user.id, body.data.userId)).get();
+  if (!exists) return c.json(err("not_found", "That person isn't on Buildpair any more."), 404);
+  await db
+    .insert(blocks)
+    .values({ blockerId: me, blockedId: body.data.userId, createdAt: new Date() })
+    .onConflictDoNothing();
+  // Any request they have waiting on your spaces goes too.
+  const mine = db.select({ id: spaces.id }).from(spaces).where(eq(spaces.ownerId, me));
+  await db
+    .delete(joinRequests)
+    .where(and(eq(joinRequests.userId, body.data.userId), inArray(joinRequests.spaceId, mine)));
+  return c.json({ ok: true });
+});
+
+app.post("/me/blocks/:userId/remove", async (c) => {
+  await drizzle(c.env.DB)
+    .delete(blocks)
+    .where(and(eq(blocks.blockerId, c.get("userId")), eq(blocks.blockedId, c.req.param("userId"))));
+  return c.json({ ok: true });
+});
+
+const Report = z.object({
+  spaceId: z.string().min(1).max(64),
+  userId: z.string().min(1).max(64),
+  messageId: Ulid.optional(),
+  reason: z.enum(["spam", "harassment", "inappropriate", "other"]),
+  note: z.string().trim().max(1000).optional(),
+});
+
+/** Report someone you share a space with, or one of their messages. Stored, and emailed for review. */
+app.post("/reports", async (c) => {
+  const body = Report.safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json(err("invalid", "Say why you're reporting this."), 400);
+  const me = c.get("userId");
+  const { spaceId, userId, messageId, reason, note } = body.data;
+  if (userId === me) return c.json(err("invalid", "You can't report yourself."), 400);
+  if (!(await isMember(c.env, spaceId, me))) return c.json(err("not_found", "Space not found."), 404);
+  if (!(await room(c.env, spaceId).knows(userId, me)))
+    return c.json(err("not_found", "That person isn't in this space."), 404);
+  const db = drizzle(c.env.DB);
+  const today = await db
+    .select({ n: count() })
+    .from(reports)
+    .where(and(eq(reports.reporterId, me), gt(reports.createdAt, new Date(Date.now() - 86_400_000))))
+    .get();
+  if ((today?.n ?? 0) >= 20)
+    return c.json(
+      err("too_many_requests", "You've sent a lot of reports today. We're on them; try again tomorrow."),
+      429,
+    );
+  let reported: string | null = null;
+  if (messageId) {
+    const message = await room(c.env, spaceId).messageFor(messageId, me);
+    if (!message || message.authorId !== userId)
+      return c.json(err("not_found", "That message is gone, so it can't be reported."), 404);
+    reported = message.body;
+  }
+  const exists = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).get();
+  if (!exists) return c.json(err("not_found", "That person isn't on Buildpair any more."), 404);
+  // The same report again is kept, but not emailed again.
+  const repeat = await db
+    .select({ id: reports.id })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.reporterId, me),
+        eq(reports.targetId, userId),
+        messageId ? eq(reports.messageId, messageId) : isNull(reports.messageId),
+      ),
+    )
+    .get();
+  const id = newId();
+  await db.insert(reports).values({
+    id,
+    reporterId: me,
+    targetId: userId,
+    spaceId,
+    messageId: messageId ?? null,
+    body: reported,
+    reason,
+    note: note || null,
+    createdAt: new Date(),
+  });
+  if (c.env.MODERATION_EMAIL && !repeat) {
+    const text = [
+      `Report ${id}`,
+      `Reason: ${reason}`,
+      `Reported person: ${userId}`,
+      `Reported by: ${me}`,
+      `Space: ${spaceId}`,
+      messageId ? `Message ${messageId}:\n${reported}` : "No message, the person as a whole.",
+      note ? `Note from the reporter:\n${note}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    try {
+      await sendEmail(c.env, { to: c.env.MODERATION_EMAIL, subject: `Buildpair report: ${reason}`, text });
+    } catch {
+      console.error("report email failed", { id });
+    }
+  }
+  return c.json({ ok: true }, 201);
 });
 
 app.onError((e, c) => {

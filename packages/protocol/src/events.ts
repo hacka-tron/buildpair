@@ -30,6 +30,11 @@ export const MemberJoined = ev("member.joined", z.object({ member: Member }));
  * them. The room also removes their earlier events from its log, so nothing of theirs is sent again.
  */
 export const MemberErased = ev("member.erased", z.object({ userId: UserId }));
+/**
+ * Someone left the space, or its owner removed them. Their messages stay in the chat and their items stay
+ * as they were (private ones still hidden), but they can't see or change anything here any more.
+ */
+export const MemberRemoved = ev("member.removed", z.object({ userId: UserId }));
 export const ItemCreated = ev("item.created", z.object({ item: Item }));
 export const ItemEdited = ev(
   "item.edited",
@@ -82,6 +87,7 @@ export const SpaceEvent = z.discriminatedUnion("type", [
   SpaceEdited,
   MemberJoined,
   MemberErased,
+  MemberRemoved,
   ItemCreated,
   ItemEdited,
   ItemVisibilitySet,

@@ -72,3 +72,19 @@ export const moveItem = (fromSpaceId: string, itemId: string, toSpaceId: string,
     method: "POST",
     body: { moveId, toSpaceId },
   });
+/** Leave a space (your own ID), or as its owner remove someone. */
+export const removeMember = (spaceId: string, userId: string) =>
+  api<{ ok: true }>(`/spaces/${spaceId}/members/${userId}/remove`, { method: "POST" });
+export const listBlocks = () => api<{ blocks: { userId: string; name: string }[] }>("/me/blocks");
+export const blockPerson = (userId: string) =>
+  api<{ ok: true }>("/me/blocks", { method: "POST", body: { userId } });
+export const unblockPerson = (userId: string) =>
+  api<{ ok: true }>(`/me/blocks/${userId}/remove`, { method: "POST" });
+export type ReportReason = "spam" | "harassment" | "inappropriate" | "other";
+export const sendReport = (report: {
+  spaceId: string;
+  userId: string;
+  messageId?: string;
+  reason: ReportReason;
+  note?: string;
+}) => api<{ ok: true }>("/reports", { method: "POST", body: report });

@@ -34,11 +34,13 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Rate limits (2026-10-16):** sign-in, sign-up and email codes allow 20 tries a minute per network address. Changes (commands over HTTPS or the socket, invites, moves, new spaces) allow 120 a minute per person. Over the limit, people see "Too many tries in a short time. Wait a minute, then try again." IPv6 callers count by their /64. Changes over the limit wait and are sent again, never dropped, and resending changes that already landed is free. Workers rate limiting counts per Cloudflare location, so the limits are approximate.
 
+**Report, block, leave and remove (2026-10-16):** tap a person in People (on phones, tap the people line under the space name) to report, block or, as the owner, remove them. Press and hold a message (or hover on the web) for Report. Blocking hides that person's messages and reactions from you everywhere, and quietly drops their requests to join your spaces. Supporters can leave a space. People who leave or are removed keep their messages in the chat. Their items stay where they were, with private ones still hidden. Reports are stored with a copy of the message, and emailed to `MODERATION_EMAIL` once it's set. Each person can send 20 reports a day, and a repeat of the same report isn't emailed again. Protocol version 7.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
 3. **Build: the Activity tab and the Supporting tab** (milestone 4).
-4. **Build: report and block** (needed before production opens).
+4. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
 ## What exists now
@@ -55,11 +57,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 ## Known gaps (not bugs, just not built yet)
 
-- **App Store requirements before any store release:** report and block, Sign in with Apple (needed once Google sign-in ships on iOS).
+- **App Store requirements before any store release:** Sign in with Apple (needed once Google sign-in ships on iOS).
 - **Universal Links / App Links** need `apple-app-site-association` and `assetlinks.json` served from `buildpair.app/.well-known/` once the Apple Team ID and Android signing key exist.
 - **Join request leftovers (review, minor):** a declined person can ask again with the same link (the owner can stop old links). After "Stop all old links", an existing member opening an old link is told it expired. The name on a request is the one they had when asking. The waiting count updates when the spaces list reloads, not live.
 - **Approve edge cases (review, minor):** if the space can't be reached during "Let in", the person ends up in the spaces list but the room refuses them, and approving again doesn't fix it. Fix: when the invite link finds a member, add them to the room again (it's safe to repeat). Any database error while approving drops the request without a join. A failed account deletion leaves its marker, so approvals for that person are undone until they finish deleting.
 - **Rate limit leftovers (review, minor):** after a "busy", new changes still go out at once, so a change that depends on the waiting one can be refused (pause sending while a retry waits). The "Too many tries" notice stays until another message replaces it. `::ffff:` IPv4-mapped addresses would share one key. Typing notices over the socket aren't limited. Every PR preview shares one auth limit. There's no limit per account on password guesses from many addresses (codes are capped at 5 guesses each).
+- **Report and block leftovers (review, minor):** people who left show as "Someone" on their old messages (the room doesn't keep former members' names). You can block any account ID, not only people you share a space with. Removing a user ID that isn't in the room leaves a harmless record (and an unknown ID answers "something failed" instead of "not found"). The 20-a-day report cap can be passed by a few with many requests at once. Narrow races: removing someone while their approval is still finishing can leave a member the room knows but the list doesn't (removing again fixes it), and a block landing at the same moment as their request can miss that request.
 - **Owners only find out about join requests when they open the app.** The count shows on the Spaces tab and in the space, but nothing notifies them. Activity and push will.
 - **The app doesn't use the UserHub inbox socket yet**, so spaces you don't have open don't update live (they catch up when opened).
 - **SpaceRoom rebuilds its state by replaying the whole log on wake.** Add snapshots before spaces get long histories.
@@ -70,7 +73,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Production deploys go straight to 100%** with a health check and one-command rollback; add gradual rollout after confirming it works with Durable Objects on staging.
 - **Email goes through Resend**; Cloudflare Email Sending (in beta) can replace it by changing `EMAIL_PROVIDER`.
 - **Repository license:** none yet (all rights reserved).
-- **Before production opens to the public:** report and block. Until then, release only the landing page publicly if anything.
+- **Before production opens to the public:** a moderation inbox (`MODERATION_EMAIL`) and a way to receive mail at `hello@buildpair.app`, which App Store review wants as a contact. Until then, release only the landing page publicly if anything.
 - **Staging is open to anyone.** Anyone can make an account there (one email each) or request password-reset codes, which spends the Resend quota and can hurt the domain's email reputation. The allowlist is built: set the `ALLOWED_EMAILS` variable on the staging and preview environments and redeploy to turn it on. Left off for now by the owner's choice (2026-10-15). Sign-in and codes are now rate limited per address. Still to do: `noindex` on staging pages.
 - **`hello@buildpair.app` only sends.** Nothing receives replies to it yet. Owner: turn on Cloudflare Email Routing for `buildpair.app` and forward `hello@` to a personal inbox (check the SPF record still includes Resend after).
 - **Plain-words adding reads full weekday names and "today" anywhere** ("watch Friday Night Lights", "watch Today show" get a date). The add box shows what it read and one tap keeps the words as typed. Short names (fri, sat, sun) only count after on, next, this, by or due, or right before a time. "daily", "weekly" and "weekends" only count as the last words. Numeric dates need on, by, due or before ("on 10/20"). "At 7:30" stays in the words (morning or evening is unclear). A time with no day means today.
@@ -112,6 +115,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - Production database name stays `buildpair-production` (confirmed 2026-10-15).
 - Staging stays open for now; the email allowlist is built but off (2026-10-15).
 - Making an item private hides its past chat lines from the others too, and sharing it again brings them back (2026-10-16, Claude's call, reversible).
+- People who leave or are removed keep their messages and items in the space. Their private items stay hidden. Blocks are one-way and silent (2026-10-16, Claude's call, reversible).
 - A declined person may ask again; stopping old links is the owner's way to end it (2026-10-16, Claude's call, reversible).
 - Rate limits: 20 auth tries a minute per address, 120 changes a minute per person (2026-10-16, Claude's call, reversible in wrangler.jsonc).
 - Any member can make an invite link, but only the owner lets people in (2026-10-16, Claude's call, reversible).

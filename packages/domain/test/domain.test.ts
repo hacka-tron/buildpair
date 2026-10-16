@@ -6,6 +6,7 @@ import {
   decide,
   decideArrive,
   decideMoveOut,
+  decideRemove,
   emptySpace,
   leavesWith,
   newId,
@@ -678,5 +679,48 @@ describe("moving an item to another space", () => {
     if (!privateOut.ok) throw new Error(privateOut.reason);
     const gone = applyEvents(hidden, sequence([privateOut.event], hidden.seq));
     expect(gone.messages.some((m) => m.itemId === stepId)).toBe(false);
+  });
+});
+
+describe("leaving and removing people", () => {
+  it("lets a supporter leave and the owner remove one, keeping what they said and hiding their private items", () => {
+    const itemId = newId();
+    const privateId = newId();
+    let s = run(
+      space(),
+      cmd({ type: "item.create", payload: { itemId, kind: "todo", title: "Shared one" } }),
+      "jordan",
+    ).state;
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: privateId, kind: "todo", title: "Mine", visibility: "owner" },
+      }),
+      "jordan",
+    ).state;
+    s = run(s, cmd({ type: "message.send", payload: { messageId: newId(), body: "hello" } }), "jordan").state;
+    const out = decideRemove(s, "jordan", "maya", AT);
+    if (!out.ok) throw new Error(out.reason);
+    const after = applyEvents(s, sequence(out.events, s.seq));
+    expect(after.members.jordan).toBeUndefined();
+    expect(after.messages.map((m) => m.body)).toEqual(["hello"]);
+    expect(viewFor(after, "maya").items[privateId]).toBeUndefined();
+    expect(viewFor(after, "maya").items[itemId]).toBeDefined();
+    // Once out, they can't change anything.
+    expect(
+      decide(after, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-10" } }), "jordan"),
+    ).toMatchObject({
+      ok: false,
+    });
+    expect(decideRemove(s, "jordan", "jordan", AT)).toMatchObject({ ok: true });
+  });
+
+  it("won't let a supporter remove others or anyone remove the owner", () => {
+    const s = space();
+    expect(decideRemove(s, "maya", "jordan", AT)).toMatchObject({ ok: false });
+    expect(decideRemove(s, "maya", "maya", AT)).toMatchObject({ ok: false });
+    expect(decideRemove(s, "jordan", "stranger", AT)).toMatchObject({ ok: false });
+    expect(decideRemove(s, "nobody", "maya", AT)).toEqual({ ok: true, events: [] });
   });
 });

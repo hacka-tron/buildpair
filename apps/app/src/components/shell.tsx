@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { authClient } from "../lib/auth";
+import { resetBlocks } from "../lib/blocks";
 import { resetSpaces, useSpaces } from "../lib/spaces";
 import { colors, space, WIDE } from "../lib/theme";
 import { stopAllSyncs } from "../lib/use-space";
@@ -20,6 +21,7 @@ export function useWide() {
 export async function signOut() {
   stopAllSyncs();
   resetSpaces();
+  resetBlocks();
   await authClient.signOut();
 }
 

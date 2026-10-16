@@ -132,3 +132,51 @@ export const accountErasures = sqliteTable("account_erasures", {
     .references(() => user.id, { onDelete: "cascade" }),
   startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+/** People someone has blocked: their messages and reactions are hidden from the blocker, and their join requests are dropped. */
+export const blocks = sqliteTable(
+  "blocks",
+  {
+    blockerId: text("blocker_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    blockedId: text("blocked_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.blockerId, t.blockedId] })],
+);
+
+/** Reports of a person or one of their messages, for review. Go when either account is deleted. */
+export const reports = sqliteTable("reports", {
+  id: text("id").primaryKey(),
+  reporterId: text("reporter_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  targetId: text("target_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  spaceId: text("space_id").notNull(),
+  messageId: text("message_id"),
+  /** The reported message as it was, so it can be reviewed even if it changes. */
+  body: text("body"),
+  reason: text("reason", { enum: ["spam", "harassment", "inappropriate", "other"] }).notNull(),
+  note: text("note"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/** Spaces someone left or was removed from. Deleting their account still reaches those rooms. */
+export const pastMemberships = sqliteTable(
+  "past_memberships",
+  {
+    spaceId: text("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    leftAt: integer("left_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.spaceId, t.userId] })],
+);
