@@ -44,10 +44,14 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Nudges (2026-10-16):** in a space whose owner has been quiet for a week, supporters see "Alex has been quiet for 9 days. Send a nudge?" above the message box, with three suggestions built from the owner's last skip reason and what they're working on. Tapping one fills the box to edit. The strip can be hidden. Checked in the browser.
 
+**Weekly reflections (2026-10-16):** from Friday to Monday, Today asks owners "How did this week go?" for each space where they have something shared and open, unless they reflected there in the last six days. Three short prompts (went well, got in the way, next week's focus) post a reflection card to the chat for supporters to react and reply. "Not now" hides it until the app reloads. Protocol version 8 (new message kind). Checked in the browser.
+
+**Milestone 4 (people) is done.**
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: weekly reflections** (the last of milestone 4).
+3. **Build: milestone 6 basics that production needs:** privacy policy and terms pages, then the desktop extras (Cmd+K, Upcoming week view). Milestone 5 (Discover) after.
 4. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
@@ -127,6 +131,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - People who leave or are removed keep their messages and items in the space. Their private items stay hidden. Blocks are one-way and silent (2026-10-16, Claude's call, reversible).
 - A declined person may ask again; stopping old links is the owner's way to end it (2026-10-16, Claude's call, reversible).
 - The Spaces tab lists only your own spaces; spaces others share are on Supporting. A space counts as quiet after 7 days with nothing from its owner (2026-10-16, Claude's call, reversible).
+- Reflections are prompted Friday to Monday and post to the chat as a card; "Not now" isn't remembered across reloads (2026-10-16, Claude's call, reversible).
 - Rate limits: 20 auth tries a minute per address, 120 changes a minute per person (2026-10-16, Claude's call, reversible in wrangler.jsonc).
 - Any member can make an invite link, but only the owner lets people in (2026-10-16, Claude's call, reversible).
 - Moving an item leaves its chat lines in the old chat if it was shared, and takes nothing with it into the new chat (2026-10-16, Claude's call, reversible).

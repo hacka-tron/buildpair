@@ -163,6 +163,15 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
     case "message.send":
       if (state.messages.some((m) => m.id === command.payload.messageId)) return { ok: true, events: [] };
       return { ok: true, events: [chat("text", command.payload.body, null, command.payload.messageId)] };
+    case "reflection.post": {
+      const { messageId, wins, blockers, next } = command.payload;
+      if (state.messages.some((m) => m.id === messageId)) return { ok: true, events: [] };
+      if (!wins && !blockers && !next) return reject("Write at least one part of your reflection.");
+      return {
+        ok: true,
+        events: [chat("reflection", JSON.stringify({ wins, blockers, next }), null, messageId)],
+      };
+    }
     case "reaction.toggle": {
       const { messageId, emoji } = command.payload;
       const message = state.messages.find((m) => m.id === messageId);
