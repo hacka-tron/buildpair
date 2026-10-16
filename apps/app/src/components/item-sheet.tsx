@@ -1,18 +1,20 @@
 import { newId, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item } from "@buildpair/protocol";
 import type { Change } from "@buildpair/sync";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
+import { moveItem } from "../lib/api";
 import { dueLabel } from "../lib/format";
+import { useSpaces } from "../lib/spaces";
 import { colors, radius, space } from "../lib/theme";
 import { ItemRow, Sheet, Tag } from "./kit";
 import { type Schedule, SchedulePanel } from "./schedule";
 import { Button, ErrorText } from "./ui";
 
-type Mode = null | "skip" | "wont" | "update" | "edit";
+type Mode = null | "skip" | "wont" | "update" | "edit" | "move";
 
 const PROMPTS: Record<
-  Exclude<Mode, null | "edit">,
+  Exclude<Mode, null | "edit" | "move">,
   { placeholder: string; confirm: string; optional: boolean }
 > = {
   skip: { placeholder: "Add a reason (optional)", confirm: "Skip today", optional: true },
@@ -23,6 +25,8 @@ const PROMPTS: Record<
 /** What an item is, what's under it, and what you can do with it. Key it by item ID so it starts fresh. */
 export function ItemSheet(props: {
   item: Item | null;
+  /** The space the item is in. */
+  spaceId: string;
   view: SpaceState | undefined;
   userId: string;
   today: string;
@@ -36,6 +40,10 @@ export function ItemSheet(props: {
   const [text, setText] = useState("");
   const [step, setStep] = useState("");
   const [error, setError] = useState("");
+  const [moving, setMoving] = useState(false);
+  // One ID per sheet, so tapping again after a failure finishes the same move instead of starting another.
+  const moveId = useRef(newId());
+  const { spaces } = useSpaces();
 
   if (!item) return null;
 
@@ -64,6 +72,46 @@ export function ItemSheet(props: {
     if (mode === "update" && reason)
       run({ type: "item.update", payload: { itemId: live.id, body: reason } }, props.onClose);
   };
+
+  if (mode === "move") {
+    const others = (spaces ?? []).filter((sp) => sp.id !== props.spaceId);
+    const moveTo = async (toSpaceId: string) => {
+      setMoving(true);
+      setError("");
+      try {
+        await moveItem(props.spaceId, live.id, toSpaceId, moveId.current);
+        props.onClose();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Couldn't move it. Try again.");
+        setMoving(false);
+      }
+    };
+    return (
+      <Sheet visible onClose={props.onClose} title="Move to" wide={props.wide}>
+        <Text style={{ fontSize: 13, color: colors.sub }}>
+          {live.kind === "goal" ? "Its steps go with it. " : ""}
+          {shared ? "Its chat lines stay here." : "It stays private there too."}
+        </Text>
+        {others.length === 0 ? (
+          <Text style={{ fontSize: 14, color: colors.faint }}>
+            Make another space first, then move it there.
+          </Text>
+        ) : (
+          others.map((sp) => (
+            <Button
+              key={sp.id}
+              label={sp.name}
+              kind="secondary"
+              disabled={moving}
+              onPress={() => moveTo(sp.id)}
+            />
+          ))
+        )}
+        <ErrorText>{error}</ErrorText>
+        <Button label="Back" kind="secondary" disabled={moving} onPress={() => setMode(null)} />
+      </Sheet>
+    );
+  }
 
   if (mode === "edit")
     return (
@@ -241,6 +289,21 @@ export function ItemSheet(props: {
               </View>
             ) : null}
           </View>
+          {!live.parentId ? (
+            <Pressable
+              onPress={() => {
+                setError("");
+                setMode("move");
+              }}
+              accessibilityRole="button"
+              hitSlop={8}
+              style={{ alignSelf: "center", paddingVertical: space.sm }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.blue }}>
+                Move to another space
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : (
         <Text style={{ fontSize: 13, color: colors.faint }}>

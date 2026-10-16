@@ -4,7 +4,10 @@ import {
   applyEvents,
   canSee,
   decide,
+  decideArrive,
+  decideMoveOut,
   emptySpace,
+  leavesWith,
   newId,
   normalizeSpace,
   type SpaceState,
@@ -535,5 +538,100 @@ describe("making an item private or shared after creating it", () => {
       cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } }),
     );
     expect(r.state.items[theirs]?.visibility).toBe("space");
+  });
+});
+
+describe("moving an item to another space", () => {
+  const base = { commandId: newId(), at: AT };
+  function goal(visibility: "space" | "owner" = "space") {
+    const goalId = newId();
+    const stepId = newId();
+    let s = run(
+      space(),
+      cmd({ type: "item.create", payload: { itemId: goalId, kind: "goal", title: "Launch", visibility } }),
+    ).state;
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: stepId, kind: "todo", title: "Ship", parentId: goalId },
+      }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: stepId, on: "2026-10-10" } })).state;
+    return { s, goalId, stepId };
+  }
+
+  it("takes a goal with its steps and their history, and drops them here", () => {
+    const { s, goalId, stepId } = goal();
+    const out = decideMoveOut(s, goalId, "maya", base);
+    if (!out.ok) throw new Error(out.reason);
+    expect(out.items.map((i) => i.id)).toEqual([goalId, stepId]);
+    const after = applyEvents(s, sequence([out.event], s.seq));
+    expect(after.items[goalId]).toBeUndefined();
+    expect(after.items[stepId]).toBeUndefined();
+    expect(canSee(after, "jordan", sequence([out.event], s.seq)[0]!)).toBe(true);
+
+    const there = space();
+    const arrive = decideArrive(there, out.items, "maya", base);
+    if (!arrive.ok) throw new Error(arrive.reason);
+    const landed = applyEvents(there, sequence(arrive.events, there.seq));
+    expect(landed.items[stepId]).toMatchObject({ status: "done", doneOn: ["2026-10-10"], parentId: goalId });
+    // Arriving again (a retry after a move stopped partway) adds nothing.
+    expect(decideArrive(landed, out.items, "maya", base)).toEqual({ ok: true, events: [] });
+  });
+
+  it("keeps a private item's move and arrival to its owner", () => {
+    const { s, goalId } = goal("owner");
+    const out = decideMoveOut(s, goalId, "maya", base);
+    if (!out.ok) throw new Error(out.reason);
+    const moved = sequence([out.event], s.seq)[0]!;
+    expect(canSee(applyEvents(s, [moved]), "jordan", moved)).toBe(false);
+    const there = space();
+    const arrive = decideArrive(there, out.items, "maya", base);
+    if (!arrive.ok) throw new Error(arrive.reason);
+    const [arrived] = sequence(arrive.events, there.seq);
+    const landed = applyEvents(there, [arrived!]);
+    expect(canSee(landed, "jordan", arrived!)).toBe(false);
+    expect(canSee(landed, "maya", arrived!)).toBe(true);
+  });
+
+  it("refuses other people's items, steps, non-members and forged owners", () => {
+    const { s, goalId, stepId } = goal();
+    expect(decideMoveOut(s, goalId, "jordan", base)).toMatchObject({ ok: false });
+    expect(decideMoveOut(s, stepId, "maya", base)).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining("goal"),
+    });
+    expect(decideMoveOut(s, goalId, "stranger", base)).toMatchObject({ ok: false });
+    const out = decideMoveOut(s, goalId, "maya", base);
+    if (!out.ok) throw new Error(out.reason);
+    expect(decideArrive(space(), out.items, "jordan", base)).toMatchObject({ ok: false });
+    expect(decideArrive(space(), out.items, "stranger", base)).toMatchObject({ ok: false });
+  });
+
+  it("picks which earlier events leave with the items", () => {
+    const { s, goalId, stepId } = goal();
+    const ids = new Set([goalId, stepId]);
+    const line = s.messages.at(-1)!;
+    const posted = {
+      seq: line.seq,
+      type: "message.posted" as const,
+      actorId: "maya",
+      commandId: null,
+      at: AT,
+      payload: { message: line },
+    };
+    expect(leavesWith(posted, ids, true)).toBe(false);
+    expect(leavesWith(posted, ids, false)).toBe(true);
+    const done = {
+      seq: 9,
+      type: "item.completed" as const,
+      actorId: "maya",
+      commandId: null,
+      at: AT,
+      payload: { itemId: stepId, on: "2026-10-10" },
+    };
+    expect(leavesWith(done, ids, true)).toBe(true);
+    expect(leavesWith(done, new Set([newId()]), true)).toBe(false);
   });
 });

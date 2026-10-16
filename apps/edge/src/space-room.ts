@@ -1,8 +1,19 @@
 import { DurableObject } from "cloudflare:workers";
-import { applyEvents, canSee, decide, emptySpace, type SpaceState, sequence } from "@buildpair/domain";
+import {
+  applyEvents,
+  canSee,
+  decide,
+  decideArrive,
+  decideMoveOut,
+  emptySpace,
+  leavesWith,
+  type SpaceState,
+  sequence,
+} from "@buildpair/domain";
 import {
   ClientMessage,
   Command,
+  type Item,
   type Member,
   MIN_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
@@ -95,32 +106,39 @@ export class SpaceRoom extends DurableObject<Env> {
   /** Current state, rebuilt from the log after the room wakes up. */
   private load(): SpaceState {
     if (!this.state) {
-      const rows = this.ctx.storage.sql
-        .exec<{
-          seq: number;
-          type: string;
-          actor_id: string;
-          command_id: string | null;
-          at: string;
-          payload: string;
-        }>("SELECT * FROM events ORDER BY seq")
-        .toArray();
-      this.state = applyEvents(
-        emptySpace(),
-        rows.map(
-          (r) =>
-            ({
-              seq: r.seq,
-              type: r.type,
-              actorId: r.actor_id,
-              commandId: r.command_id,
-              at: r.at,
-              payload: JSON.parse(r.payload),
-            }) as SpaceEvent,
-        ),
-      );
+      this.state = applyEvents(emptySpace(), this.readLog());
     }
     return this.state;
+  }
+
+  private readLog(afterSeq = 0, limit = -1): SpaceEvent[] {
+    return this.ctx.storage.sql
+      .exec<{
+        seq: number;
+        type: string;
+        actor_id: string;
+        command_id: string | null;
+        at: string;
+        payload: string;
+      }>("SELECT * FROM events WHERE seq > ? ORDER BY seq LIMIT ?", afterSeq, limit)
+      .toArray()
+      .map(
+        (r) =>
+          ({
+            seq: r.seq,
+            type: r.type,
+            actorId: r.actor_id,
+            commandId: r.command_id,
+            at: r.at,
+            payload: JSON.parse(r.payload),
+          }) as SpaceEvent,
+      );
+  }
+
+  private commandSeq(id: string): number | undefined {
+    return this.ctx.storage.sql
+      .exec<{ seq: number }>("SELECT seq FROM commands WHERE id = ?", id)
+      .toArray()[0]?.seq;
   }
 
   private commit(unsequenced: UnsequencedEvent[], commandId?: string): SpaceEvent[] {
@@ -266,10 +284,8 @@ export class SpaceRoom extends DurableObject<Env> {
     if (!parsed.success) return { ok: false, reason: "That change isn't valid." };
     const command = parsed.data;
     // A retried command (same ID) returns its original result instead of applying twice.
-    const seen = this.ctx.storage.sql
-      .exec<{ seq: number }>("SELECT seq FROM commands WHERE id = ?", command.id)
-      .toArray()[0];
-    if (seen) return { ok: true, seq: seen.seq };
+    const seen = this.commandSeq(command.id);
+    if (seen !== undefined) return { ok: true, seq: seen };
     const decision = decide(this.load(), command, actorId);
     if (!decision.ok) return decision;
     const events = this.commit(decision.events, command.id);
@@ -280,6 +296,65 @@ export class SpaceRoom extends DurableObject<Env> {
     return { ok: true, seq: this.load().seq };
   }
 
+  // --- Moving an item to another space (the Worker runs these in order; each is safe to repeat) ---
+
+  /** What would leave with this item, or why it can't move. `done` means this move already finished here. */
+  async prepareMove(
+    moveId: string,
+    itemId: string,
+    actorId: string,
+  ): Promise<{ ok: true; done: boolean; items: Item[] } | { ok: false; reason: string }> {
+    if (this.commandSeq(moveId) !== undefined) return { ok: true, done: true, items: [] };
+    const d = decideMoveOut(this.load(), itemId, actorId, {
+      commandId: moveId,
+      at: new Date().toISOString(),
+    });
+    return d.ok ? { ok: true, done: false, items: d.items } : d;
+  }
+
+  /** The items arrive here. */
+  async receiveItems(moveId: string, items: Item[], actorId: string): Promise<CommandResult> {
+    const seen = this.commandSeq(moveId);
+    if (seen !== undefined) return { ok: true, seq: seen };
+    const d = decideArrive(this.load(), items, actorId, { commandId: moveId, at: new Date().toISOString() });
+    if (!d.ok) return d;
+    const events = this.commit(d.events, moveId);
+    this.publish(events);
+    return { ok: true, seq: this.load().seq };
+  }
+
+  /**
+   * The items leave: everyone's devices drop them, and their earlier events are deleted from this log so
+   * nothing about them is sent from here again. Chat lines about shared items stay; lines about private
+   * ones go, with their reactions.
+   */
+  async moveOut(moveId: string, itemId: string, actorId: string): Promise<CommandResult> {
+    const seen = this.commandSeq(moveId);
+    if (seen !== undefined) return { ok: true, seq: seen };
+    const d = decideMoveOut(this.load(), itemId, actorId, {
+      commandId: moveId,
+      at: new Date().toISOString(),
+    });
+    if (!d.ok) return d;
+    const [moved] = this.commit([d.event], moveId);
+    const ids = new Set(d.items.map((i) => i.id));
+    const keepLines = d.items[0]!.visibility === "space";
+    const log = this.readLog().filter((e) => e.seq < moved!.seq);
+    const gone = log.filter((e) => leavesWith(e, ids, keepLines));
+    const goneLines = new Set(
+      gone.flatMap((e) => (e.type === "message.posted" ? [e.payload.message.id] : [])),
+    );
+    for (const e of log)
+      if (e.type === "reaction.toggled" && goneLines.has(e.payload.messageId)) gone.push(e);
+    const sql = this.ctx.storage.sql;
+    this.ctx.storage.transactionSync(() => {
+      for (const e of gone) sql.exec("DELETE FROM events WHERE seq = ?", e.seq);
+    });
+    this.state = null;
+    this.publish([moved!]);
+    return { ok: true, seq: this.load().seq };
+  }
+
   /** Everything after `afterSeq` that this person may see. */
   async eventsAfter(
     afterSeq: number,
@@ -287,28 +362,8 @@ export class SpaceRoom extends DurableObject<Env> {
   ): Promise<{ after: number; upTo: number; events: SpaceEvent[] } | null> {
     const state = this.load();
     if (!state.members[userId]) return null;
-    const rows = this.ctx.storage.sql
-      .exec<{
-        seq: number;
-        type: string;
-        actor_id: string;
-        command_id: string | null;
-        at: string;
-        payload: string;
-      }>("SELECT * FROM events WHERE seq > ? ORDER BY seq LIMIT ?", afterSeq, MAX_EVENTS_PER_BATCH)
-      .toArray();
-    const events = rows.map(
-      (r) =>
-        ({
-          seq: r.seq,
-          type: r.type,
-          actorId: r.actor_id,
-          commandId: r.command_id,
-          at: r.at,
-          payload: JSON.parse(r.payload),
-        }) as SpaceEvent,
-    );
-    const upTo = rows.length === MAX_EVENTS_PER_BATCH ? rows.at(-1)!.seq : state.seq;
+    const events = this.readLog(afterSeq, MAX_EVENTS_PER_BATCH);
+    const upTo = events.length === MAX_EVENTS_PER_BATCH ? events.at(-1)!.seq : state.seq;
     return { after: afterSeq, upTo, events: events.filter((e) => canSee(state, userId, e)) };
   }
 

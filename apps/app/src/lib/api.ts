@@ -50,3 +50,9 @@ export const createInvite = (spaceId: string) =>
   api<{ token: string; url: string }>(`/spaces/${spaceId}/invites`, { method: "POST" });
 export const acceptInvite = (token: string) =>
   api<{ spaceId: string }>(`/invites/${token}/accept`, { method: "POST" });
+/** Move an item (a goal with its steps) to another of your spaces. Reuse `moveId` when retrying. */
+export const moveItem = (fromSpaceId: string, itemId: string, toSpaceId: string, moveId: string) =>
+  api<{ ok: true }>(`/spaces/${fromSpaceId}/items/${itemId}/move`, {
+    method: "POST",
+    body: { moveId, toSpaceId },
+  });

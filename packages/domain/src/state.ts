@@ -88,6 +88,17 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
       if (Object.keys(reactions).length) next.reactions = { ...state.reactions, ...reactions };
       break;
     }
+    case "item.moved": {
+      const gone = new Set(event.payload.itemIds);
+      next.items = Object.fromEntries(Object.entries(state.items).filter(([id]) => !gone.has(id)));
+      break;
+    }
+    case "item.arrived": {
+      const items = { ...state.items };
+      for (const item of event.payload.items) items[item.id] = normalizeItem(item);
+      next.items = items;
+      break;
+    }
     case "item.completed": {
       const item = state.items[event.payload.itemId];
       if (!item) break;
