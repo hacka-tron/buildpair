@@ -458,9 +458,14 @@ app.post("/invites/:token/accept", async (c) => {
     .where(eq(invites.token, c.req.param("token")))
     .get();
   const userId = c.get("userId");
-  // Members go straight in, even with an old link.
-  if (invite && (await isMember(c.env, invite.spaceId, userId)))
+  // Members go straight in, even with an old link. A supporter let in while the space couldn't be
+  // reached is added to it again here (safe to repeat), so opening the link fixes it.
+  const role = invite ? await roleIn(c.env, invite.spaceId, userId) : null;
+  if (invite && role) {
+    if (role === "supporter")
+      await joinAsSupporter(c.env, invite.spaceId, userId, c.get("userName")).catch(() => false);
     return c.json({ spaceId: invite.spaceId, spaceName: invite.name, status: "member" });
+  }
   if (!invite || invite.expiresAt.getTime() < Date.now()) {
     return c.json(err("invite_expired", "This invite link has expired. Ask for a new one."), 410);
   }
