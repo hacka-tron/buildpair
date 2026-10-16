@@ -111,4 +111,26 @@ describe("joining by request", () => {
     expect(answers.map((a) => a.status)).toEqual([200, 200]);
     expect((await jordan.get(`/spaces/${spaceId}/events?after=0`)).status).toBe(200);
   });
+
+  it("puts a member back in the space when they open the link again", async () => {
+    const { maya, spaceId, token } = await setup();
+    const jordan = await signIn(`jordan-${newId()}@example.com`);
+    const jordanId = await idOf(jordan);
+    const { env } = await import("cloudflare:test");
+    // Let in on the list, but the space never heard (it couldn't be reached at the time).
+    await env.DB.prepare(
+      "INSERT INTO memberships (space_id, user_id, role, joined_at) VALUES (?, ?, 'supporter', ?)",
+    )
+      .bind(spaceId, jordanId, Date.now())
+      .run();
+    expect((await jordan.get(`/spaces/${spaceId}/events?after=0`)).status).toBe(404);
+    expect(await (await jordan.post(`/invites/${token}/accept`)).json()).toMatchObject({ status: "member" });
+    expect((await jordan.get(`/spaces/${spaceId}/events?after=0`)).status).toBe(200);
+    // Opening it again adds nobody twice.
+    await jordan.post(`/invites/${token}/accept`);
+    const { events } = (await (await maya.get(`/spaces/${spaceId}/events?after=0`)).json()) as {
+      events: { type: string; actorId: string }[];
+    };
+    expect(events.filter((e) => e.type === "member.joined" && e.actorId === jordanId)).toHaveLength(1);
+  });
 });
