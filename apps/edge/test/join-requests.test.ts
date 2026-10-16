@@ -77,4 +77,27 @@ describe("joining by request", () => {
     expect((await jordan.post("/api/auth/delete-user", { password: PASSWORD })).status).toBe(200);
     expect(await requests(maya, spaceId)).toEqual([]);
   });
+
+  it("undoes a join when the request disappears while it's being approved", async () => {
+    const { maya, spaceId, token } = await setup();
+    const jordan = await signIn(`jordan-${newId()}@example.com`);
+    await jordan.post(`/invites/${token}/accept`);
+    const jordanId = await idOf(jordan);
+    // Stand in for an account deletion that removes the request between the read and the delete.
+    const { env } = await import("cloudflare:test");
+    // A trigger removes the request the moment the membership is written.
+    await env.DB.prepare(
+      "CREATE TRIGGER IF NOT EXISTS vanish AFTER INSERT ON memberships WHEN NEW.role = 'supporter' BEGIN DELETE FROM join_requests WHERE user_id = NEW.user_id; END",
+    ).run();
+    try {
+      expect((await maya.post(`/spaces/${spaceId}/requests/${jordanId}/approve`)).status).toBe(200);
+    } finally {
+      await env.DB.prepare("DROP TRIGGER IF EXISTS vanish").run();
+    }
+    expect((await jordan.get(`/spaces/${spaceId}/events?after=0`)).status).toBe(404);
+    const { events } = (await (await maya.get(`/spaces/${spaceId}/events?after=0`)).json()) as {
+      events: { type: string; actorId: string }[];
+    };
+    expect(events.some((e) => e.type === "member.joined" && e.actorId === jordanId)).toBe(false);
+  });
 });

@@ -400,12 +400,13 @@ app.post("/invites/:token/accept", async (c) => {
     .innerJoin(spaces, eq(spaces.id, invites.spaceId))
     .where(eq(invites.token, c.req.param("token")))
     .get();
+  const userId = c.get("userId");
+  // Members go straight in, even with an old link.
+  if (invite && (await isMember(c.env, invite.spaceId, userId)))
+    return c.json({ spaceId: invite.spaceId, spaceName: invite.name, status: "member" });
   if (!invite || invite.expiresAt.getTime() < Date.now()) {
     return c.json(err("invite_expired", "This invite link has expired. Ask for a new one."), 410);
   }
-  const userId = c.get("userId");
-  if (await isMember(c.env, invite.spaceId, userId))
-    return c.json({ spaceId: invite.spaceId, spaceName: invite.name, status: "member" });
   await db
     .insert(joinRequests)
     .values({ spaceId: invite.spaceId, userId, name: c.get("userName"), createdAt: new Date() })
@@ -443,7 +444,15 @@ app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
       .onConflictDoNothing();
     await room(c.env, spaceId).addMember({ userId: request.userId, role: "supporter", name: request.name });
   }
-  await db.delete(joinRequests).where(who);
+  const answered = await db.delete(joinRequests).where(who).returning({ userId: joinRequests.userId });
+  if (c.req.param("answer") === "approve" && answered.length === 0) {
+    // The request vanished while we let them in: they deleted their account (which removes requests
+    // first). Undo the join so nothing of theirs stays in the space.
+    await room(c.env, spaceId).eraseMember(request.userId);
+    await db
+      .delete(memberships)
+      .where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, request.userId)));
+  }
   return c.json({ ok: true });
 });
 

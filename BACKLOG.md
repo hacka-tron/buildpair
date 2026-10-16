@@ -55,6 +55,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 - **App Store requirements before any store release:** report and block, Sign in with Apple (needed once Google sign-in ships on iOS).
 - **Universal Links / App Links** need `apple-app-site-association` and `assetlinks.json` served from `buildpair.app/.well-known/` once the Apple Team ID and Android signing key exist.
+- **Join request leftovers (review, minor):** a declined person can ask again with the same link (the owner can stop old links). After "Stop all old links", an existing member opening an old link is told it expired. The name on a request is the one they had when asking. The waiting count updates when the spaces list reloads, not live.
 - **Owners only find out about join requests when they open the app.** The count shows on the Spaces tab and in the space, but nothing notifies them. Activity and push will.
 - **The app doesn't use the UserHub inbox socket yet**, so spaces you don't have open don't update live (they catch up when opened).
 - **SpaceRoom rebuilds its state by replaying the whole log on wake.** Add snapshots before spaces get long histories.
@@ -109,6 +110,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - Production database name stays `buildpair-production` (confirmed 2026-10-15).
 - Staging stays open for now; the email allowlist is built but off (2026-10-15).
 - Making an item private hides its past chat lines from the others too, and sharing it again brings them back (2026-10-16, Claude's call, reversible).
+- A declined person may ask again; stopping old links is the owner's way to end it (2026-10-16, Claude's call, reversible).
 - Any member can make an invite link, but only the owner lets people in (2026-10-16, Claude's call, reversible).
 - Moving an item leaves its chat lines in the old chat if it was shared, and takes nothing with it into the new chat (2026-10-16, Claude's call, reversible).
 - Steps follow their goal's visibility and go one level deep, under your own goal (2026-10-16, Claude's call, reversible).
