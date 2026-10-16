@@ -26,7 +26,9 @@ export default function Spaces() {
   }, [params.new]);
 
   // Most recent activity first, like a chat list.
+  // Spaces others share with you live on the Supporting tab.
   const rows = (spaces ?? [])
+    .filter((s) => s.role === "owner")
     .map((s) => {
       const view = views[s.id];
       const items = Object.values(view?.items ?? {}).filter((i) => !i.parentId);
@@ -101,7 +103,6 @@ export default function Spaces() {
                 >
                   {s.name}
                 </Text>
-                {s.role === "supporter" ? <Tag tone="blue">Supporting</Tag> : null}
                 {s.requests ? (
                   <Tag tone="blue">{`${s.requests} ${s.requests === 1 ? "request" : "requests"}`}</Tag>
                 ) : null}

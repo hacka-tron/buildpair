@@ -53,6 +53,7 @@ export default function Today() {
   const { data: session } = authClient.useSession();
   const userId = session?.user.id ?? "";
   const { spaces, error } = useSpaces();
+  const waiting = (spaces ?? []).reduce((n, s) => n + (s.role === "owner" ? (s.requests ?? 0) : 0), 0);
   const ids = useMemo(() => (spaces ?? []).map((s) => s.id), [spaces]);
   const views = useSpaceViews(ids, userId);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -125,14 +126,37 @@ export default function Today() {
                 <Button label="Add" onPress={() => setAdding(true)} />
               </View>
             ) : (
-              <Pressable
-                onPress={() => router.push("/profile")}
-                accessibilityRole="link"
-                accessibilityLabel="Your profile"
-                hitSlop={8}
-              >
-                <Avatar id={userId || "me"} name={session?.user.name || "?"} size={34} />
-              </Pressable>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+                <Pressable
+                  onPress={() => router.push("/activity")}
+                  accessibilityRole="link"
+                  accessibilityLabel={waiting ? `Activity, ${waiting} asking to join` : "Activity"}
+                  hitSlop={8}
+                >
+                  <Icon name="bell" size={22} color={colors.ink} />
+                  {waiting ? (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        right: -2,
+                        width: 9,
+                        height: 9,
+                        borderRadius: 5,
+                        backgroundColor: colors.blue,
+                      }}
+                    />
+                  ) : null}
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push("/profile")}
+                  accessibilityRole="link"
+                  accessibilityLabel="Your profile"
+                  hitSlop={8}
+                >
+                  <Avatar id={userId || "me"} name={session?.user.name || "?"} size={34} />
+                </Pressable>
+              </View>
             )
           }
         />
