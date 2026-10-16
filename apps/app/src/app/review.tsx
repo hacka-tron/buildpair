@@ -79,7 +79,7 @@ export default function Review() {
           textAlignVertical: "top",
           color: colors.ink,
           outlineColor: colors.royal,
-          backgroundColor: "#fff",
+          backgroundColor: colors.card,
         }}
       />
     </View>

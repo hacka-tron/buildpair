@@ -138,7 +138,7 @@ export function SchedulePanel(props: {
                   height: 20,
                   borderRadius: 5,
                   borderWidth: value.deadline ? 0 : 1.5,
-                  borderColor: "#B4BAC8",
+                  borderColor: colors.control,
                   backgroundColor: value.deadline ? colors.blue : "transparent",
                   alignItems: "center",
                   justifyContent: "center",
@@ -264,7 +264,7 @@ function Calendar(props: {
                   style={{
                     fontSize: 13,
                     fontWeight: on || isToday ? "700" : "400",
-                    color: on ? "#fff" : past ? "#C7CBD5" : colors.ink,
+                    color: on ? "#fff" : past ? colors.faint : colors.ink,
                   }}
                 >
                   {Number(day.slice(8))}

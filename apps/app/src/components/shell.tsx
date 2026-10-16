@@ -97,7 +97,7 @@ function TabBar({ active }: { active: Section }) {
         flexDirection: "row",
         borderTopWidth: 1,
         borderColor: colors.line,
-        backgroundColor: "#fff",
+        backgroundColor: colors.card,
         paddingBottom: insets.bottom,
       }}
     >
@@ -184,7 +184,7 @@ function Sidebar({ active }: { active: Section }) {
               paddingVertical: 7,
               paddingHorizontal: 8,
               borderRadius: 8,
-              backgroundColor: activeSpace === s.id ? "#fff" : hovered ? "#EEF0F5" : "transparent",
+              backgroundColor: activeSpace === s.id ? colors.card : hovered ? colors.hover : "transparent",
               borderWidth: 1,
               borderColor: activeSpace === s.id ? colors.line : "transparent",
             })}
@@ -247,7 +247,7 @@ function NavRow({ icon, label, href, on }: { icon: IconName; label: string; href
         paddingVertical: 8,
         paddingHorizontal: 8,
         borderRadius: 8,
-        backgroundColor: on ? "#fff" : hovered ? "#EEF0F5" : "transparent",
+        backgroundColor: on ? colors.card : hovered ? colors.hover : "transparent",
         borderWidth: 1,
         borderColor: on ? colors.line : "transparent",
       })}

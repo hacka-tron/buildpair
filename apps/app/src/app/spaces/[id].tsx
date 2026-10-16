@@ -162,7 +162,7 @@ export default function SpaceScreen() {
         setNotice("");
       }}
       accessibilityRole="button"
-      style={{ paddingVertical: space.sm, paddingHorizontal: space.lg, backgroundColor: "#FDECEA" }}
+      style={{ paddingVertical: space.sm, paddingHorizontal: space.lg, backgroundColor: colors.dangerBg }}
     >
       <ErrorText>{problem} Tap to dismiss.</ErrorText>
     </Pressable>
@@ -907,7 +907,7 @@ function Chat(props: {
                   paddingHorizontal: 12,
                   paddingVertical: 7,
                   maxWidth: 320,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.card,
                 }}
               >
                 <Text numberOfLines={1} style={{ fontSize: 13, color: colors.ink }}>
@@ -950,7 +950,7 @@ function Chat(props: {
             paddingVertical: 11,
             fontSize: 16,
             color: colors.ink,
-            backgroundColor: "#fff",
+            backgroundColor: colors.card,
             outlineColor: colors.royal,
           }}
         />
@@ -1011,7 +1011,7 @@ function MessageRow(props: {
               gap: 4,
               borderWidth: 1,
               borderColor: mine ? colors.royal : colors.line,
-              backgroundColor: mine ? colors.tint : "#fff",
+              backgroundColor: mine ? colors.tint : colors.card,
               borderRadius: 999,
               paddingHorizontal: 9,
               paddingVertical: 3,
@@ -1044,7 +1044,7 @@ function MessageRow(props: {
           style={{
             flexDirection: "row",
             gap: 2,
-            backgroundColor: "#fff",
+            backgroundColor: colors.card,
             borderWidth: 1,
             borderColor: colors.line,
             borderRadius: 999,
@@ -1108,7 +1108,7 @@ function MessageRow(props: {
               padding: 14,
               gap: 10,
               maxWidth: 560,
-              backgroundColor: "#fff",
+              backgroundColor: colors.card,
             }}
           >
             <Text style={{ fontSize: 13, color: colors.sub }}>
@@ -1149,7 +1149,7 @@ function MessageRow(props: {
             width: 28,
             height: 28,
             borderRadius: 14,
-            backgroundColor: m.kind === "completion" ? colors.blue : "#fff",
+            backgroundColor: m.kind === "completion" ? colors.blue : colors.card,
             borderWidth: m.kind === "completion" ? 0 : 1.5,
             borderColor: colors.faint,
             alignItems: "center",
