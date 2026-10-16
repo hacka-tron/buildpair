@@ -38,4 +38,6 @@ export async function eraseAccount(env: Env, userId: string): Promise<void> {
   }
   // Invite links they made for other people's spaces stop working too.
   await db.delete(invites).where(eq(invites.createdBy, userId));
+  // How far they'd read each space.
+  await env.USER_HUB.get(env.USER_HUB.idFromName(userId)).erase();
 }

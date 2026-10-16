@@ -1,7 +1,9 @@
 import {
   type ClientMessage,
+  type InboxClientMessage,
   InboxMessage,
   parseServerMessage,
+  type ReadPositions,
   type ServerMessage,
   type SpaceEvent,
 } from "@buildpair/protocol";
@@ -205,7 +207,8 @@ export const spaceTransport: Transport = {
  */
 export function connectInbox(handlers: {
   onPoke: (spaceId: string, seq: number) => void;
-  onOpen: () => void;
+  onReads: (reads: ReadPositions, all: boolean) => void;
+  onOpen: (send: (msg: InboxClientMessage) => boolean) => void;
 }) {
   const url = async () => {
     const { ticket } = await api<{ ticket: string }>("/me/ticket", { method: "POST" });
@@ -215,10 +218,18 @@ export function connectInbox(handlers: {
     maxReconnectionDelay: 30_000,
     minReconnectionDelay: 1_000,
   });
-  ws.addEventListener("open", () => handlers.onOpen());
+  /** False when the socket isn't open, so the caller keeps the message for the next open. */
+  const send = (msg: InboxClientMessage) => {
+    if (ws.readyState !== ws.OPEN) return false;
+    ws.send(JSON.stringify(msg));
+    return true;
+  };
+  ws.addEventListener("open", () => handlers.onOpen(send));
   ws.addEventListener("message", (e: MessageEvent) => {
     const parsed = InboxMessage.safeParse(JSON.parse(String(e.data)));
-    if (parsed.success && parsed.data.t === "poke") handlers.onPoke(parsed.data.spaceId, parsed.data.seq);
+    if (!parsed.success) return;
+    if (parsed.data.t === "poke") handlers.onPoke(parsed.data.spaceId, parsed.data.seq);
+    if (parsed.data.t === "reads") handlers.onReads(parsed.data.reads, parsed.data.all === true);
   });
   return () => ws.close();
 }

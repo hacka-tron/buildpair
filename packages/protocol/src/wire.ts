@@ -40,12 +40,29 @@ export const ServerMessage = z.discriminatedUnion("t", [
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 
-/** Messages on a person's inbox socket (their UserHub): small notices that a space has news. */
+/** spaceId -> the last chat position someone has read there, on any of their devices. */
+export const ReadPositions = z.record(z.string().min(1).max(64), z.number().int().nonnegative());
+export type ReadPositions = z.infer<typeof ReadPositions>;
+
+/**
+ * Messages on a person's inbox socket (their UserHub): small notices that a space has news, and how far
+ * they've read (all of it after they say hello, then whatever another device reads).
+ */
 export const InboxMessage = z.discriminatedUnion("t", [
   z.object({ t: z.literal("poke"), spaceId: z.string(), seq: z.number().int().nonnegative() }),
+  /** `all` marks the answer to a hello: every saved position. */
+  z.object({ t: z.literal("reads"), reads: ReadPositions, all: z.boolean().optional() }),
   z.object({ t: z.literal("error"), reason: z.string() }),
 ]);
 export type InboxMessage = z.infer<typeof InboxMessage>;
+
+/** What a device says on its inbox socket: how far it has read. `all` asks for every saved position back. */
+export const InboxClientMessage = z.object({
+  t: z.literal("read"),
+  reads: ReadPositions.refine((r) => Object.keys(r).length <= 200, "Too many at once."),
+  all: z.boolean().optional(),
+});
+export type InboxClientMessage = z.infer<typeof InboxClientMessage>;
 
 /**
  * Read a server message, skipping single events this version doesn't know (newer servers add event
