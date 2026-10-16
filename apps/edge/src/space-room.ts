@@ -552,6 +552,8 @@ export class SpaceRoom extends DurableObject<Env> {
         }
         result = { ok: false, reason: "unreachable" };
       }
+      // Another run (a resend, or the alarm) may have settled this move while we waited.
+      if (!sql.exec("SELECT 1 FROM outbox WHERE move_id = ?", row.move_id).toArray().length) continue;
       if (!result.ok) {
         this.takeBack(row.actor_id, items);
         sql.exec("DELETE FROM moves WHERE move_id = ?", row.move_id);
@@ -560,7 +562,12 @@ export class SpaceRoom extends DurableObject<Env> {
       sql.exec("DELETE FROM outbox WHERE move_id = ?", row.move_id);
     }
     const waiting = nextTry < Infinity;
-    if (waiting) await this.ctx.storage.setAlarm(Date.now() + nextTry);
+    if (waiting) {
+      // A resend never pushes back a sooner alarm, so the tries still run out on time.
+      const at = Date.now() + nextTry;
+      const set = await this.ctx.storage.getAlarm();
+      if (byAlarm || set === null || set > at) await this.ctx.storage.setAlarm(at);
+    }
     return { waiting, refused };
   }
 
