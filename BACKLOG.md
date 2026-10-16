@@ -2,7 +2,9 @@
 
 Where the work stands, what's next, and what's still open. Update it whenever something finishes or comes up.
 
-## > RESUME HERE (as of 2026-10-16)
+## > RESUME HERE (as of 2026-10-16, end of day)
+
+**Today (2026-10-16), all merged and live on staging, each reviewed where it touched data or privacy:** private after creating, moving items between spaces, owner-approved join requests, rate limits, report/block/leave/remove, Supporting and Activity, one inbox socket per device, unread dots, nudges, weekly reflections, privacy and terms pages, ⌘K/Upcoming/weekly review, Discover with offers and "support each other", profiles/badges/compliments, room snapshots, dark mode, and keyboard shortcuts (PRs #28 to #49). Milestones 3 to 5 are built, except reminders and push.
 
 **Done and pushed to `main`:** milestone 1 (foundations) and the landing page with sign-up. CI is green: lint, typecheck, 28 unit/integration tests, two browser tests (sign-up on desktop and mobile; two people chatting live), secret scan and CodeQL.
 
