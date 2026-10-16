@@ -120,6 +120,8 @@ export const joinRequests = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    /** What they said when offering support from Discover. Invite-link requests have none. */
+    note: text("note"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.spaceId, t.userId] })],
@@ -179,4 +181,29 @@ export const pastMemberships = sqliteTable(
     leftAt: integer("left_at", { mode: "timestamp_ms" }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.spaceId, t.userId] })],
+);
+
+/**
+ * Spaces their owner chose to show on Discover, as strangers see them: the name, what it's for, the owner's
+ * first name, shared open goals and habits (never private ones), and how many people are in it. The room
+ * keeps this in step with the space; turning Discover off deletes the row.
+ */
+export const listings = sqliteTable(
+  "listings",
+  {
+    spaceId: text("space_id")
+      .primaryKey()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    purpose: text("purpose").notNull(),
+    ownerName: text("owner_name").notNull(),
+    /** JSON array of { title, kind } for up to five shared open goals and habits. */
+    goals: text("goals").notNull(),
+    people: integer("people").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("listings_updated_idx").on(t.updatedAt)],
 );

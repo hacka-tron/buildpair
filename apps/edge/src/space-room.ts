@@ -25,7 +25,7 @@ import {
 } from "@buildpair/protocol";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { spaces } from "./db/schema";
+import { listings, spaces } from "./db/schema";
 import { type Env, SLOW_DOWN, withinLimit } from "./env";
 
 const SCHEMA_VERSION = 2;
@@ -600,10 +600,69 @@ export class SpaceRoom extends DurableObject<Env> {
     }
   }
 
+  private listed(): boolean {
+    return (
+      this.ctx.storage.sql.exec<{ value: string }>("SELECT value FROM meta WHERE key = 'listed'").toArray()[0]
+        ?.value === "1"
+    );
+  }
+
+  /** Owners only: show this space on Discover, or take it off. */
+  async setListed(on: boolean, actorId: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+    if (this.load().members[actorId]?.role !== "owner")
+      return { ok: false, reason: "Only the space's owner can show it on Discover." };
+    this.ctx.storage.sql.exec(
+      "INSERT OR REPLACE INTO meta (key, value) VALUES ('listed', ?)",
+      on ? "1" : "0",
+    );
+    if (on) await this.writeListing();
+    else await drizzle(this.env.DB).delete(listings).where(eq(listings.spaceId, this.spaceId()));
+    return { ok: true };
+  }
+
+  /** What strangers see on Discover. Only shared, open, top-level goals and habits; never private items. */
+  private async writeListing() {
+    const state = this.load();
+    const owner = Object.values(state.members).find((m) => m.role === "owner");
+    if (!owner) return;
+    const goals = Object.values(state.items)
+      .filter(
+        (i) =>
+          i.ownerId === owner.userId &&
+          i.visibility === "space" &&
+          i.status === "open" &&
+          !i.parentId &&
+          (i.kind === "goal" || i.kind === "habit"),
+      )
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .slice(0, 5)
+      .map((i) => ({ title: i.title, kind: i.kind }));
+    const row = {
+      spaceId: this.spaceId(),
+      ownerId: owner.userId,
+      name: state.name,
+      purpose: state.purpose,
+      ownerName: owner.name.split(" ")[0] || owner.name,
+      goals: JSON.stringify(goals),
+      people: Object.keys(state.members).length,
+      updatedAt: new Date(),
+    };
+    try {
+      await drizzle(this.env.DB)
+        .insert(listings)
+        .values(row)
+        .onConflictDoUpdate({ target: listings.spaceId, set: row });
+    } catch {
+      console.error("listing update failed", { spaceId: row.spaceId });
+    }
+  }
+
   /** Send new events to open sockets (filtered per person) and poke each member's inbox. */
   private publish(events: SpaceEvent[]) {
     if (!events.length) return;
     const state = this.load();
+    // A listed space's Discover card follows its changes.
+    if (this.listed()) this.ctx.waitUntil(this.writeListing());
     const after = events[0]!.seq - 1;
     for (const ws of this.ctx.getWebSockets()) {
       const { userId } = ws.deserializeAttachment() as SocketInfo;

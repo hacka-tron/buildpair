@@ -230,6 +230,7 @@ export default function SpaceScreen() {
           name={name}
           purpose={purpose}
           color={view.color ?? summary?.color ?? null}
+          listed={Boolean(summary?.listed)}
           wide={wide}
           onClose={() => setSettings(false)}
           apply={(change) => applyChange(id, userId, change)}
@@ -1329,9 +1330,16 @@ function InviteSheet(props: {
           {requests.map((r) => (
             <View key={r.userId} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
               <Avatar id={r.userId} name={r.name} size={28} />
-              <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: colors.ink }}>
-                {r.name}
-              </Text>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text numberOfLines={1} style={{ fontSize: 14, color: colors.ink }}>
+                  {r.name}
+                </Text>
+                {r.note ? (
+                  <Text numberOfLines={3} style={{ fontSize: 12, color: colors.sub }}>
+                    From Discover: "{r.note}"
+                  </Text>
+                ) : null}
+              </View>
               <Button
                 label="Decline"
                 kind="secondary"

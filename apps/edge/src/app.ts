@@ -1,7 +1,7 @@
 import { newId } from "@buildpair/domain";
 import { Ulid } from "@buildpair/protocol";
 import { APIError } from "better-auth/api";
-import { and, count, eq, gt, inArray, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, isNotNull, isNull, like, notInArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
@@ -12,6 +12,7 @@ import {
   blocks,
   invites,
   joinRequests,
+  listings,
   memberships,
   pastMemberships,
   reports,
@@ -288,6 +289,9 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+/** Requests and offers expire after a week. */
+const weekAgo = () => new Date(Date.now() - 7 * 86_400_000);
+
 const room = (env: Env, spaceId: string) => env.SPACE_ROOM.get(env.SPACE_ROOM.idFromName(spaceId));
 
 async function roleIn(env: Env, spaceId: string, userId: string) {
@@ -327,12 +331,20 @@ app.get("/spaces", async (c) => {
     .select({ spaceId: joinRequests.spaceId, n: count() })
     .from(joinRequests)
     .innerJoin(spaces, eq(spaces.id, joinRequests.spaceId))
-    .where(eq(spaces.ownerId, c.get("userId")))
+    .where(and(eq(spaces.ownerId, c.get("userId")), gt(joinRequests.createdAt, weekAgo())))
     .groupBy(joinRequests.spaceId)
     .all();
   const counts = new Map(waiting.map((w) => [w.spaceId, w.n]));
+  const shown = await drizzle(c.env.DB)
+    .select({ spaceId: listings.spaceId })
+    .from(listings)
+    .where(eq(listings.ownerId, c.get("userId")))
+    .all();
+  const listed = new Set(shown.map((l) => l.spaceId));
   return c.json({
-    spaces: rows.map((r) => (r.role === "owner" ? { ...r, requests: counts.get(r.id) ?? 0 } : r)),
+    spaces: rows.map((r) =>
+      r.role === "owner" ? { ...r, requests: counts.get(r.id) ?? 0, listed: listed.has(r.id) } : r,
+    ),
   });
 });
 
@@ -470,9 +482,14 @@ app.get("/spaces/:id/requests", async (c) => {
   if ((await roleIn(c.env, spaceId, c.get("userId"))) !== "owner")
     return c.json(err("not_found", "Space not found."), 404);
   const requests = await drizzle(c.env.DB)
-    .select({ userId: joinRequests.userId, name: joinRequests.name, createdAt: joinRequests.createdAt })
+    .select({
+      userId: joinRequests.userId,
+      name: joinRequests.name,
+      note: joinRequests.note,
+      createdAt: joinRequests.createdAt,
+    })
     .from(joinRequests)
-    .where(eq(joinRequests.spaceId, spaceId))
+    .where(and(eq(joinRequests.spaceId, spaceId), gt(joinRequests.createdAt, weekAgo())))
     .orderBy(joinRequests.createdAt)
     .all();
   return c.json({ requests });
@@ -487,7 +504,8 @@ app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
   const who = and(eq(joinRequests.spaceId, spaceId), eq(joinRequests.userId, c.req.param("userId")));
   // Taking the request is the claim: of two answers at once, only the one that gets it acts.
   const [request] = await db.delete(joinRequests).where(who).returning();
-  if (!request || c.req.param("answer") === "decline") return c.json({ ok: true });
+  if (!request || c.req.param("answer") === "decline" || request.createdAt < weekAgo())
+    return c.json({ ok: true });
   const userId = request.userId;
   try {
     await db
@@ -560,6 +578,109 @@ app.get("/me/blocks", async (c) => {
 });
 
 /** Block someone you share a space with. Their messages and reactions are hidden from you. */
+/** Owners only: show a space on Discover, or take it off. */
+app.post("/spaces/:id/listing", async (c) => {
+  const body = z.object({ on: z.boolean() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json(err("invalid", "Say whether to show it."), 400);
+  const spaceId = c.req.param("id");
+  if ((await roleIn(c.env, spaceId, c.get("userId"))) !== "owner")
+    return c.json(err("not_found", "Space not found."), 404);
+  const result = await room(c.env, spaceId).setListed(body.data.on, c.get("userId"));
+  if (!result.ok) return c.json(err("rejected", result.reason), 409);
+  return c.json({ ok: true });
+});
+
+/** Spaces others chose to show, minus your own, ones you're in, and anyone blocked either way. */
+app.get("/discover", async (c) => {
+  const me = c.get("userId");
+  const db = drizzle(c.env.DB);
+  const mine = db.select({ id: memberships.spaceId }).from(memberships).where(eq(memberships.userId, me));
+  const blockedByMe = db.select({ id: blocks.blockedId }).from(blocks).where(eq(blocks.blockerId, me));
+  const blockingMe = db.select({ id: blocks.blockerId }).from(blocks).where(eq(blocks.blockedId, me));
+  // Wildcards are dropped rather than escaped (SQLite's LIKE has no default escape character).
+  const q = (c.req.query("q") ?? "").replace(/[%_]/g, "").trim().slice(0, 60);
+  const filters = [
+    notInArray(listings.spaceId, mine),
+    notInArray(listings.ownerId, blockedByMe),
+    notInArray(listings.ownerId, blockingMe),
+  ];
+  if (q) filters.push(or(like(listings.name, `%${q}%`), like(listings.purpose, `%${q}%`))!);
+  const rows = await db
+    .select()
+    .from(listings)
+    .where(and(...filters))
+    .orderBy(desc(listings.updatedAt))
+    .limit(50)
+    .all();
+  const asked = await db
+    .select({ spaceId: joinRequests.spaceId })
+    .from(joinRequests)
+    .where(and(eq(joinRequests.userId, me), gt(joinRequests.createdAt, weekAgo())))
+    .all();
+  const pending = new Set(asked.map((a) => a.spaceId));
+  return c.json({
+    listings: rows.map(({ ownerId: _, updatedAt, goals, ...r }) => ({
+      ...r,
+      goals: JSON.parse(goals) as { title: string; kind: string }[],
+      updatedAt: updatedAt.toISOString(),
+      asked: pending.has(r.spaceId),
+    })),
+  });
+});
+
+/** Offer to support a listed space. It becomes a request with your note; the owner decides. */
+app.post("/discover/:spaceId/offer", async (c) => {
+  const body = z
+    .object({ note: z.string().trim().max(280).optional() })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json(err("invalid", "Keep your note under 280 characters."), 400);
+  const me = c.get("userId");
+  const spaceId = c.req.param("spaceId");
+  const db = drizzle(c.env.DB);
+  const listing = await db.select().from(listings).where(eq(listings.spaceId, spaceId)).get();
+  if (!listing) return c.json(err("not_found", "That space isn't on Discover any more."), 404);
+  if (await isMember(c.env, spaceId, me)) return c.json({ status: "member" });
+  const sent = await db
+    .select({ n: count() })
+    .from(joinRequests)
+    .where(
+      and(
+        eq(joinRequests.userId, me),
+        isNotNull(joinRequests.note),
+        gt(joinRequests.createdAt, new Date(Date.now() - 86_400_000)),
+      ),
+    )
+    .get();
+  if ((sent?.n ?? 0) >= 10)
+    return c.json(
+      err("too_many_requests", "You've offered a lot of support today. Try again tomorrow."),
+      429,
+    );
+  // Someone the owner blocked gets the same answer, but the offer goes nowhere.
+  const blocked = await db
+    .select({ id: blocks.blockedId })
+    .from(blocks)
+    .where(and(eq(blocks.blockerId, listing.ownerId), eq(blocks.blockedId, me)))
+    .get();
+  if (!blocked) {
+    const row = {
+      spaceId,
+      userId: me,
+      name: c.get("userName"),
+      note: body.data.note || "",
+      createdAt: new Date(),
+    };
+    await db
+      .insert(joinRequests)
+      .values(row)
+      .onConflictDoUpdate({
+        target: [joinRequests.spaceId, joinRequests.userId],
+        set: { note: row.note, createdAt: row.createdAt },
+      });
+  }
+  return c.json({ status: "requested" });
+});
+
 app.post("/me/blocks", async (c) => {
   const body = z
     .object({ userId: z.string().min(1).max(64) })
