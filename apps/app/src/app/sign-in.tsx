@@ -2,7 +2,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { Wordmark } from "../components/kit";
 import { useWide } from "../components/shell";
-import { Button, ErrorText, Field, Screen } from "../components/ui";
+import { Button, ErrorText, Field, LegalLinks, Screen } from "../components/ui";
 import { authClient } from "../lib/auth";
 import { colors, space } from "../lib/theme";
 
@@ -286,6 +286,7 @@ export default function SignIn() {
             <Text style={{ fontSize: 13, color: colors.faint, textAlign: "center" }}>
               Got an invite link? Open it after signing in and you'll land in the space.
             </Text>
+            <LegalLinks />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

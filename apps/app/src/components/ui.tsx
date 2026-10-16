@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -9,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { SITE_URL } from "../lib/config";
 import { colors, radius, space, type } from "../lib/theme";
 
 export function Screen({ children }: { children: ReactNode }) {
@@ -103,3 +105,18 @@ export const styles = StyleSheet.create({
   title: { fontSize: type.title, fontWeight: "700", letterSpacing: -0.4, color: colors.ink },
   sub: { fontSize: type.secondary, color: colors.sub },
 });
+
+/** Links to the privacy and terms pages on the landing site. */
+export function LegalLinks() {
+  const open = (path: string) => void Linking.openURL(`${SITE_URL}${path}`);
+  return (
+    <View style={{ flexDirection: "row", justifyContent: "center", gap: 16, paddingVertical: 8 }}>
+      <Pressable onPress={() => open("/privacy")} accessibilityRole="link" hitSlop={8}>
+        <Text style={{ fontSize: 13, color: colors.sub }}>Privacy</Text>
+      </Pressable>
+      <Pressable onPress={() => open("/terms")} accessibilityRole="link" hitSlop={8}>
+        <Text style={{ fontSize: 13, color: colors.sub }}>Terms</Text>
+      </Pressable>
+    </View>
+  );
+}
