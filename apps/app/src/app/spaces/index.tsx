@@ -102,6 +102,9 @@ export default function Spaces() {
                   {s.name}
                 </Text>
                 {s.role === "supporter" ? <Tag tone="blue">Supporting</Tag> : null}
+                {s.requests ? (
+                  <Tag tone="blue">{`${s.requests} ${s.requests === 1 ? "request" : "requests"}`}</Tag>
+                ) : null}
                 <View style={{ flex: 1 }} />
                 {last ? (
                   <Text style={{ fontSize: 12, color: colors.faint }}>{ago(last.createdAt)}</Text>

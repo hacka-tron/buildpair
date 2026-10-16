@@ -6,14 +6,16 @@ import { acceptInvite } from "../../lib/api";
 import { refreshSpaces } from "../../lib/spaces";
 import { colors, space } from "../../lib/theme";
 
-/** buildpair.app/join/<token>: joins the space and opens it. */
+/** buildpair.app/join/<token>: asks to join the space, or opens it if you're already in. */
 export default function Join() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const [error, setError] = useState("");
+  const [asked, setAsked] = useState("");
 
   useEffect(() => {
     acceptInvite(token)
-      .then(({ spaceId }) => {
+      .then(({ spaceId, spaceName, status }) => {
+        if (status === "requested") return setAsked(spaceName);
         void refreshSpaces();
         router.replace({ pathname: "/spaces/[id]", params: { id: spaceId } });
       })
@@ -25,7 +27,14 @@ export default function Join() {
       <View
         style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: space.lg, padding: space.xl }}
       >
-        {error ? (
+        {asked ? (
+          <>
+            <Text style={[styles.sub, { textAlign: "center" }]}>
+              You asked to join {asked}. It shows up in your spaces once the owner lets you in.
+            </Text>
+            <Button label="Go to your spaces" onPress={() => router.replace("/")} />
+          </>
+        ) : error ? (
           <>
             <Text style={[styles.sub, { textAlign: "center" }]}>{error}</Text>
             <Button label="Go to your spaces" onPress={() => router.replace("/")} />

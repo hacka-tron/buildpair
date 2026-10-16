@@ -62,9 +62,21 @@ try {
     .last()
     .click({ position: { x: 5, y: 5 } });
   const token = link.split("/join/")[1].trim();
+  const spaceId = new URL(maya.url()).pathname.split("/").pop();
 
   const jordan = await signIn(browser, `jordan-${stamp}@example.com`);
   await jordan.goto(`${WEB}/join/${token}`);
+  await jordan.getByText(/You asked to join Life/).waitFor();
+  // Maya lets Jordan in from the invite sheet.
+  await maya.reload();
+  await maya.getByText(/Invite · 1 waiting/).click();
+  await maya.getByText("Let in", { exact: true }).click();
+  await maya.getByText("Asking to join").waitFor({ state: "detached" });
+  await maya
+    .getByLabel("Close")
+    .last()
+    .click({ position: { x: 5, y: 5 } });
+  await jordan.goto(`${WEB}/spaces/${spaceId}`);
   await jordan.getByPlaceholder("Message Life…").waitFor();
 
   await maya.getByPlaceholder("Message Life…").fill("Flights booked!");

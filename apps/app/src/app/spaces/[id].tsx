@@ -20,10 +20,10 @@ import { SelectionBar, useSelection } from "../../components/selection";
 import { Shell, useWide } from "../../components/shell";
 import { SpaceSettings } from "../../components/space-settings";
 import { Button, ErrorText } from "../../components/ui";
-import { createInvite } from "../../lib/api";
+import { answerRequest, createInvite, type JoinRequest, listRequests, resetInvites } from "../../lib/api";
 import { authClient } from "../../lib/auth";
 import { ago, localToday, peopleLine } from "../../lib/format";
-import { applyChange, patchSpace, useSpaces } from "../../lib/spaces";
+import { applyChange, patchSpace, refreshSpaces, useSpaces } from "../../lib/spaces";
 import { colors, radius, space } from "../../lib/theme";
 import { useSpace } from "../../lib/use-space";
 
@@ -43,6 +43,7 @@ export default function SpaceScreen() {
   const [inviting, setInviting] = useState(false);
   const [settings, setSettings] = useState(false);
   const isOwner = view.members[userId]?.role === "owner";
+  const waiting = isOwner ? (summary?.requests ?? 0) : 0;
   // The room is the source of truth; bring the list (sidebar, Spaces tab) in line when it differs.
   useEffect(() => {
     // Only once connected: a copy saved on the device can be older than the list.
@@ -137,6 +138,7 @@ export default function SpaceScreen() {
     <InviteSheet
       spaceId={id}
       spaceName={name}
+      isOwner={isOwner}
       visible={inviting}
       wide={wide}
       onClose={() => setInviting(false)}
@@ -239,7 +241,11 @@ export default function SpaceScreen() {
               <Icon name="settings" size={18} color={colors.sub} />
             </Pressable>
           ) : null}
-          <Button label="Invite" kind="secondary" onPress={() => setInviting(true)} />
+          <Button
+            label={waiting ? `Invite · ${waiting} waiting` : "Invite"}
+            kind="secondary"
+            onPress={() => setInviting(true)}
+          />
         </View>
         {errorBar}
         <View style={{ flex: 1, flexDirection: "row" }}>
@@ -308,7 +314,7 @@ export default function SpaceScreen() {
             <Pressable
               onPress={() => setInviting(true)}
               accessibilityRole="button"
-              accessibilityLabel="Invite people"
+              accessibilityLabel={waiting ? `Invite people, ${waiting} waiting to join` : "Invite people"}
               hitSlop={8}
               style={{
                 width: 36,
@@ -321,6 +327,24 @@ export default function SpaceScreen() {
               }}
             >
               <Icon name="user-plus" size={16} color={colors.ink} />
+              {waiting ? (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -4,
+                    right: -4,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    paddingHorizontal: 4,
+                    backgroundColor: colors.blue,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>{waiting}</Text>
+                </View>
+              ) : null}
             </Pressable>
           </View>
           <Text numberOfLines={1} style={{ fontSize: 13, color: colors.sub }}>
@@ -803,6 +827,7 @@ function MessageRow(props: {
 function InviteSheet(props: {
   spaceId: string;
   spaceName: string;
+  isOwner: boolean;
   visible: boolean;
   wide: boolean;
   onClose: () => void;
@@ -811,6 +836,15 @@ function InviteSheet(props: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [requests, setRequests] = useState<JoinRequest[]>([]);
+  const [answering, setAnswering] = useState("");
+  const { spaceId, isOwner, visible } = props;
+  useEffect(() => {
+    if (!visible || !isOwner) return;
+    listRequests(spaceId)
+      .then((r) => setRequests(r.requests))
+      .catch((e: Error) => setError(e.message));
+  }, [spaceId, isOwner, visible]);
   const make = async () => {
     setBusy(true);
     setError("");
@@ -820,6 +854,29 @@ function InviteSheet(props: {
       setError((e as Error).message);
     } finally {
       setBusy(false);
+    }
+  };
+  const answer = async (who: string, choice: "approve" | "decline") => {
+    setAnswering(who);
+    setError("");
+    try {
+      await answerRequest(props.spaceId, who, choice);
+      setRequests((r) => r.filter((x) => x.userId !== who));
+      void refreshSpaces();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setAnswering("");
+    }
+  };
+  const reset = async () => {
+    setError("");
+    try {
+      await resetInvites(props.spaceId);
+      setLink("");
+      setCopied(false);
+    } catch (e) {
+      setError((e as Error).message);
     }
   };
   const share = async () => {
@@ -842,8 +899,9 @@ function InviteSheet(props: {
       wide={props.wide}
     >
       <Text style={{ fontSize: 14, color: colors.sub, lineHeight: 20 }}>
-        Anyone who opens the link joins this space as a supporter. They'll see what's in it (except things
-        you've kept to yourself) and can chat here.
+        {props.isOwner
+          ? "People who open the link ask to join. You approve each one. Once in, they see what's here (except things you've kept to yourself) and can chat."
+          : "People who open the link ask to join. The owner approves each one."}
       </Text>
       {link ? (
         <>
@@ -874,6 +932,35 @@ function InviteSheet(props: {
       ) : (
         <Button label="Make an invite link" onPress={make} busy={busy} />
       )}
+      {props.isOwner && requests.length ? (
+        <View style={{ gap: space.sm }}>
+          <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink }}>Asking to join</Text>
+          {requests.map((r) => (
+            <View key={r.userId} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+              <Avatar id={r.userId} name={r.name} size={28} />
+              <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: colors.ink }}>
+                {r.name}
+              </Text>
+              <Button
+                label="Decline"
+                kind="secondary"
+                disabled={answering === r.userId}
+                onPress={() => answer(r.userId, "decline")}
+              />
+              <Button
+                label="Let in"
+                disabled={answering === r.userId}
+                onPress={() => answer(r.userId, "approve")}
+              />
+            </View>
+          ))}
+        </View>
+      ) : null}
+      {props.isOwner ? (
+        <Pressable onPress={reset} accessibilityRole="button" hitSlop={8} style={{ alignSelf: "center" }}>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.blue }}>Stop all old links</Text>
+        </Pressable>
+      ) : null}
       <ErrorText>{error}</ErrorText>
     </Sheet>
   );
