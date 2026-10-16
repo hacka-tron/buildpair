@@ -108,3 +108,27 @@ export const invites = sqliteTable("invites", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+/** People who opened an invite link and asked to join. The space's owner approves or declines each one. */
+export const joinRequests = sqliteTable(
+  "join_requests",
+  {
+    spaceId: text("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.spaceId, t.userId] })],
+);
+
+/** Accounts being deleted right now. Written first, so a join approved at the same moment can tell and undo itself. */
+export const accountErasures = sqliteTable("account_erasures", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
+});

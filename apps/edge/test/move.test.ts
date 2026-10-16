@@ -1,17 +1,13 @@
 import { newId } from "@buildpair/domain";
 import { PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
-import { type Client, command, openSocket, signIn } from "./helpers";
+import { type Client, command, join, openSocket, signIn } from "./helpers";
 
 type Batch = { after: number; upTo: number; events: SpaceEvent[] };
 
 async function spaceOf(owner: Client, name: string) {
   const { id } = (await (await owner.post("/spaces", { name, purpose: "Testing" })).json()) as { id: string };
   return id;
-}
-async function join(owner: Client, guest: Client, spaceId: string) {
-  const { token } = (await (await owner.post(`/spaces/${spaceId}/invites`)).json()) as { token: string };
-  expect((await guest.post(`/invites/${token}/accept`)).status).toBe(200);
 }
 const run = (who: Client, spaceId: string, ...cmds: ReturnType<typeof command>[]) =>
   who.post(`/spaces/${spaceId}/commands`, { commands: cmds });

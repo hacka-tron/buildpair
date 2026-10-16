@@ -1,13 +1,13 @@
 import { newId } from "@buildpair/domain";
 import { Ulid } from "@buildpair/protocol";
 import { APIError } from "better-auth/api";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
 import { createAuth, MIN_PASSWORD, NOT_INVITED, USE_PASSWORD } from "./auth";
-import { invites, memberships, spaces } from "./db/schema";
+import { accountErasures, invites, joinRequests, memberships, spaces, user } from "./db/schema";
 import { assertConfig, type Env, isEmailAllowed, testLogin } from "./env";
 import { USER_HEADER } from "./space-room";
 import { signTicket, verifyTicket } from "./tickets";
@@ -253,13 +253,17 @@ app.use("*", async (c, next) => {
 
 const room = (env: Env, spaceId: string) => env.SPACE_ROOM.get(env.SPACE_ROOM.idFromName(spaceId));
 
-async function isMember(env: Env, spaceId: string, userId: string) {
+async function roleIn(env: Env, spaceId: string, userId: string) {
   const row = await drizzle(env.DB)
     .select({ role: memberships.role })
     .from(memberships)
     .where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, userId)))
     .get();
-  return Boolean(row);
+  return row?.role ?? null;
+}
+
+async function isMember(env: Env, spaceId: string, userId: string) {
+  return (await roleIn(env, spaceId, userId)) !== null;
 }
 
 app.get("/me", (c) => c.json({ id: c.get("userId"), name: c.get("userName") }));
@@ -281,7 +285,18 @@ app.get("/spaces", async (c) => {
     .innerJoin(spaces, eq(spaces.id, memberships.spaceId))
     .where(eq(memberships.userId, c.get("userId")))
     .all();
-  return c.json({ spaces: rows });
+  // Owners see how many people are waiting to join.
+  const waiting = await drizzle(c.env.DB)
+    .select({ spaceId: joinRequests.spaceId, n: count() })
+    .from(joinRequests)
+    .innerJoin(spaces, eq(spaces.id, joinRequests.spaceId))
+    .where(eq(spaces.ownerId, c.get("userId")))
+    .groupBy(joinRequests.spaceId)
+    .all();
+  const counts = new Map(waiting.map((w) => [w.spaceId, w.n]));
+  return c.json({
+    spaces: rows.map((r) => (r.role === "owner" ? { ...r, requests: counts.get(r.id) ?? 0 } : r)),
+  });
 });
 
 const CreateSpace = z.object({
@@ -373,23 +388,84 @@ app.post("/spaces/:id/invites", async (c) => {
   return c.json({ token, url: `https://buildpair.app/join/${token}` }, 201);
 });
 
+/**
+ * Opening an invite link asks to join. The space's owner approves each request; until then the person
+ * sees nothing of the space. Asking again changes nothing, and members are sent straight in.
+ */
 app.post("/invites/:token/accept", async (c) => {
   const db = drizzle(c.env.DB);
   const invite = await db
-    .select()
+    .select({ spaceId: invites.spaceId, expiresAt: invites.expiresAt, name: spaces.name })
     .from(invites)
+    .innerJoin(spaces, eq(spaces.id, invites.spaceId))
     .where(eq(invites.token, c.req.param("token")))
     .get();
+  const userId = c.get("userId");
+  // Members go straight in, even with an old link.
+  if (invite && (await isMember(c.env, invite.spaceId, userId)))
+    return c.json({ spaceId: invite.spaceId, spaceName: invite.name, status: "member" });
   if (!invite || invite.expiresAt.getTime() < Date.now()) {
     return c.json(err("invite_expired", "This invite link has expired. Ask for a new one."), 410);
   }
-  const userId = c.get("userId");
   await db
-    .insert(memberships)
-    .values({ spaceId: invite.spaceId, userId, role: "supporter", joinedAt: new Date() })
+    .insert(joinRequests)
+    .values({ spaceId: invite.spaceId, userId, name: c.get("userName"), createdAt: new Date() })
     .onConflictDoNothing();
-  await room(c.env, invite.spaceId).addMember({ userId, role: "supporter", name: c.get("userName") });
-  return c.json({ spaceId: invite.spaceId });
+  return c.json({ spaceId: invite.spaceId, spaceName: invite.name, status: "requested" });
+});
+
+/** Owner only: who's asking to join. */
+app.get("/spaces/:id/requests", async (c) => {
+  const spaceId = c.req.param("id");
+  if ((await roleIn(c.env, spaceId, c.get("userId"))) !== "owner")
+    return c.json(err("not_found", "Space not found."), 404);
+  const requests = await drizzle(c.env.DB)
+    .select({ userId: joinRequests.userId, name: joinRequests.name, createdAt: joinRequests.createdAt })
+    .from(joinRequests)
+    .where(eq(joinRequests.spaceId, spaceId))
+    .orderBy(joinRequests.createdAt)
+    .all();
+  return c.json({ requests });
+});
+
+/** Owner only: let someone in as a supporter, or turn them down. Answering twice changes nothing. */
+app.post("/spaces/:id/requests/:userId/:answer{approve|decline}", async (c) => {
+  const spaceId = c.req.param("id");
+  if ((await roleIn(c.env, spaceId, c.get("userId"))) !== "owner")
+    return c.json(err("not_found", "Space not found."), 404);
+  const db = drizzle(c.env.DB);
+  const who = and(eq(joinRequests.spaceId, spaceId), eq(joinRequests.userId, c.req.param("userId")));
+  // Taking the request is the claim: of two answers at once, only the one that gets it acts.
+  const [request] = await db.delete(joinRequests).where(who).returning();
+  if (!request || c.req.param("answer") === "decline") return c.json({ ok: true });
+  const userId = request.userId;
+  try {
+    await db
+      .insert(memberships)
+      .values({ spaceId, userId, role: "supporter", joinedAt: new Date() })
+      .onConflictDoNothing();
+  } catch {
+    // Their account is already gone.
+    return c.json({ ok: true });
+  }
+  await room(c.env, spaceId).addMember({ userId, role: "supporter", name: request.name });
+  // If they started deleting their account meanwhile, that deletion may have missed this join. Undo it.
+  const leaving = await db.select().from(accountErasures).where(eq(accountErasures.userId, userId)).get();
+  const still = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).get();
+  if (leaving || !still) {
+    await room(c.env, spaceId).eraseMember(userId);
+    await db.delete(memberships).where(and(eq(memberships.spaceId, spaceId), eq(memberships.userId, userId)));
+  }
+  return c.json({ ok: true });
+});
+
+/** Owner only: stop every invite link made so far. People who already asked stay in the list. */
+app.post("/spaces/:id/invites/reset", async (c) => {
+  const spaceId = c.req.param("id");
+  if ((await roleIn(c.env, spaceId, c.get("userId"))) !== "owner")
+    return c.json(err("not_found", "Space not found."), 404);
+  await drizzle(c.env.DB).delete(invites).where(eq(invites.spaceId, spaceId));
+  return c.json({ ok: true });
 });
 
 app.onError((e, c) => {

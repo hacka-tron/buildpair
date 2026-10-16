@@ -2,18 +2,13 @@ import { env, SELF } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
 import { PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
-import { type Client, command, openSocket, PASSWORD, signIn } from "./helpers";
+import { type Client, command, join, openSocket, PASSWORD, signIn } from "./helpers";
 
 type Batch = { after: number; upTo: number; events: SpaceEvent[] };
 
 async function spaceOf(owner: Client, name: string) {
   const { id } = (await (await owner.post("/spaces", { name, purpose: "Testing" })).json()) as { id: string };
   return id;
-}
-
-async function join(owner: Client, guest: Client, spaceId: string) {
-  const { token } = (await (await owner.post(`/spaces/${spaceId}/invites`)).json()) as { token: string };
-  expect((await guest.post(`/invites/${token}/accept`)).status).toBe(200);
 }
 
 const run = (who: Client, spaceId: string, ...cmds: ReturnType<typeof command>[]) =>

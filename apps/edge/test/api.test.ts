@@ -2,7 +2,7 @@ import { SELF } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
 import { MIN_PROTOCOL_VERSION, PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
-import { command, openSocket, signIn } from "./helpers";
+import { command, join, openSocket, signIn } from "./helpers";
 
 type Batch = { after: number; upTo: number; events: SpaceEvent[] };
 
@@ -48,8 +48,7 @@ describe("API", () => {
   it("won't let a supporter change a space's details", async () => {
     const { maya, spaceId } = await makeSpace();
     const jordan = await signIn(`jordan-${newId()}@example.com`);
-    const { token } = (await (await maya.post(`/spaces/${spaceId}/invites`)).json()) as { token: string };
-    await jordan.post(`/invites/${token}/accept`);
+    await join(maya, jordan, spaceId);
     const res = await jordan.post(`/spaces/${spaceId}/commands`, {
       commands: [command({ type: "space.edit", payload: { name: "Mine now" } })],
     });
@@ -95,6 +94,10 @@ describe("API", () => {
     const jordan = await signIn(`jordan-${newId()}@example.com`);
     expect((await jordan.get(`/spaces/${spaceId}/events?after=0`)).status).toBe(404);
     expect((await jordan.post(`/invites/${token}/accept`)).status).toBe(200);
+    // Asking isn't joining: nothing is visible until the owner says yes.
+    expect((await jordan.get(`/spaces/${spaceId}/events?after=0`)).status).toBe(404);
+    const { id: jordanId } = (await (await jordan.get("/me")).json()) as { id: string };
+    expect((await maya.post(`/spaces/${spaceId}/requests/${jordanId}/approve`)).status).toBe(200);
 
     const seen = (await (await jordan.get(`/spaces/${spaceId}/events?after=0`)).json()) as Batch;
     const titles = seen.events.flatMap((e) => (e.type === "item.created" ? [e.payload.item.title] : []));
@@ -105,9 +108,8 @@ describe("API", () => {
 
   it("takes an item off other members' devices when it's made private, and back when shared", async () => {
     const { maya, spaceId } = await makeSpace();
-    const { token } = (await (await maya.post(`/spaces/${spaceId}/invites`)).json()) as { token: string };
     const jordan = await signIn(`jordan-${newId()}@example.com`);
-    await jordan.post(`/invites/${token}/accept`);
+    await join(maya, jordan, spaceId);
     const itemId = newId();
     await maya.post(`/spaces/${spaceId}/commands`, {
       commands: [
@@ -150,9 +152,8 @@ describe("API", () => {
 
   it("delivers a message live to another member's socket and acknowledges the sender", async () => {
     const { maya, spaceId } = await makeSpace();
-    const { token } = (await (await maya.post(`/spaces/${spaceId}/invites`)).json()) as { token: string };
     const jordan = await signIn(`jordan-${newId()}@example.com`);
-    await jordan.post(`/invites/${token}/accept`);
+    await join(maya, jordan, spaceId);
 
     const a = await openSocket(maya, spaceId);
     const b = await openSocket(jordan, spaceId);

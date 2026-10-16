@@ -82,3 +82,13 @@ export async function openSocket(client: Client, spaceId: string) {
   };
   return { ws, received, waitFor, send: (m: unknown) => ws.send(JSON.stringify(m)) };
 }
+
+/** Invite `guest` to `owner`'s space: they open the link, and the owner approves the request. */
+export async function join(owner: Client, guest: Client, spaceId: string): Promise<void> {
+  const { token } = (await (await owner.post(`/spaces/${spaceId}/invites`)).json()) as { token: string };
+  const asked = await guest.post(`/invites/${token}/accept`);
+  if (asked.status !== 200) throw new Error(`ask: ${asked.status}`);
+  const { id } = (await (await guest.get("/me")).json()) as { id: string };
+  const ok = await owner.post(`/spaces/${spaceId}/requests/${id}/approve`);
+  if (ok.status !== 200) throw new Error(`approve: ${ok.status}`);
+}
