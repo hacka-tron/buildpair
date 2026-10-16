@@ -2,8 +2,13 @@ import { applyEvents, emptySpace } from "@buildpair/domain";
 import type { Message } from "@buildpair/protocol";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./storage", () => ({ kvStorage: { get: async () => null, set: async () => undefined } }));
-const { isUnread, latestFromOthers } = await import("./unread");
+const stored = new Map<string, string>();
+vi.mock("./storage", () => ({
+  kvStorage: { get: async () => null, set: async (k: string, v: string) => void stored.set(k, v) },
+}));
+const { connectReads, isUnread, latestFromOthers, markRead, mergeReads, startReading } = await import(
+  "./unread"
+);
 
 const view = (authors: string[]) => ({
   ...applyEvents(emptySpace(), []),
@@ -32,5 +37,54 @@ describe("unread", () => {
     const v = view(["sam", "pest"]);
     expect(isUnread(1, v, "me", new Set(["pest"]))).toBe(false);
     expect(isUnread(undefined, v, "me", new Set())).toBe(false);
+  });
+
+  it("shares what was read, keeps it while offline, and never shares a start-from-now position", async () => {
+    const sent: unknown[] = [];
+    let open = false;
+    const send = (msg: unknown) => {
+      if (!open) return false;
+      sent.push(msg);
+      return true;
+    };
+    mergeReads("me", {});
+    // Before the server's positions arrive, a never-read space doesn't start counting.
+    startReading("quiet", 7);
+    connectReads("me", send);
+    markRead("a", 3);
+    expect(sent).toEqual([]);
+    open = true;
+    connectReads("me", send);
+    expect(sent).toEqual([{ t: "read", reads: { a: 3 }, all: true }]);
+    mergeReads("me", { a: 2, b: 6 }, true);
+    startReading("quiet", 7);
+    markRead("a", 4);
+    expect(sent.at(-1)).toEqual({ t: "read", reads: { a: 4 } });
+    expect(JSON.stringify(sent)).not.toContain("quiet");
+    // The furthest position wins, from either side.
+    mergeReads("me", { b: 9 });
+    markRead("b", 8);
+    expect(sent).toHaveLength(2);
+  });
+
+  it("sends a big backlog in chunks the server accepts", async () => {
+    const sent: { reads: Record<string, number>; all?: boolean }[] = [];
+    let open = false;
+    const send = (msg: { reads: Record<string, number>; all?: boolean }) => {
+      if (!open) return false;
+      sent.push(msg);
+      return true;
+    };
+    connectReads("me", send);
+    for (let i = 0; i < 450; i++) markRead(`s${i}`, 1);
+    // Saved while offline, so a restart still sends them.
+    await Promise.resolve();
+    expect(Object.keys(JSON.parse(stored.get("read-unsent:me") ?? "{}"))).toHaveLength(450);
+    open = true;
+    connectReads("me", send);
+    expect(sent.map((m) => Object.keys(m.reads).length)).toEqual([200, 200, 50]);
+    expect(JSON.parse(stored.get("read-unsent:me") ?? "")).toEqual({});
+    expect(sent[0]?.all).toBe(true);
+    expect(sent.slice(1).every((m) => !m.all)).toBe(true);
   });
 });

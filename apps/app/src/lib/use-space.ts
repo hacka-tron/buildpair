@@ -2,6 +2,7 @@ import { SpaceSync } from "@buildpair/sync";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { spaceStorage } from "./storage";
 import { connectInbox, setLive, spaceTransport } from "./transport";
+import { connectReads, mergeReads } from "./unread";
 
 const syncs = new Map<string, SpaceSync>();
 
@@ -34,7 +35,9 @@ export function useInbox(userId: string) {
     stopInbox?.();
     const stop = connectInbox({
       onPoke: (spaceId, seq) => forSpace(spaceId)?.catchUp(seq),
-      onOpen: () => {
+      onReads: (reads, all) => mergeReads(userId, reads, all),
+      onOpen: (send) => {
+        connectReads(userId, send);
         for (const [key, s] of syncs) if (key.startsWith(`${userId}:`)) s.catchUp();
       },
     });
