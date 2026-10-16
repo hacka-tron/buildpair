@@ -1,7 +1,7 @@
 import { SpaceSync } from "@buildpair/sync";
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { spaceStorage } from "./storage";
-import { spaceTransport } from "./transport";
+import { connectInbox, setLive, spaceTransport } from "./transport";
 
 const syncs = new Map<string, SpaceSync>();
 
@@ -20,10 +20,33 @@ export function getSync(spaceId: string, userId: string) {
 export function stopAllSyncs() {
   for (const s of syncs.values()) s.stop();
   syncs.clear();
+  stopInbox?.();
+  stopInbox = null;
 }
 
+let stopInbox: (() => void) | null = null;
+
+/** Listen for news from every space through the person's inbox, once per signed-in session. */
+export function useInbox(userId: string) {
+  useEffect(() => {
+    if (!userId || stopInbox) return;
+    const forSpace = (spaceId: string) => syncs.get(`${userId}:${spaceId}`);
+    stopInbox = connectInbox({
+      onPoke: (spaceId, seq) => forSpace(spaceId)?.catchUp(seq),
+      onOpen: () => {
+        for (const [key, s] of syncs) if (key.startsWith(`${userId}:`)) s.catchUp();
+      },
+    });
+  }, [userId]);
+}
+
+/** A space on screen: it holds a live socket (presence, typing) until the screen closes. */
 export function useSpace(spaceId: string, userId: string) {
   const sync = useMemo(() => getSync(spaceId, userId), [spaceId, userId]);
+  useEffect(() => {
+    setLive(spaceId, true);
+    return () => setLive(spaceId, false);
+  }, [spaceId]);
   const snapshot = useSyncExternalStore(sync.subscribe, sync.getSnapshot, sync.getSnapshot);
   return { sync, ...snapshot };
 }

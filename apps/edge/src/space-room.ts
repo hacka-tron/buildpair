@@ -483,12 +483,17 @@ export class SpaceRoom extends DurableObject<Env> {
   async eventsAfter(
     afterSeq: number,
     userId: string,
-  ): Promise<{ after: number; upTo: number; events: SpaceEvent[] } | null> {
+  ): Promise<{ after: number; upTo: number; more: boolean; events: SpaceEvent[] } | null> {
     const state = this.load();
     if (!state.members[userId]) return null;
     const events = this.readLog(afterSeq, MAX_EVENTS_PER_BATCH);
     const upTo = events.length === MAX_EVENTS_PER_BATCH ? events.at(-1)!.seq : state.seq;
-    return { after: afterSeq, upTo, events: events.filter((e) => canSee(state, userId, e)) };
+    return {
+      after: afterSeq,
+      upTo,
+      more: upTo < state.seq,
+      events: events.filter((e) => canSee(state, userId, e)),
+    };
   }
 
   // --- Live connections ---
@@ -526,7 +531,8 @@ export class SpaceRoom extends DurableObject<Env> {
         for (;;) {
           const batch = await this.eventsAfter(after, userId);
           if (!batch) return;
-          this.send(ws, { t: "events", ...batch });
+          const { more: _, ...events } = batch;
+          this.send(ws, { t: "events", ...events });
           if (batch.upTo >= this.load().seq) break;
           after = batch.upTo;
         }

@@ -38,10 +38,12 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Supporting and Activity (2026-10-16):** a Supporting tab (phones) and sidebar entry lists spaces others share with you, newest first. Above them, "Check in on" lists owners who haven't posted, ticked or skipped anything for 7 days while something shared is open. The Spaces tab now shows only your own spaces. Activity (the bell on Today, or the sidebar) shows people asking to join your spaces and reactions to what you said in the last two weeks. All of it is worked out on the device from spaces you can already see. Checked in the browser at 1440 wide.
 
+**One connection per device (2026-10-16):** each device keeps one inbox socket to its UserHub. Spaces that aren't on screen (Today, Spaces, Supporting, Activity) no longer hold a socket each. When the inbox says a space has news, the device fetches it over HTTPS, and changes made from Today go over HTTPS in order. Only the space you have open keeps a live socket, for presence and typing. Checked in the browser: a message posted elsewhere showed up on Supporting within a second, with only the inbox socket open.
+
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
 2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: unread dots and live updates for spaces you don't have open** (the UserHub inbox socket), then quiet-goal nudges and weekly reflections (the rest of milestone 4).
+3. **Build: unread dots** (a read position per space), then quiet-goal nudges and weekly reflections (the rest of milestone 4).
 4. **Owner: say where reports go.** Pick an inbox you read and I'll set it as `MODERATION_EMAIL` for staging and production. The app promises a look within a day. Until it's set, reports are only stored.
 5. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
 
@@ -67,7 +69,6 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Report and block leftovers (review, minor):** people who left show as "Someone" on their old messages (the room doesn't keep former members' names). You can block any account ID, not only people you share a space with. Removing a user ID that isn't in the room leaves a harmless record (and an unknown ID answers "something failed" instead of "not found"). The 20-a-day report cap can be passed by a few with many requests at once. Narrow races: removing someone while their approval is still finishing can leave a member the room knows but the list doesn't (removing again fixes it), and a block landing at the same moment as their request can miss that request.
 - **Activity has no "new" marker.** It shows the last two weeks of reactions and every waiting request, but doesn't remember what you've already seen, and only the bell's dot (for requests) hints at news. Reactions don't carry a time on the device, so they're ordered by the message they're on.
 - **Owners only find out about join requests when they open the app.** The count shows on the Spaces tab and in the space, but nothing notifies them. Activity and push will.
-- **The app doesn't use the UserHub inbox socket yet**, so spaces you don't have open don't update live (they catch up when opened).
 - **SpaceRoom rebuilds its state by replaying the whole log on wake.** Add snapshots before spaces get long histories.
 - **The list of your spaces lives in D1**; the architecture moves it (with unread counts) into UserHub later.
 - **Analytics and error tracking** (PostHog EU cookieless, Sentry) are decided but not wired in.
@@ -98,7 +99,6 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Portfolio screenshots in `docs/portfolio` are out of date.** The app has changed a lot since they were taken.
 - **Account deletion leftovers (review of PR #26, minor):** pending email codes for the address aren't deleted (they expire within 10 minutes). If the person joins or makes a space while the delete runs, the delete can stop partway or leave their join in the space, and deleting again finishes it. Accounts with no password are told to set one with "Forgot your password?" first. Typing notices still go to every open connection without a member check (erased people's connections are already closed).
 - **Accounts made with email codes before 2026-10-15 have no password.** They set one with "Forgot your password?".
-- **Today and Spaces open a live socket per space** to show their contents. Fine for a few spaces; move to the UserHub inbox (see above) before people have many.
 
 ## Later milestones
 
