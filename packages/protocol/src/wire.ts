@@ -32,6 +32,8 @@ export const ServerMessage = z.discriminatedUnion("t", [
   }),
   z.object({ t: z.literal("ack"), id: Ulid, seq: z.number().int().nonnegative() }),
   z.object({ t: z.literal("reject"), id: Ulid, reason: z.string() }),
+  /** Too many changes in a short time: keep this one and send it again a little later. */
+  z.object({ t: z.literal("busy"), id: Ulid, reason: z.string() }),
   z.object({ t: z.literal("presence"), online: z.array(UserId) }),
   z.object({ t: z.literal("typing"), userId: UserId }),
   z.object({ t: z.literal("error"), reason: z.string() }),

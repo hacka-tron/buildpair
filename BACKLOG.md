@@ -32,7 +32,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 **Join requests (2026-10-16):** opening an invite link now asks to join. The owner sees "Invite · N waiting" (a badge on phones, a tag on the Spaces tab), and lets people in or declines them from the invite sheet. "Stop all old links" resets them. Until let in, the person sees nothing of the space. Checked in the browser at 1440 wide.
 
-**Rate limits (2026-10-16):** sign-in, sign-up and email codes allow 20 tries a minute per network address. Changes (commands over HTTPS or the socket, invites, moves, new spaces) allow 120 a minute per person. Over the limit, people see "Too many tries in a short time. Wait a minute, then try again." Workers rate limiting counts per Cloudflare location, so the limits are approximate.
+**Rate limits (2026-10-16):** sign-in, sign-up and email codes allow 20 tries a minute per network address. Changes (commands over HTTPS or the socket, invites, moves, new spaces) allow 120 a minute per person. Over the limit, people see "Too many tries in a short time. Wait a minute, then try again." IPv6 callers count by their /64. Changes over the limit wait and are sent again, never dropped, and resending changes that already landed is free. Workers rate limiting counts per Cloudflare location, so the limits are approximate.
 
 **Next, in order:**
 1. **Owner: try sign-in on staging** at `app-staging.buildpair.app` with `bagel` / `bagel`, then make your own account there (one confirmation email). Production (`buildpair.app`) isn't released, so it doesn't load yet.
@@ -59,6 +59,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Universal Links / App Links** need `apple-app-site-association` and `assetlinks.json` served from `buildpair.app/.well-known/` once the Apple Team ID and Android signing key exist.
 - **Join request leftovers (review, minor):** a declined person can ask again with the same link (the owner can stop old links). After "Stop all old links", an existing member opening an old link is told it expired. The name on a request is the one they had when asking. The waiting count updates when the spaces list reloads, not live.
 - **Approve edge cases (review, minor):** if the space can't be reached during "Let in", the person ends up in the spaces list but the room refuses them, and approving again doesn't fix it. Fix: when the invite link finds a member, add them to the room again (it's safe to repeat). Any database error while approving drops the request without a join. A failed account deletion leaves its marker, so approvals for that person are undone until they finish deleting.
+- **Rate limit leftovers (review, minor):** typing notices over the socket aren't limited. Every PR preview shares one auth limit. There's no limit per account on password guesses from many addresses (codes are capped at 5 guesses each).
 - **Owners only find out about join requests when they open the app.** The count shows on the Spaces tab and in the space, but nothing notifies them. Activity and push will.
 - **The app doesn't use the UserHub inbox socket yet**, so spaces you don't have open don't update live (they catch up when opened).
 - **SpaceRoom rebuilds its state by replaying the whole log on wake.** Add snapshots before spaces get long histories.

@@ -8,6 +8,8 @@ export class FakeRoom {
   log: SpaceEvent[] = [];
   seenCommands = new Map<string, number>();
   sockets = new Set<FakeSocket>();
+  /** Answer the next N new commands with "busy", like a rate limit. */
+  busyFor = 0;
 
   constructor(members: string[]) {
     const at = "2026-10-10T09:00:00.000Z";
@@ -52,6 +54,10 @@ export class FakeRoom {
     if (msg.t === "cmd") {
       const seen = this.seenCommands.get(msg.cmd.id);
       if (seen !== undefined) return socket.deliver({ t: "ack", id: msg.cmd.id, seq: seen });
+      if (this.busyFor > 0) {
+        this.busyFor--;
+        return socket.deliver({ t: "busy", id: msg.cmd.id, reason: "Wait a minute." });
+      }
       const d = decide(this.state, msg.cmd, socket.userId);
       if (!d.ok) return socket.deliver({ t: "reject", id: msg.cmd.id, reason: d.reason });
       const events = this.commit(d.events);

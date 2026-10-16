@@ -499,8 +499,10 @@ export class SpaceRoom extends DurableObject<Env> {
         return;
       }
       case "cmd": {
-        if (!(await withinLimit(this.env.WRITE_LIMIT, `write:${userId}`))) {
-          this.send(ws, { t: "reject", id: msg.cmd.id, reason: SLOW_DOWN });
+        // A resent change that already landed costs nothing; reconnecting resends the whole queue.
+        const fresh = this.commandSeq(msg.cmd.id) === undefined;
+        if (fresh && !(await withinLimit(this.env.WRITE_LIMIT, `write:${userId}`))) {
+          this.send(ws, { t: "busy", id: msg.cmd.id, reason: SLOW_DOWN });
           return;
         }
         const result = await this.runCommand(msg.cmd, userId);
