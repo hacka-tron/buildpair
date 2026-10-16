@@ -25,7 +25,7 @@ import {
 } from "@buildpair/protocol";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { spaces } from "./db/schema";
+import { listings, spaces, user } from "./db/schema";
 import { type Env, SLOW_DOWN, withinLimit } from "./env";
 
 const SCHEMA_VERSION = 2;
@@ -600,10 +600,107 @@ export class SpaceRoom extends DurableObject<Env> {
     }
   }
 
+  private listed(): boolean {
+    return (
+      this.ctx.storage.sql.exec<{ value: string }>("SELECT value FROM meta WHERE key = 'listed'").toArray()[0]
+        ?.value === "1"
+    );
+  }
+
+  /** Owners only: show this space on Discover, or take it off. */
+  async setListed(on: boolean, actorId: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+    if (this.load().members[actorId]?.role !== "owner")
+      return { ok: false, reason: "Only the space's owner can show it on Discover." };
+    this.ctx.storage.sql.exec(
+      "INSERT OR REPLACE INTO meta (key, value) VALUES ('listed', ?)",
+      on ? "1" : "0",
+    );
+    // Behind any write still on its way, so turning it off always has the last word.
+    const done = await this.syncListing();
+    if (!done) return { ok: false, reason: "Couldn't update Discover just now. Try again in a moment." };
+    return { ok: true };
+  }
+
+  private listingQueue: Promise<unknown> = Promise.resolve();
+  /** What was last written to Discover ("" for removed), so unchanged listings aren't rewritten. Lost on wake. */
+  private lastListing: string | null = null;
+
+  /** Bring the Discover listing in line with the space, one write at a time and in order. */
+  private syncListing(): Promise<boolean> {
+    const run = this.listingQueue.then(() => this.writeListing());
+    this.listingQueue = run.catch(() => undefined);
+    return run;
+  }
+
+  /**
+   * What strangers see on Discover: only the owner's shared, open, top-level goals and habits, never
+   * private items. Unlisted (or failing to write) means the row is removed, so nothing stale stays up.
+   */
+  private async writeListing(): Promise<boolean> {
+    const db = drizzle(this.env.DB);
+    const spaceId = this.spaceId();
+    const remove = async () => {
+      if (this.lastListing === "") return true;
+      try {
+        await db.delete(listings).where(eq(listings.spaceId, spaceId));
+        this.lastListing = "";
+        return true;
+      } catch {
+        this.lastListing = null;
+        console.error("listing removal failed", { spaceId });
+        return false;
+      }
+    };
+    if (!this.listed()) return remove();
+    const state = this.load();
+    const owner = Object.values(state.members).find((m) => m.role === "owner");
+    if (!owner) return remove();
+    try {
+      // Their account's name, not the one copied into the space, and never a piece of their email.
+      const account = await db.select({ name: user.name }).from(user).where(eq(user.id, owner.userId)).get();
+      const first = (account?.name ?? "").trim().split(/\s+/)[0] ?? "";
+      const goals = Object.values(state.items)
+        .filter(
+          (i) =>
+            i.ownerId === owner.userId &&
+            i.visibility === "space" &&
+            i.status === "open" &&
+            !i.parentId &&
+            (i.kind === "goal" || i.kind === "habit"),
+        )
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .slice(0, 5)
+        .map((i) => ({ title: i.title, kind: i.kind }));
+      const content = {
+        spaceId,
+        ownerId: owner.userId,
+        name: state.name,
+        purpose: state.purpose,
+        ownerName: first || "The owner",
+        goals: JSON.stringify(goals),
+        people: Object.keys(state.members).length,
+      };
+      const key = JSON.stringify(content);
+      if (key === this.lastListing) return true;
+      const row = { ...content, updatedAt: new Date() };
+      // Turned off while we looked things up: the queued removal after this one handles it.
+      if (!this.listed()) return remove();
+      await db.insert(listings).values(row).onConflictDoUpdate({ target: listings.spaceId, set: row });
+      this.lastListing = key;
+      return true;
+    } catch {
+      console.error("listing update failed", { spaceId });
+      await remove();
+      return false;
+    }
+  }
+
   /** Send new events to open sockets (filtered per person) and poke each member's inbox. */
   private publish(events: SpaceEvent[]) {
     if (!events.length) return;
     const state = this.load();
+    // A listed space's Discover card follows its changes.
+    if (this.listed()) this.ctx.waitUntil(this.syncListing());
     const after = events[0]!.seq - 1;
     for (const ws of this.ctx.getWebSockets()) {
       const { userId } = ws.deserializeAttachment() as SocketInfo;

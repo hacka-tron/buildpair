@@ -18,10 +18,11 @@ export type Section =
   | "spaces"
   | "supporting"
   | "activity"
+  | "discover"
   | "review"
   | "profile"
   | { spaceId: string };
-type Href = "/" | "/upcoming" | "/spaces" | "/supporting" | "/activity";
+type Href = "/" | "/upcoming" | "/spaces" | "/supporting" | "/discover" | "/activity";
 
 export const TAB_BAR_HEIGHT = 58;
 
@@ -75,10 +76,16 @@ function BottomInset() {
   return <View style={{ height: insets.bottom }} />;
 }
 
-const TABS: { key: "today" | "spaces" | "supporting"; label: string; icon: IconName; href: Href }[] = [
+const TABS: {
+  key: "today" | "spaces" | "supporting" | "discover";
+  label: string;
+  icon: IconName;
+  href: Href;
+}[] = [
   { key: "today", label: "Today", icon: "check", href: "/" },
   { key: "spaces", label: "Spaces", icon: "grid", href: "/spaces" },
   { key: "supporting", label: "Supporting", icon: "users", href: "/supporting" },
+  { key: "discover", label: "Discover", icon: "compass", href: "/discover" },
 ];
 
 function TabBar({ active }: { active: Section }) {
@@ -143,6 +150,7 @@ function Sidebar({ active }: { active: Section }) {
         <NavRow icon="calendar" label="Upcoming" href="/upcoming" on={active === "upcoming"} />
         <NavRow icon="grid" label="Spaces" href="/spaces" on={active === "spaces"} />
         <NavRow icon="users" label="Supporting" href="/supporting" on={active === "supporting"} />
+        <NavRow icon="compass" label="Discover" href="/discover" on={active === "discover"} />
         <NavRow icon="bell" label="Activity" href="/activity" on={active === "activity"} />
         <View
           style={{

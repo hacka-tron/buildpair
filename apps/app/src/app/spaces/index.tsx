@@ -107,6 +107,7 @@ export default function Spaces() {
                 >
                   {s.name}
                 </Text>
+                {s.listed ? <Tag>On Discover</Tag> : null}
                 {s.requests ? (
                   <Tag tone="blue">{`${s.requests} ${s.requests === 1 ? "request" : "requests"}`}</Tag>
                 ) : null}

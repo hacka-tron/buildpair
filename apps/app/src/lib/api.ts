@@ -43,6 +43,8 @@ export interface SpaceSummary {
   role: "owner" | "supporter";
   /** Owners only: how many people are asking to join. */
   requests?: number;
+  /** Owners only: whether it's shown on Discover. */
+  listed?: boolean;
 }
 
 export const listSpaces = () => api<{ spaces: SpaceSummary[] }>("/spaces");
@@ -58,6 +60,8 @@ export const acceptInvite = (token: string) =>
 export interface JoinRequest {
   userId: string;
   name: string;
+  /** What they wrote when offering support from Discover. */
+  note: string | null;
   createdAt: string;
 }
 export const listRequests = (spaceId: string) =>
@@ -88,3 +92,21 @@ export const sendReport = (report: {
   reason: ReportReason;
   note?: string;
 }) => api<{ ok: true }>("/reports", { method: "POST", body: report });
+
+export interface Listing {
+  spaceId: string;
+  name: string;
+  purpose: string;
+  ownerName: string;
+  goals: { title: string; kind: string }[];
+  people: number;
+  updatedAt: string;
+  /** You've offered support and the owner hasn't answered yet. */
+  asked: boolean;
+}
+export const listDiscover = (q = "") =>
+  api<{ listings: Listing[] }>(`/discover${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`);
+export const offerSupport = (spaceId: string, note: string) =>
+  api<{ status: "requested" | "member" }>(`/discover/${spaceId}/offer`, { method: "POST", body: { note } });
+export const setListing = (spaceId: string, on: boolean) =>
+  api<{ ok: true }>(`/spaces/${spaceId}/listing`, { method: "POST", body: { on } });

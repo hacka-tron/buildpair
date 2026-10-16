@@ -50,6 +50,7 @@ export function CommandPalette() {
       { key: "upcoming", label: "Upcoming", group: "Go to", icon: "calendar", run: go("/upcoming") },
       { key: "spaces", label: "Spaces", group: "Go to", icon: "grid", run: go("/spaces") },
       { key: "supporting", label: "Supporting", group: "Go to", icon: "users", run: go("/supporting") },
+      { key: "discover", label: "Discover", group: "Go to", icon: "compass", run: go("/discover") },
       { key: "activity", label: "Activity", group: "Go to", icon: "bell", run: go("/activity") },
       { key: "profile", label: "Profile", group: "Go to", icon: "user", run: go("/profile") },
       {

@@ -50,6 +50,13 @@
       "when": 1792160204006,
       "tag": "0006_real_blizzard",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1792165348678,
+      "tag": "0007_empty_professor_monster",
+      "breakpoints": true
     }
   ]
 }
