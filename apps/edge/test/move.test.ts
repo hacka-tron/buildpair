@@ -1,4 +1,3 @@
-import { env } from "cloudflare:test";
 import { newId } from "@buildpair/domain";
 import { PROTOCOL_VERSION, type SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
@@ -71,25 +70,6 @@ describe("moving an item to another space", () => {
     // Sending it again finishes nothing new and doesn't duplicate it.
     expect((await move(maya, home, goalId, work, moveId)).status).toBe(200);
     expect((await log(sam, work)).events.filter((e) => e.type === "item.arrived")).toHaveLength(1);
-    // A retry under a new ID after the first stopped partway doesn't duplicate it either.
-    const half = newId();
-    await run(
-      maya,
-      home,
-      command({ type: "item.create", payload: { itemId: half, kind: "todo", title: "Half" } }),
-    );
-    const created = (await log(maya, home)).events.find(
-      (e) => e.type === "item.created" && e.payload.item.id === half,
-    );
-    if (created?.type !== "item.created") throw new Error("missing");
-    const workRoom = env.SPACE_ROOM.get(env.SPACE_ROOM.idFromName(work));
-    await workRoom.receiveItems(newId(), [created.payload.item], created.actorId);
-    expect((await move(maya, home, half, work)).status).toBe(200);
-    expect((await log(sam, work)).events.filter((e) => e.type === "item.arrived")).toHaveLength(2);
-    const stillHere = (await log(maya, home)).events.some(
-      (e) => e.type === "item.created" && e.payload.item.id === half,
-    );
-    expect(stillHere).toBe(false);
     // It can move back.
     expect((await move(maya, work, goalId, home)).status).toBe(200);
     const goalThere = (await log(sam, work)).events.some(
@@ -145,5 +125,79 @@ describe("moving an item to another space", () => {
     expect((await move(maya, home, goalId, home)).status).toBe(400);
     expect((await maya.post(`/spaces/${home}/items/${goalId}/move`, { toSpaceId: work })).status).toBe(400);
     expect((await log(maya, home)).events.filter((e) => e.type === "item.created")).toHaveLength(2);
+  });
+
+  it("never loses an item to a reused move ID", async () => {
+    const { maya, sam, home, work } = await setup();
+    const one = newId();
+    const two = newId();
+    await run(
+      maya,
+      home,
+      command({ type: "item.create", payload: { itemId: one, kind: "todo", title: "First" } }),
+      command({ type: "item.create", payload: { itemId: two, kind: "todo", title: "Second" } }),
+    );
+    const moveId = newId();
+    expect((await move(maya, home, one, work, moveId)).status).toBe(200);
+    // The same ID for another item is refused, and that item stays put.
+    expect((await move(maya, home, two, work, moveId)).status).toBe(409);
+    const titles = (b: Batch) =>
+      b.events.flatMap((e) =>
+        e.type === "item.created"
+          ? [e.payload.item.title]
+          : e.type === "item.arrived"
+            ? e.payload.items.map((i) => i.title)
+            : [],
+      );
+    expect(titles(await log(maya, home))).toEqual(["Second"]);
+    // An ID that already brought something else into the other space: refused there, so it comes back.
+    const third = await spaceOf(maya, "Third");
+    const other = newId();
+    await run(
+      maya,
+      third,
+      command({ type: "item.create", payload: { itemId: other, kind: "todo", title: "Other" } }),
+    );
+    const taken = newId();
+    expect((await move(maya, third, other, work, taken)).status).toBe(200);
+    expect((await move(maya, home, two, work, taken)).status).toBe(200);
+    expect(titles(await log(maya, home))).toEqual(["Second"]);
+    expect(titles(await log(sam, work))).toEqual(["First", "Other"]);
+  });
+
+  it("answers a resent move the same way and doesn't move it twice", async () => {
+    const { maya, sam, home, work } = await setup();
+    const itemId = newId();
+    await run(maya, home, command({ type: "item.create", payload: { itemId, kind: "todo", title: "Once" } }));
+    const moveId = newId();
+    expect((await move(maya, home, itemId, work, moveId)).status).toBe(200);
+    const again = await move(maya, home, itemId, work, moveId);
+    expect(again.status).toBe(200);
+    expect(await again.json()).toEqual({ ok: true, delivered: true });
+    expect((await log(sam, work)).events.filter((e) => e.type === "item.arrived")).toHaveLength(1);
+  });
+
+  it("brings the item back when the other space refuses it", async () => {
+    const { maya, home, work } = await setup();
+    const itemId = newId();
+    await run(
+      maya,
+      home,
+      command({ type: "item.create", payload: { itemId, kind: "todo", title: "Boomerang" } }),
+    );
+    // The other space already used this move ID for something else.
+    const third = await spaceOf(maya, "Third");
+    const other = newId();
+    await run(
+      maya,
+      third,
+      command({ type: "item.create", payload: { itemId: other, kind: "todo", title: "Other" } }),
+    );
+    const moveId = newId();
+    expect((await move(maya, third, other, work, moveId)).status).toBe(200);
+    expect((await move(maya, home, itemId, work, moveId)).status).toBe(200);
+    const back = (await log(maya, home)).events.filter((e) => e.type === "item.arrived");
+    expect(back).toHaveLength(1);
+    expect(JSON.stringify(await log(maya, work))).not.toContain("Boomerang");
   });
 });

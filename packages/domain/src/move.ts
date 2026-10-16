@@ -45,8 +45,6 @@ export function decideArrive(
   if (!state.members[actorId]) return { ok: false, reason: "You're not a member of the space you picked." };
   if (items.length === 0 || items.some((i) => i.ownerId !== actorId))
     return { ok: false, reason: "Only the person who added this item can move it." };
-  // Already here from an earlier try that stopped partway: nothing to add, so the move can finish.
-  if (items.every((i) => state.items[i.id]?.ownerId === actorId)) return { ok: true, events: [] };
   if (items.some((i) => state.items[i.id]))
     return { ok: false, reason: "This item is already in that space." };
   return { ok: true, events: [{ ...base, actorId, type: "item.arrived", payload: { items } }] };

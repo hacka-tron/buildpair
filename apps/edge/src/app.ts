@@ -336,9 +336,8 @@ app.post("/spaces/:id/commands", async (c) => {
 });
 
 /**
- * Move an item (a goal with its steps) to another of your spaces. It's added there first, then taken out
- * of here, so a failure partway leaves it in both rather than neither; sending the same moveId again
- * finishes the job.
+ * Move an item (a goal with its steps) to another of your spaces. The space it's in takes it out and
+ * delivers it; sending the same moveId again resumes a delivery that hasn't landed yet.
  */
 app.post("/spaces/:id/items/:itemId/move", async (c) => {
   const body = z
@@ -351,15 +350,9 @@ app.post("/spaces/:id/items/:itemId/move", async (c) => {
   if (toSpaceId === from) return c.json(err("invalid", "It's already in this space."), 400);
   if (!(await isMember(c.env, from, userId)) || !(await isMember(c.env, toSpaceId, userId)))
     return c.json(err("not_found", "Space not found."), 404);
-  const source = room(c.env, from);
-  const prepared = await source.prepareMove(moveId, c.req.param("itemId"), userId);
-  if (!prepared.ok) return c.json(err("rejected", prepared.reason), 409);
-  if (prepared.done) return c.json({ ok: true });
-  const arrived = await room(c.env, toSpaceId).receiveItems(moveId, prepared.items, userId);
-  if (!arrived.ok) return c.json(err("rejected", arrived.reason), 409);
-  const left = await source.moveOut(moveId, c.req.param("itemId"), userId);
-  if (!left.ok) return c.json(err("rejected", left.reason), 409);
-  return c.json({ ok: true });
+  const result = await room(c.env, from).moveOut(moveId, c.req.param("itemId"), toSpaceId, userId);
+  if (!result.ok) return c.json(err("rejected", result.reason), 409);
+  return c.json({ ok: true, delivered: result.delivered });
 });
 
 app.post("/spaces/:id/invites", async (c) => {

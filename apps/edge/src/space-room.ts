@@ -26,7 +26,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { spaces } from "./db/schema";
 import type { Env } from "./env";
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const MAX_EVENTS_PER_BATCH = 500;
 /** The Worker sets this after verifying a ticket; Durable Objects are not reachable from the internet directly. */
 export const USER_HEADER = "x-buildpair-user";
@@ -99,6 +99,23 @@ export class SpaceRoom extends DurableObject<Env> {
         payload TEXT NOT NULL
       )`);
       sql.exec("CREATE TABLE IF NOT EXISTS commands (id TEXT PRIMARY KEY, seq INTEGER NOT NULL)");
+    }
+    if (version < 2) {
+      // Moving items between spaces: copies waiting to be delivered, move IDs used here, and arrivals.
+      sql.exec(`CREATE TABLE IF NOT EXISTS outbox (
+        move_id TEXT PRIMARY KEY,
+        item_id TEXT NOT NULL,
+        to_space TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        items TEXT NOT NULL
+      )`);
+      sql.exec(`CREATE TABLE IF NOT EXISTS moves (
+        move_id TEXT PRIMARY KEY,
+        item_id TEXT NOT NULL,
+        to_space TEXT NOT NULL,
+        actor_id TEXT NOT NULL
+      )`);
+      sql.exec("CREATE TABLE IF NOT EXISTS arrivals (move_id TEXT PRIMARY KEY, key TEXT NOT NULL)");
     }
     sql.exec("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)", String(SCHEMA_VERSION));
   }
@@ -244,6 +261,8 @@ export class SpaceRoom extends DurableObject<Env> {
     ]);
     this.ctx.storage.transactionSync(() => {
       sql.exec("DELETE FROM events WHERE actor_id = ? AND type != 'member.erased'", userId);
+      // Copies of their items waiting to move elsewhere go too.
+      sql.exec("DELETE FROM outbox WHERE actor_id = ?", userId);
       // Sharing an item copies its chat lines and reactions into someone else's event. Take theirs out too.
       const copies = sql
         .exec<{ seq: number; payload: string }>(
@@ -296,63 +315,134 @@ export class SpaceRoom extends DurableObject<Env> {
     return { ok: true, seq: this.load().seq };
   }
 
-  // --- Moving an item to another space (the Worker runs these in order; each is safe to repeat) ---
-
-  /** What would leave with this item, or why it can't move. `done` means this move already finished here. */
-  async prepareMove(
-    moveId: string,
-    itemId: string,
-    actorId: string,
-  ): Promise<{ ok: true; done: boolean; items: Item[] } | { ok: false; reason: string }> {
-    if (this.commandSeq(moveId) !== undefined) return { ok: true, done: true, items: [] };
-    const d = decideMoveOut(this.load(), itemId, actorId, {
-      commandId: moveId,
-      at: new Date().toISOString(),
-    });
-    return d.ok ? { ok: true, done: false, items: d.items } : d;
-  }
-
-  /** The items arrive here. */
-  async receiveItems(moveId: string, items: Item[], actorId: string): Promise<CommandResult> {
-    const seen = this.commandSeq(moveId);
-    if (seen !== undefined) return { ok: true, seq: seen };
-    const d = decideArrive(this.load(), items, actorId, { commandId: moveId, at: new Date().toISOString() });
-    if (!d.ok) return d;
-    const events = this.commit(d.events, moveId);
-    this.publish(events);
-    return { ok: true, seq: this.load().seq };
-  }
+  // --- Moving an item to another space ---
 
   /**
-   * The items leave: everyone's devices drop them, and their earlier events are deleted from this log so
-   * nothing about them is sent from here again. Chat lines about shared items stay; lines about private
-   * ones go, with their reactions.
+   * The item (a goal with its steps) leaves this space for `toSpaceId`. In one step it's taken out, its
+   * earlier events are deleted from this log, and a copy waits in the outbox. Nothing can change it in
+   * between, and the copy is kept until the other space has it. Delivery is tried at once, then by alarm.
+   * Chat lines about a shared item stay; lines about a private one go, with their reactions.
+   * Sending the same moveId again only resumes delivery; a moveId used for something else is refused.
    */
-  async moveOut(moveId: string, itemId: string, actorId: string): Promise<CommandResult> {
-    const seen = this.commandSeq(moveId);
-    if (seen !== undefined) return { ok: true, seq: seen };
+  async moveOut(
+    moveId: string,
+    itemId: string,
+    toSpaceId: string,
+    actorId: string,
+  ): Promise<{ ok: true; delivered: boolean } | { ok: false; reason: string }> {
+    const sql = this.ctx.storage.sql;
+    const used = sql
+      .exec<{ item_id: string; to_space: string; actor_id: string }>(
+        "SELECT item_id, to_space, actor_id FROM moves WHERE move_id = ?",
+        moveId,
+      )
+      .toArray()[0];
+    if (used) {
+      if (used.item_id !== itemId || used.to_space !== toSpaceId || used.actor_id !== actorId)
+        return { ok: false, reason: "That move didn't go through. Try again." };
+      // The same move sent again: finish delivering it if it hasn't landed yet.
+      return { ok: true, delivered: await this.deliver() };
+    }
     const d = decideMoveOut(this.load(), itemId, actorId, {
       commandId: moveId,
       at: new Date().toISOString(),
     });
     if (!d.ok) return d;
-    const [moved] = this.commit([d.event], moveId);
+    const [moved] = this.commit([d.event]);
     const ids = new Set(d.items.map((i) => i.id));
-    const keepLines = d.items[0]!.visibility === "space";
     const log = this.readLog().filter((e) => e.seq < moved!.seq);
-    const gone = log.filter((e) => leavesWith(e, ids, keepLines));
+    const gone = log.filter((e) => leavesWith(e, ids, d.items[0]!.visibility === "space"));
     const goneLines = new Set(
       gone.flatMap((e) => (e.type === "message.posted" ? [e.payload.message.id] : [])),
     );
     for (const e of log)
       if (e.type === "reaction.toggled" && goneLines.has(e.payload.messageId)) gone.push(e);
-    const sql = this.ctx.storage.sql;
     this.ctx.storage.transactionSync(() => {
       for (const e of gone) sql.exec("DELETE FROM events WHERE seq = ?", e.seq);
+      sql.exec(
+        "INSERT INTO moves (move_id, item_id, to_space, actor_id) VALUES (?, ?, ?, ?)",
+        moveId,
+        itemId,
+        toSpaceId,
+        actorId,
+      );
+      sql.exec(
+        "INSERT INTO outbox (move_id, item_id, to_space, actor_id, items) VALUES (?, ?, ?, ?, ?)",
+        moveId,
+        itemId,
+        toSpaceId,
+        actorId,
+        JSON.stringify(d.items),
+      );
     });
     this.state = null;
     this.publish([moved!]);
-    return { ok: true, seq: this.load().seq };
+    return { ok: true, delivered: await this.deliver() };
+  }
+
+  /**
+   * Items arriving from another space. Each moveId lands once: the same move again is a no-op, and a
+   * moveId already used for different items is refused (so the sender takes them back).
+   */
+  async receiveItems(
+    moveId: string,
+    fromSpaceId: string,
+    items: Item[],
+    actorId: string,
+  ): Promise<{ ok: true } | { ok: false; reason: string }> {
+    const sql = this.ctx.storage.sql;
+    const key = `${fromSpaceId}:${items.map((i) => i.id).join(",")}`;
+    const seen = sql.exec<{ key: string }>("SELECT key FROM arrivals WHERE move_id = ?", moveId).toArray()[0];
+    if (seen) return seen.key === key ? { ok: true } : { ok: false, reason: "This move was already used." };
+    const d = decideArrive(this.load(), items, actorId, { commandId: moveId, at: new Date().toISOString() });
+    if (!d.ok) return d;
+    const events = this.commit(d.events);
+    sql.exec("INSERT INTO arrivals (move_id, key) VALUES (?, ?)", moveId, key);
+    this.publish(events);
+    return { ok: true };
+  }
+
+  /**
+   * Send waiting moves to their spaces. A space that refuses for good (it was deleted, or the person left)
+   * means the items come back here. If a space can't be reached, try again later. True when all landed.
+   */
+  private async deliver(): Promise<boolean> {
+    const sql = this.ctx.storage.sql;
+    const rows = sql
+      .exec<{ move_id: string; to_space: string; actor_id: string; items: string }>(
+        "SELECT move_id, to_space, actor_id, items FROM outbox",
+      )
+      .toArray();
+    let waiting = false;
+    for (const row of rows) {
+      const items = JSON.parse(row.items) as Item[];
+      let result: { ok: true } | { ok: false; reason: string };
+      try {
+        const there = this.env.SPACE_ROOM.get(this.env.SPACE_ROOM.idFromName(row.to_space));
+        result = await there.receiveItems(row.move_id, this.spaceId(), items, row.actor_id);
+      } catch {
+        waiting = true;
+        continue;
+      }
+      if (!result.ok) this.takeBack(row.actor_id, items);
+      sql.exec("DELETE FROM outbox WHERE move_id = ?", row.move_id);
+    }
+    if (waiting) await this.ctx.storage.setAlarm(Date.now() + 30_000);
+    return !waiting;
+  }
+
+  /** A move the other space refused: the items return here, unless their owner has left. */
+  private takeBack(actorId: string, items: Item[]) {
+    const state = this.load();
+    if (!state.members[actorId] || items.some((i) => state.items[i.id])) return;
+    const events = this.commit([
+      { type: "item.arrived", actorId, commandId: null, at: new Date().toISOString(), payload: { items } },
+    ]);
+    this.publish(events);
+  }
+
+  override async alarm(): Promise<void> {
+    await this.deliver();
   }
 
   /** Everything after `afterSeq` that this person may see. */

@@ -41,8 +41,8 @@ export function ItemSheet(props: {
   const [step, setStep] = useState("");
   const [error, setError] = useState("");
   const [moving, setMoving] = useState(false);
-  // One ID per sheet, so tapping again after a failure finishes the same move instead of starting another.
-  const moveId = useRef(newId());
+  // One ID per destination, so tapping it again after a failure finishes the same move.
+  const moveIds = useRef<Record<string, string>>({});
   const { spaces } = useSpaces();
 
   if (!item) return null;
@@ -79,7 +79,8 @@ export function ItemSheet(props: {
       setMoving(true);
       setError("");
       try {
-        await moveItem(props.spaceId, live.id, toSpaceId, moveId.current);
+        moveIds.current[toSpaceId] ??= newId();
+        await moveItem(props.spaceId, live.id, toSpaceId, moveIds.current[toSpaceId]);
         props.onClose();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Couldn't move it. Try again.");

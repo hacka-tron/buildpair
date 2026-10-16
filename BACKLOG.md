@@ -72,7 +72,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **"order 2 jan prints" reads as January 2.** A number next to a month name counts as a date anywhere in the words. The add box shows it and one tap undoes it.
 - **"Every monday" becomes 1 time a week**, not specific days. Habits only know times per week for now.
 - **Still to build in milestone 3:** reminders and push.
-- **An edit made in the old space during a move can be lost.** The item is copied to the new space, then removed from the old one. A change in that split second stays behind. Rare, and the item is never lost.
+- **A move to a space that can't be reached waits.** The old space keeps a copy and retries every 30 seconds until the new space takes it, so for that time the item shows in neither. If the new space refuses (deleted, or you left), the item comes back. Not tested against a real outage.
 - **Making an item private still tells others its ID (review of the visibility change, minor).** The "went private" notice names item IDs only, but goes to every member, including people who join later. From it they can tell that a private item (or a goal with N steps) exists and roughly when it was made.
 - **Old odd step shapes keep their old visibility.** Before 2026-10-16 a direct command could put a goal under a goal, or a step under someone else's goal. The app never did. Such items don't follow their top goal when it's made private.
 - **Sharing an item again copies its chat lines and reactions into the log.** Toggling a long-lived goal back and forth many times grows the log. No size limit yet; snapshots (above) would fix it.

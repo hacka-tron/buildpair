@@ -576,8 +576,8 @@ describe("moving an item to another space", () => {
     if (!arrive.ok) throw new Error(arrive.reason);
     const landed = applyEvents(there, sequence(arrive.events, there.seq));
     expect(landed.items[stepId]).toMatchObject({ status: "done", doneOn: ["2026-10-10"], parentId: goalId });
-    // Arriving again (a retry after a move stopped partway) adds nothing.
-    expect(decideArrive(landed, out.items, "maya", base)).toEqual({ ok: true, events: [] });
+    // The same items can't land twice.
+    expect(decideArrive(landed, out.items, "maya", base)).toMatchObject({ ok: false });
   });
 
   it("keeps a private item's move and arrival to its owner", () => {
@@ -633,5 +633,50 @@ describe("moving an item to another space", () => {
     };
     expect(leavesWith(done, ids, true)).toBe(true);
     expect(leavesWith(done, new Set([newId()]), true)).toBe(false);
+  });
+
+  it("leaves someone else's old step behind on its own, and takes a private item's lines along", () => {
+    const { s, goalId, stepId } = goal();
+    const theirs = newId();
+    const withTheirs = applyEvents(
+      s,
+      sequence(
+        [
+          {
+            type: "item.created",
+            actorId: "jordan",
+            commandId: null,
+            at: AT,
+            payload: {
+              item: {
+                ...s.items[stepId]!,
+                id: theirs,
+                ownerId: "jordan",
+                title: "Jordan's",
+                status: "open",
+                doneOn: [],
+              },
+            },
+          },
+        ],
+        s.seq,
+      ),
+    );
+    const out = decideMoveOut(withTheirs, goalId, "maya", base);
+    if (!out.ok) throw new Error(out.reason);
+    expect(out.items.map((i) => i.id)).not.toContain(theirs);
+    const after = applyEvents(withTheirs, sequence([out.event], withTheirs.seq));
+    expect(after.items[theirs]?.parentId).toBeNull();
+    // A shared goal's completion line stays in the chat.
+    expect(after.messages.some((m) => m.itemId === stepId)).toBe(true);
+
+    const hidden = run(
+      s,
+      cmd({ type: "item.visibility", payload: { itemId: goalId, visibility: "owner" } }),
+    ).state;
+    const privateOut = decideMoveOut(hidden, goalId, "maya", base);
+    if (!privateOut.ok) throw new Error(privateOut.reason);
+    const gone = applyEvents(hidden, sequence([privateOut.event], hidden.seq));
+    expect(gone.messages.some((m) => m.itemId === stepId)).toBe(false);
   });
 });
