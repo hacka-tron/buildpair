@@ -69,4 +69,28 @@ describe("profiles", () => {
       404,
     );
   });
+
+  it("hides profiles both ways once someone blocks, clears compliments, and skips private goals", async () => {
+    const { maya, jordan, spaceId, mayaId, jordanId } = await pair();
+    await jordan.post(`/people/${mayaId}/compliments`, { tag: "friendly", on: true });
+    const privateGoal = newId();
+    await maya.post(`/spaces/${spaceId}/commands`, {
+      commands: [
+        command({
+          type: "item.create",
+          payload: { itemId: privateGoal, kind: "goal", title: "x", visibility: "owner" },
+        }),
+        command({ type: "item.complete", payload: { itemId: privateGoal, on: "2026-10-16" } }),
+      ],
+    });
+    await new Promise((r) => setTimeout(r, 200));
+    expect((await profile(jordan, mayaId)).stats.goalsFinished).toBe(0);
+    await maya.post("/me/blocks", { userId: jordanId });
+    expect((await jordan.get(`/people/${mayaId}`)).status).toBe(404);
+    expect((await maya.get(`/people/${jordanId}`)).status).toBe(404);
+    expect((await jordan.post(`/people/${mayaId}/compliments`, { tag: "honest", on: true })).status).toBe(
+      404,
+    );
+    expect((await profile(maya, mayaId)).compliments).toEqual([]);
+  });
 });

@@ -712,6 +712,15 @@ app.post("/me/blocks", async (c) => {
     .insert(blocks)
     .values({ blockerId: me, blockedId: body.data.userId, createdAt: new Date() })
     .onConflictDoNothing();
+  // Compliments between you go, both ways.
+  await db
+    .delete(compliments)
+    .where(
+      or(
+        and(eq(compliments.fromId, me), eq(compliments.toId, body.data.userId)),
+        and(eq(compliments.fromId, body.data.userId), eq(compliments.toId, me)),
+      ),
+    );
   // Any request they have waiting on your spaces goes too.
   const mine = db.select({ id: spaces.id }).from(spaces).where(eq(spaces.ownerId, me));
   await db
@@ -810,9 +819,20 @@ app.post("/reports", async (c) => {
   return c.json({ ok: true }, 201);
 });
 
-/** Whether two people are both in at least one space right now. */
+/** Whether two people are both in at least one space right now, and neither has blocked the other. */
 async function shareASpace(env: Env, a: string, b: string): Promise<boolean> {
   const db = drizzle(env.DB);
+  const blocked = await db
+    .select({ id: blocks.blockerId })
+    .from(blocks)
+    .where(
+      or(
+        and(eq(blocks.blockerId, a), eq(blocks.blockedId, b)),
+        and(eq(blocks.blockerId, b), eq(blocks.blockedId, a)),
+      ),
+    )
+    .get();
+  if (blocked) return false;
   const theirs = db.select({ id: memberships.spaceId }).from(memberships).where(eq(memberships.userId, b));
   const row = await db
     .select({ id: memberships.spaceId })

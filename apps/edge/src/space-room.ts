@@ -715,10 +715,12 @@ export class SpaceRoom extends DurableObject<Env> {
     const state = this.load();
     // A listed space's Discover card follows its changes.
     if (this.listed()) this.ctx.waitUntil(this.syncListing());
-    // Finished goals count toward the owner's profile.
+    // Finished shared goals count toward the owner's profile.
     for (const e of events) {
       const item = e.type === "item.completed" ? state.items[e.payload.itemId] : undefined;
-      if (item?.kind === "goal" && item.status === "done") this.ctx.waitUntil(this.countGoal(item.ownerId));
+      // Only shared goals: a count that moves for a private one would tell others it exists.
+      if (item?.kind === "goal" && item.status === "done" && item.visibility === "space")
+        this.ctx.waitUntil(this.countGoal(item.ownerId));
     }
     const after = events[0]!.seq - 1;
     for (const ws of this.ctx.getWebSockets()) {

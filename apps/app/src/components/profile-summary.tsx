@@ -34,33 +34,43 @@ export function statsLine(s: PersonProfile["stats"]): string {
 export function ProfileSummary({ userId, self }: { userId: string; self: boolean }) {
   const [profile, setProfile] = useState<PersonProfile | null>(null);
   const [error, setError] = useState("");
+  /** A compliment that didn't go through; the profile stays on screen. */
+  const [notice, setNotice] = useState("");
   useEffect(() => {
+    let current = true;
+    setProfile(null);
+    setError("");
     getProfile(userId)
-      .then(setProfile)
-      .catch((e: Error) => setError(e.message));
+      .then((p) => current && setProfile(p))
+      .catch((e: Error) => current && setError(e.message));
+    return () => {
+      current = false;
+    };
   }, [userId]);
   if (error) return <Text style={{ fontSize: 13, color: colors.faint }}>{error}</Text>;
   if (!profile) return null;
   const counts = new Map(profile.compliments.map((c) => [c.tag, c.count]));
+  /** Apply one compliment change to a profile, so quick taps on different chips all count. */
+  const flip = (p: PersonProfile, tag: ComplimentTag, on: boolean): PersonProfile => {
+    if (p.mine.includes(tag) === on) return p;
+    const n = (p.compliments.find((c) => c.tag === tag)?.count ?? 0) + (on ? 1 : -1);
+    const others = p.compliments.filter((c) => c.tag !== tag);
+    return {
+      ...p,
+      mine: on ? [...p.mine, tag] : p.mine.filter((t) => t !== tag),
+      compliments: n > 0 ? [...others, { tag, count: n }] : others,
+    };
+  };
   const toggle = async (tag: ComplimentTag) => {
     const on = !profile.mine.includes(tag);
-    // Show it at once; put it back if the server says no.
-    const before = profile;
-    setProfile({
-      ...profile,
-      mine: on ? [...profile.mine, tag] : profile.mine.filter((t) => t !== tag),
-      compliments: Object.entries(COMPLIMENT_LABELS)
-        .map(([t]) => ({
-          tag: t as ComplimentTag,
-          count: (counts.get(t as ComplimentTag) ?? 0) + (t === tag ? (on ? 1 : -1) : 0),
-        }))
-        .filter((c) => c.count > 0),
-    });
+    setNotice("");
+    // Show it at once; undo just this one if the server says no.
+    setProfile((p) => (p ? flip(p, tag, on) : p));
     try {
       await setCompliment(userId, tag, on);
     } catch (e) {
-      setProfile(before);
-      setError((e as Error).message);
+      setProfile((p) => (p ? flip(p, tag, !on) : p));
+      setNotice((e as Error).message);
     }
   };
   return (
@@ -121,6 +131,7 @@ export function ProfileSummary({ userId, self }: { userId: string; self: boolean
               );
             })}
           </View>
+          {notice ? <Text style={{ fontSize: 12, color: colors.faint }}>{notice}</Text> : null}
         </View>
       )}
     </View>
