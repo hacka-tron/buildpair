@@ -34,6 +34,7 @@ import { authClient } from "../../lib/auth";
 import { block, unblock, useBlocked } from "../../lib/blocks";
 import { ago, localToday, peopleLine } from "../../lib/format";
 import { applyChange, markSpaceGone, patchSpace, refreshSpaces, useSpaces } from "../../lib/spaces";
+import { nudgeFor } from "../../lib/supporting";
 import { colors, radius, space } from "../../lib/theme";
 import { markRead, useReadPositions } from "../../lib/unread";
 import { useSpace } from "../../lib/use-space";
@@ -783,6 +784,8 @@ function Chat(props: {
 }) {
   const [draft, setDraft] = useState("");
   const [picker, setPicker] = useState<string | null>(null);
+  const nudge = useMemo(() => nudgeFor(props.view, props.userId), [props.view, props.userId]);
+  const [nudgeHidden, setNudgeHidden] = useState(false);
   const lastTyping = useRef(0);
   const rows = useMemo(() => {
     const out: Row[] = [];
@@ -859,6 +862,50 @@ function Chat(props: {
           )
         }
       />
+      {nudge && !nudgeHidden && !draft ? (
+        <View style={{ gap: space.sm, paddingHorizontal: space.md, paddingTop: space.md }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={{ flex: 1, fontSize: 13, color: colors.sub }}>
+              {nudge.ownerName} has been quiet for {nudge.quietDays} days. Send a nudge?
+            </Text>
+            <Pressable
+              onPress={() => setNudgeHidden(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Hide suggestions"
+              hitSlop={8}
+            >
+              <Icon name="x" size={14} color={colors.faint} />
+            </Pressable>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: space.sm }}
+          >
+            {nudge.suggestions.map((text) => (
+              <Pressable
+                key={text}
+                onPress={() => setDraft(text)}
+                accessibilityRole="button"
+                accessibilityLabel={`Start a message: ${text}`}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.line,
+                  borderRadius: 999,
+                  paddingHorizontal: 12,
+                  paddingVertical: 7,
+                  maxWidth: 320,
+                  backgroundColor: "#fff",
+                }}
+              >
+                <Text numberOfLines={1} style={{ fontSize: 13, color: colors.ink }}>
+                  {text}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
       <View
         style={{
           flexDirection: "row",

@@ -51,7 +51,9 @@ export default function Supporting() {
         {quiet.length ? (
           <View style={{ gap: space.sm }}>
             <SectionHeader open={!collapsed} onToggle={() => setCollapsed((c) => !c)}>
-              {`Check in on · ${quiet.length}`}
+              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>
+                Check in on · {quiet.length}
+              </Text>
             </SectionHeader>
             {!collapsed
               ? quiet.map((q) => (

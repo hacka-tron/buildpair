@@ -2,7 +2,7 @@ import { applyEvents, emptySpace, type SpaceState } from "@buildpair/domain";
 import type { Item, Message, SpaceEvent } from "@buildpair/protocol";
 import { describe, expect, it } from "vitest";
 import type { SpaceSummary } from "./api";
-import { activity, checkIns, namesLine, supportedRows } from "./supporting";
+import { activity, checkIns, namesLine, nudgeFor, supportedRows } from "./supporting";
 
 const NOW = Date.parse("2026-10-16T12:00:00.000Z");
 const daysAgo = (n: number) => new Date(NOW - n * 86_400_000).toISOString();
@@ -153,5 +153,25 @@ describe("activity", () => {
     expect(namesLine(["Sam"])).toBe("Sam");
     expect(namesLine(["Sam", "Ana"])).toBe("Sam and Ana");
     expect(namesLine(["Sam", "Ana", "Jo", "Lee"])).toBe("Sam and 3 others");
+  });
+});
+
+describe("nudges", () => {
+  it("offers check-ins built from the owner's last skip and their goal", () => {
+    const view = space({
+      items: [{ title: "Half marathon" }],
+      messages: [{ kind: "skip", body: "knee is sore", createdAt: daysAgo(9) }],
+    });
+    const nudge = nudgeFor(view, "me", NOW);
+    expect(nudge).toMatchObject({ ownerName: "Alex", quietDays: 9 });
+    expect(nudge?.suggestions[0]).toContain("knee is sore");
+    expect(nudge?.suggestions[1]).toContain("Half marathon");
+    expect(nudge?.suggestions).toHaveLength(3);
+  });
+
+  it("stays out of the way for the owner and for spaces that aren't quiet", () => {
+    const quiet = space({ items: [{}], messages: [{ createdAt: daysAgo(9) }] });
+    expect(nudgeFor(quiet, "alex", NOW)).toBeNull();
+    expect(nudgeFor(space({ items: [{}], messages: [{ createdAt: daysAgo(1) }] }), "me", NOW)).toBeNull();
   });
 });
