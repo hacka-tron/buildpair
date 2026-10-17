@@ -76,6 +76,19 @@ export const ItemArrived = ev("item.arrived", z.object({ items: z.array(Item).mi
 export const ItemCompleted = ev("item.completed", z.object({ itemId: Ulid, on: LocalDate }));
 export const ItemSkipped = ev("item.skipped", z.object({ itemId: Ulid, on: LocalDate }));
 export const ItemWontDo = ev("item.wont", z.object({ itemId: Ulid }));
+/** A tick or "won't do" taken back. `messageId` is the chat line it posted, which goes with it. */
+export const ItemReopened = ev(
+  "item.reopened",
+  z.object({ itemId: Ulid, on: LocalDate, messageId: Ulid.nullable() }),
+);
+/**
+ * Items deleted (a goal with its steps). Like a move, their earlier events are deleted from the log and
+ * chat lines about shared items stay.
+ */
+export const ItemDeleted = ev(
+  "item.deleted",
+  z.object({ itemIds: z.array(Ulid).min(1), visibility: Visibility }),
+);
 export const MessagePosted = ev("message.posted", z.object({ message: Message }));
 export const ReactionToggled = ev(
   "reaction.toggled",
@@ -96,6 +109,8 @@ export const SpaceEvent = z.discriminatedUnion("type", [
   ItemCompleted,
   ItemSkipped,
   ItemWontDo,
+  ItemReopened,
+  ItemDeleted,
   MessagePosted,
   ReactionToggled,
 ]);

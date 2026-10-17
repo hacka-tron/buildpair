@@ -62,6 +62,7 @@ export function leavesWith(event: SpaceEvent, ids: ReadonlySet<string>, keepLine
     case "item.completed":
     case "item.skipped":
     case "item.wont":
+    case "item.reopened":
       return ids.has(event.payload.itemId);
     case "item.visibility":
       return event.payload.itemIds.some((id) => ids.has(id));

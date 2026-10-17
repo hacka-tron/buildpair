@@ -7,6 +7,7 @@ import { ApiError, moveItem } from "../lib/api";
 import { dueLabel } from "../lib/format";
 import { useSpaces } from "../lib/spaces";
 import { colors, radius, space } from "../lib/theme";
+import { deleteLater, toggle } from "../lib/ticks";
 import { ItemRow, Sheet, Tag } from "./kit";
 import { type Schedule, SchedulePanel } from "./schedule";
 import { Button, ErrorText } from "./ui";
@@ -62,6 +63,15 @@ export function ItemSheet(props: {
     if (problem) return setError(problem);
     setError("");
     after?.();
+  };
+
+  // Deleted after the Undo notice, so a slip costs nothing. A goal takes its steps.
+  const remove = () => {
+    const ids = [live.id, ...steps.filter((st) => st.ownerId === props.userId).map((st) => st.id)];
+    deleteLater(ids, live.kind === "goal" ? "Goal and its steps deleted" : "Deleted", () =>
+      props.apply({ type: "item.delete", payload: { itemId: live.id } }),
+    );
+    props.onClose();
   };
 
   const confirm = () => {
@@ -191,7 +201,7 @@ export function ItemSheet(props: {
               today={props.today}
               last={i === steps.length - 1 && !(mine && open)}
               readOnly={!mine || !open}
-              onToggle={() => run({ type: "item.complete", payload: { itemId: s.id, on: props.today } })}
+              onToggle={() => setError(toggle(s, props.today, props.apply) ?? "")}
             />
           ))}
           {mine && open ? (
@@ -267,16 +277,23 @@ export function ItemSheet(props: {
       ) : mine && open ? (
         <View style={{ gap: space.sm }}>
           <ErrorText>{error}</ErrorText>
-          {!doneToday ? (
-            <Button
-              label={
-                live.kind === "habit" ? "Done today" : live.kind === "goal" ? "Finish goal" : "Mark done"
-              }
-              onPress={() =>
-                run({ type: "item.complete", payload: { itemId: live.id, on: props.today } }, props.onClose)
-              }
-            />
-          ) : null}
+          <Button
+            label={
+              doneToday
+                ? "Not done today"
+                : live.kind === "habit"
+                  ? "Done today"
+                  : live.kind === "goal"
+                    ? "Finish goal"
+                    : "Mark done"
+            }
+            kind={doneToday ? "secondary" : "primary"}
+            onPress={() => {
+              const problem = toggle(live, props.today, props.apply);
+              if (problem) setError(problem);
+              else props.onClose();
+            }}
+          />
           <View style={{ flexDirection: "row", gap: space.sm }}>
             {live.kind === "habit" && !doneToday && !skippedToday ? (
               <View style={{ flex: 1 }}>
@@ -292,30 +309,56 @@ export function ItemSheet(props: {
               </View>
             ) : null}
           </View>
-          {!live.parentId ? (
-            <Pressable
-              onPress={() => {
-                setError("");
-                setMode("move");
-              }}
-              accessibilityRole="button"
-              hitSlop={8}
-              style={{ alignSelf: "center", paddingVertical: space.sm }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.blue }}>
-                Move to another space
-              </Text>
-            </Pressable>
-          ) : null}
+          <View style={{ flexDirection: "row", justifyContent: "center", gap: space.xl }}>
+            {!live.parentId ? (
+              <LinkButton
+                label="Move to another space"
+                onPress={() => {
+                  setError("");
+                  setMode("move");
+                }}
+              />
+            ) : null}
+            <LinkButton label="Delete" danger onPress={remove} />
+          </View>
+        </View>
+      ) : mine ? (
+        <View style={{ gap: space.sm }}>
+          <ErrorText>{error}</ErrorText>
+          <Text style={{ fontSize: 13, color: colors.faint }}>
+            {live.status === "wont" ? "Marked won't do." : "Finished."}
+          </Text>
+          <Button
+            label={live.kind === "goal" ? "Reopen goal" : "Reopen"}
+            kind="secondary"
+            onPress={() => {
+              const problem = toggle(live, props.today, props.apply);
+              if (problem) setError(problem);
+            }}
+          />
+          <LinkButton label="Delete" danger onPress={remove} />
         </View>
       ) : (
         <Text style={{ fontSize: 13, color: colors.faint }}>
-          {mine
-            ? "This one is closed."
-            : "Only the person who added it can change it. You can react and reply in the chat."}
+          Only the person who added it can change it. You can react and reply in the chat.
         </Text>
       )}
     </Sheet>
+  );
+}
+
+function LinkButton(props: { label: string; onPress: () => void; danger?: boolean }) {
+  return (
+    <Pressable
+      onPress={props.onPress}
+      accessibilityRole="button"
+      hitSlop={8}
+      style={{ alignSelf: "center", paddingVertical: space.sm }}
+    >
+      <Text style={{ fontSize: 14, fontWeight: "600", color: props.danger ? colors.danger : colors.blue }}>
+        {props.label}
+      </Text>
+    </Pressable>
   );
 }
 

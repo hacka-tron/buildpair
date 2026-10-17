@@ -145,6 +145,39 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
       if (item) next.items = { ...state.items, [item.id]: { ...item, status: "wont" } };
       break;
     }
+    case "item.reopened": {
+      const item = state.items[event.payload.itemId];
+      if (item) {
+        const reopened: Item =
+          item.kind === "habit"
+            ? { ...item, doneOn: item.doneOn.filter((d) => d !== event.payload.on) }
+            : { ...item, status: "open", doneOn: [] };
+        next.items = { ...state.items, [item.id]: reopened };
+      }
+      const line = event.payload.messageId;
+      if (line) {
+        next.messages = state.messages.filter((m) => m.id !== line);
+        const { [line]: _, ...reactions } = state.reactions;
+        next.reactions = reactions;
+      }
+      break;
+    }
+    case "item.deleted": {
+      const gone = new Set(event.payload.itemIds);
+      // Someone else's step under a deleted goal (older data) stays, on its own.
+      next.items = Object.fromEntries(
+        Object.entries(state.items)
+          .filter(([id]) => !gone.has(id))
+          .map(([id, i]) => [id, i.parentId && gone.has(i.parentId) ? { ...i, parentId: null } : i]),
+      );
+      // A private item's lines go with it, as they do from the log.
+      if (event.payload.visibility === "owner") {
+        next.messages = state.messages.filter((m) => !m.itemId || !gone.has(m.itemId));
+        const kept = new Set(next.messages.map((m) => m.id));
+        next.reactions = Object.fromEntries(Object.entries(state.reactions).filter(([id]) => kept.has(id)));
+      }
+      break;
+    }
     case "message.posted":
       next.messages = [...state.messages, { ...event.payload.message, seq: event.seq }];
       break;

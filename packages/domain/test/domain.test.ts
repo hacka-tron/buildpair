@@ -787,3 +787,120 @@ describe("weekly reflections", () => {
     expect(readReflection(broken)).toBeNull();
   });
 });
+
+describe("taking a tick back, and deleting", () => {
+  const todo = (title: string, extra: Partial<CommandInput["payload"]> = {}) => {
+    const itemId = newId();
+    return { itemId, c: cmd({ type: "item.create", payload: { itemId, kind: "todo", title, ...extra } }) };
+  };
+
+  it("reopens a finished to-do and takes its chat line and reactions with it", () => {
+    const t = todo("Call the bank");
+    let s = run(space(), t.c).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    const line = s.messages.find((m) => m.kind === "completion")!;
+    s = run(
+      s,
+      cmd({ type: "reaction.toggle", payload: { messageId: line.id, emoji: "🎉" } }),
+      "jordan",
+    ).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    expect(s.items[t.itemId]).toMatchObject({ status: "open", doneOn: [] });
+    expect(s.messages).toEqual([]);
+    expect(s.reactions[line.id]).toBeUndefined();
+    // Ticking again works and posts again.
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    expect(s.items[t.itemId]?.status).toBe("done");
+    expect(s.messages).toHaveLength(1);
+  });
+
+  it("reopens a won't-do, and takes back only today's tick on a habit", () => {
+    const t = todo("Fix the gate");
+    let s = run(space(), t.c).state;
+    s = run(s, cmd({ type: "item.wont", payload: { itemId: t.itemId, reason: "Moving out" } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    expect(s.items[t.itemId]?.status).toBe("open");
+    expect(s.messages).toEqual([]);
+
+    const habitId = newId();
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: habitId, kind: "habit", title: "Gym", timesPerWeek: 3 },
+      }),
+    ).state;
+    for (const on of ["2026-10-09", "2026-10-10"])
+      s = run(s, cmd({ type: "item.complete", payload: { itemId: habitId, on } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: habitId, on: "2026-10-10" } })).state;
+    expect(s.items[habitId]?.doneOn).toEqual(["2026-10-09"]);
+    expect(s.messages.filter((m) => m.itemId === habitId)).toHaveLength(1);
+  });
+
+  it("does nothing for an open item, and only the owner can reopen or delete", () => {
+    const t = todo("Write docs");
+    const s = run(space(), t.c).state;
+    expect(
+      decide(s, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } }), "maya"),
+    ).toEqual({
+      ok: true,
+      events: [],
+    });
+    const done = run(
+      s,
+      cmd({ type: "item.complete", payload: { itemId: t.itemId, on: "2026-10-10" } }),
+    ).state;
+    expect(
+      decide(done, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } }), "jordan")
+        .ok,
+    ).toBe(false);
+    expect(decide(done, cmd({ type: "item.delete", payload: { itemId: t.itemId } }), "jordan").ok).toBe(
+      false,
+    );
+  });
+
+  it("deletes a goal with its steps, keeping a shared item's chat lines", () => {
+    const goalId = newId();
+    const stepId = newId();
+    let s = run(
+      space(),
+      cmd({ type: "item.create", payload: { itemId: goalId, kind: "goal", title: "Launch" } }),
+    ).state;
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: stepId, kind: "todo", title: "Docs", parentId: goalId },
+      }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: stepId, on: "2026-10-10" } })).state;
+    const { state, events } = run(s, cmd({ type: "item.delete", payload: { itemId: goalId } }));
+    expect(state.items).toEqual({});
+    expect(state.messages).toHaveLength(1);
+    expect(canSee(state, "jordan", events[0]!)).toBe(true);
+  });
+
+  it("keeps a private item's delete and reopen to its owner, and takes its lines along", () => {
+    const t = todo("See therapist");
+    let s = run(space(), t.c).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId: t.itemId, visibility: "owner" } })).state;
+    const reopened = run(s, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } }));
+    expect(canSee(reopened.state, "jordan", reopened.events[0]!)).toBe(false);
+    const { state, events } = run(s, cmd({ type: "item.delete", payload: { itemId: t.itemId } }));
+    expect(state.messages).toEqual([]);
+    expect(canSee(state, "jordan", events[0]!)).toBe(false);
+    expect(canSee(state, "maya", events[0]!)).toBe(true);
+  });
+
+  it("forgets a reopened item's events with it when it leaves the log", () => {
+    const e = { seq: 9, type: "item.reopened", actorId: "maya", commandId: null, at: AT } as const;
+    expect(
+      leavesWith(
+        { ...e, payload: { itemId: "a", on: "2026-10-10", messageId: null } } as SpaceEvent,
+        new Set(["a"]),
+        true,
+      ),
+    ).toBe(true);
+  });
+});

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useShortcuts } from "../lib/shortcuts";
 import { colors, radius, space } from "../lib/theme";
+import { deleteLater, isTicked, notify } from "../lib/ticks";
 import { Icon, Sheet } from "./kit";
 import { NO_SCHEDULE, type Schedule, SchedulePanel } from "./schedule";
 import { Button } from "./ui";
@@ -55,7 +56,7 @@ export function SelectionBar(props: {
   const dated = picked.filter((p) => p.item.kind !== "habit");
   const skippable = picked.filter((p) => p.item.kind !== "goal");
 
-  const run = (targets: Picked[], change: (item: Item) => Change) => {
+  const run = (targets: Picked[], change: (item: Item) => Change): boolean => {
     const failed = targets
       .map((p) => props.apply(p.spaceId, change(p.item)))
       .filter((reason): reason is string => Boolean(reason));
@@ -65,14 +66,35 @@ export function SelectionBar(props: {
           ? (failed[0] ?? "That didn't work.")
           : `${targets.length - failed.length} done. ${failed.length} couldn't be changed. ${failed[0]}`,
       );
-      return;
+      return false;
     }
     setProblem("");
     props.onClear();
+    return true;
   };
 
-  const done = () =>
-    run(picked, (item) => ({ type: "item.complete", payload: { itemId: item.id, on: today } }));
+  const done = () => {
+    const open = picked.filter((p) => !isTicked(p.item, today));
+    if (!run(open, (item) => ({ type: "item.complete", payload: { itemId: item.id, on: today } }))) return;
+    notify(open.length === 1 ? "Done" : `${open.length} done`, () => {
+      for (const p of open)
+        props.apply(p.spaceId, { type: "item.reopen", payload: { itemId: p.item.id, on: today } });
+    });
+  };
+  // Sent after the Undo notice, like a single delete.
+  const remove = () => {
+    const targets = [...picked];
+    deleteLater(
+      targets.map((p) => p.item.id),
+      targets.length === 1 ? "Deleted" : `${targets.length} deleted`,
+      () => {
+        for (const p of targets)
+          props.apply(p.spaceId, { type: "item.delete", payload: { itemId: p.item.id } });
+      },
+    );
+    setProblem("");
+    props.onClear();
+  };
   const skip = () =>
     run(skippable, (item) => ({ type: "item.skip", payload: { itemId: item.id, on: today, reason: null } }));
   const wont = () =>
@@ -83,6 +105,8 @@ export function SelectionBar(props: {
       s: skippable.length > 0 ? skip : undefined,
       w: n > 0 ? wont : undefined,
       r: dated.length > 0 ? () => setRescheduling(true) : undefined,
+      Backspace: n > 0 ? remove : undefined,
+      Delete: n > 0 ? remove : undefined,
       Escape: props.onClear,
     },
     !rescheduling,
@@ -163,6 +187,7 @@ export function SelectionBar(props: {
             {action(props.wide ? "Skip today" : "Skip", skippable.length > 0, skip, "S")}
             {action("Won't do", n > 0, wont, "W")}
             {action("Reschedule", dated.length > 0, () => setRescheduling(true), "R")}
+            {action("Delete", n > 0, remove, "⌫")}
           </View>
         </View>
       </View>

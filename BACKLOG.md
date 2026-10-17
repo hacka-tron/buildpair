@@ -142,6 +142,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 ## Decisions (owner)
 
+- To-dos follow the habits of the best to-do apps, as written up in `docs/design/todo-study.md`. A tick can always be taken back. A ticked item keeps its place for a moment. Every tick and delete shows Undo for five seconds, and deletes are sent only after that. Reopening takes back the chat line it posted. No priorities or flags for now (Claude's call, 2026-10-16).
+
 - Integrations (Jira, Linear, GitHub, health apps) wait. Focus on core features and polish (2026-10-16).
 - Privacy and terms drafts are fine as written, minimum age 16 (2026-10-16).
 - Mail on the domain: `hello@` (public contact) and `reports@` (moderation) forward to the owner's personal inbox through Cloudflare Email Routing, so no personal address sits in the public repo (2026-10-16, suggested by Claude, owner to set up).

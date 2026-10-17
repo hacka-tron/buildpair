@@ -417,11 +417,34 @@ export class SpaceRoom extends DurableObject<Env> {
       return { ok: false, reason: "That change couldn't be saved. Try making it shorter." };
     }
     const events = this.commit(decision.events, command.id);
+    for (const e of events)
+      if (e.type === "item.deleted")
+        this.forget(new Set(e.payload.itemIds), e.payload.visibility === "space", e.seq);
     // The list of spaces is updated before anyone hears about the change, so a sidebar that refreshes
     // on the news already sees it.
     for (const e of events) if (e.type === "space.edited") await this.updateIndex(e.payload.changes);
     this.publish(events);
     return { ok: true, seq: this.load().seq };
+  }
+
+  /**
+   * Items left the log (moved or deleted) at `seq`: delete their earlier events, so nothing about them is
+   * stored or sent again. Chat lines about shared items stay (`keepLines`); lines about private ones go,
+   * with their reactions.
+   */
+  private forget(ids: ReadonlySet<string>, keepLines: boolean, seq: number) {
+    const sql = this.ctx.storage.sql;
+    const log = this.readLog().filter((e) => e.seq < seq);
+    const gone = log.filter((e) => leavesWith(e, ids, keepLines));
+    const goneLines = new Set(
+      gone.flatMap((e) => (e.type === "message.posted" ? [e.payload.message.id] : [])),
+    );
+    for (const e of log)
+      if (e.type === "reaction.toggled" && goneLines.has(e.payload.messageId)) gone.push(e);
+    // Callers run this in the same synchronous step as the commit, so the two land together.
+    for (const e of gone) sql.exec("DELETE FROM events WHERE seq = ?", e.seq);
+    this.dropSnapshot();
+    this.state = null;
   }
 
   // --- Moving an item to another space ---
@@ -460,15 +483,8 @@ export class SpaceRoom extends DurableObject<Env> {
     if (!d.ok) return d;
     const [moved] = this.commit([d.event]);
     const ids = new Set(d.items.map((i) => i.id));
-    const log = this.readLog().filter((e) => e.seq < moved!.seq);
-    const gone = log.filter((e) => leavesWith(e, ids, d.items[0]!.visibility === "space"));
-    const goneLines = new Set(
-      gone.flatMap((e) => (e.type === "message.posted" ? [e.payload.message.id] : [])),
-    );
-    for (const e of log)
-      if (e.type === "reaction.toggled" && goneLines.has(e.payload.messageId)) gone.push(e);
     this.ctx.storage.transactionSync(() => {
-      for (const e of gone) sql.exec("DELETE FROM events WHERE seq = ?", e.seq);
+      this.forget(ids, d.items[0]!.visibility === "space", moved!.seq);
       sql.exec(
         "INSERT INTO moves (move_id, item_id, to_space, actor_id) VALUES (?, ?, ?, ?)",
         moveId,

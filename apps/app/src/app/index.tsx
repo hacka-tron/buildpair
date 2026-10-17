@@ -28,6 +28,7 @@ import { useShortcuts } from "../lib/shortcuts";
 import { applyChange, useSpaces, useSpaceViews } from "../lib/spaces";
 import { TEMPLATES, type Template } from "../lib/templates";
 import { colors, radius, space } from "../lib/theme";
+import { isTicked, toggle, useHeld, useHidden } from "../lib/ticks";
 
 /**
  * What's on today: anything open that's due today or earlier, habits, top-level things without a
@@ -82,16 +83,21 @@ export default function Today() {
     (s) => views[s.id] && reflectionDue(views[s.id]!, userId, new Date()),
   );
 
+  const held = useHeld();
+  const hidden = useHidden();
   const groups = (spaces ?? []).map((s) => {
     const view = views[s.id];
-    const all = Object.values(view?.items ?? {});
+    const all = Object.values(view?.items ?? {}).filter((i) => !hidden.has(i.id));
+    // A just-ticked item keeps its place for a moment, so a mis-tap is easy to undo.
     const open = all.filter(
-      (i) => forToday(i, today, view) && !doneOnDay(i, today) && !skippedToday(i, today),
+      (i) =>
+        (forToday(i, today, view) && !doneOnDay(i, today) && !skippedToday(i, today)) ||
+        (held.has(i.id) && doneOnDay(i, today)),
     );
-    const doneToday = all.filter((i) => doneOnDay(i, today));
+    const doneToday = all.filter((i) => doneOnDay(i, today) && !held.has(i.id));
     return { space: s, view, open, doneToday };
   });
-  const left = groups.reduce((n, g) => n + g.open.length, 0);
+  const left = groups.reduce((n, g) => n + g.open.filter((i) => !isTicked(i, today)).length, 0);
   const done = groups.reduce((n, g) => n + g.doneToday.length, 0);
   // Open things due in the next two weeks, and goals with any deadline, soonest first, so nothing added
   // for later drops out of sight.
@@ -101,7 +107,8 @@ export default function Today() {
       Object.values(view?.items ?? {})
         .filter(
           (i) =>
-            i.status === "open" &&
+            (i.status === "open" || held.has(i.id)) &&
+            !hidden.has(i.id) &&
             i.kind !== "habit" &&
             i.dueOn !== null &&
             i.dueOn > today &&
@@ -261,12 +268,7 @@ export default function Today() {
                       selection={selection.rowProps(item, s.id, userId)}
                       onOpen={() => setOpened({ spaceId: s.id, item })}
                       onToggle={() =>
-                        setProblem(
-                          applyChange(s.id, userId, {
-                            type: "item.complete",
-                            payload: { itemId: item.id, on: today },
-                          }) ?? "",
-                        )
+                        setProblem(toggle(item, today, (c) => applyChange(s.id, userId, c)) ?? "")
                       }
                     />
                   ))}
@@ -293,12 +295,7 @@ export default function Today() {
                     selection={selection.rowProps(item, s.id, userId)}
                     onOpen={() => setOpened({ spaceId: s.id, item })}
                     onToggle={() =>
-                      setProblem(
-                        applyChange(s.id, userId, {
-                          type: "item.complete",
-                          payload: { itemId: item.id, on: today },
-                        }) ?? "",
-                      )
+                      setProblem(toggle(item, today, (c) => applyChange(s.id, userId, c)) ?? "")
                     }
                   />
                 ))}
