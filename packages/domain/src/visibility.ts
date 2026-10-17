@@ -18,6 +18,7 @@ export function canSee(state: SpaceState, userId: UserId, event: SpaceEvent): bo
     case "item.completed":
     case "item.skipped":
     case "item.wont":
+    case "item.reopened":
     case "item.edited":
       return visibleTo(state, userId, event.payload.itemId);
     case "item.visibility":
@@ -25,6 +26,7 @@ export function canSee(state: SpaceState, userId: UserId, event: SpaceEvent): bo
       // the items, so it goes only to people who may see them now.
       return event.payload.visibility === "owner" || visibleTo(state, userId, event.payload.itemIds[0]);
     case "item.moved":
+    case "item.deleted":
       return event.payload.visibility === "space" || event.actorId === userId;
     case "item.arrived":
       return visibleTo(state, userId, event.payload.items[0]?.id);

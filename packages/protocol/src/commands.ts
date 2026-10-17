@@ -48,6 +48,13 @@ export const EditSpace = cmd(
 export const SetItemVisibility = cmd("item.visibility", z.object({ itemId: Ulid, visibility: Visibility }));
 
 export const CompleteItem = cmd("item.complete", z.object({ itemId: Ulid, on: LocalDate }));
+/**
+ * Take back a tick (or "won't do"): a to-do or goal opens again, a habit loses that day's tick. The chat
+ * line it posted goes too.
+ */
+export const ReopenItem = cmd("item.reopen", z.object({ itemId: Ulid, on: LocalDate }));
+/** Delete an item for good. A goal takes its steps with it. */
+export const DeleteItem = cmd("item.delete", z.object({ itemId: Ulid }));
 export const SkipItem = cmd(
   "item.skip",
   z.object({ itemId: Ulid, on: LocalDate, reason: z.string().trim().max(500).nullable().default(null) }),
@@ -78,6 +85,8 @@ export const Command = z.discriminatedUnion("type", [
   SetItemVisibility,
   EditSpace,
   CompleteItem,
+  ReopenItem,
+  DeleteItem,
   SkipItem,
   WontDoItem,
   PostUpdate,

@@ -6,6 +6,7 @@ import { authClient } from "../lib/auth";
 import { resetBlocks, useBlocked } from "../lib/blocks";
 import { resetSpaces, useSpaces, useSpaceViews } from "../lib/spaces";
 import { colors, space, WIDE } from "../lib/theme";
+import { dismiss, flushDeletes, useNotice } from "../lib/ticks";
 import { useUnread } from "../lib/unread";
 import { stopAllSyncs } from "../lib/use-space";
 import { CommandPalette } from "./command-palette";
@@ -25,12 +26,14 @@ export type Section =
 type Href = "/" | "/upcoming" | "/spaces" | "/supporting" | "/discover" | "/activity";
 
 export const TAB_BAR_HEIGHT = 58;
+const SIDEBAR_WIDTH = 248;
 
 export function useWide() {
   return useWindowDimensions().width >= WIDE;
 }
 
 export async function signOut() {
+  flushDeletes();
   stopAllSyncs();
   resetSpaces();
   resetBlocks();
@@ -60,6 +63,7 @@ export function Shell({
         <Sidebar active={active} />
         <View style={{ flex: 1, minWidth: 0 }}>{children}</View>
         <CommandPalette />
+        <UndoNotice wide bottom={space.lg} />
       </SafeAreaView>
     );
   }
@@ -67,7 +71,62 @@ export function Shell({
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
       <View style={{ flex: 1 }}>{children}</View>
       {tabs ? <TabBar active={active} /> : <BottomInset />}
+      {/* Above the tab bar and clear of the floating + and the selection bar. */}
+      <UndoNotice wide={false} bottom={(tabs ? TAB_BAR_HEIGHT : 0) + 84} />
     </SafeAreaView>
+  );
+}
+
+/** "Done · Undo": shows for a few seconds after a tick or delete (bottom left of the page on wide screens). */
+function UndoNotice({ wide, bottom }: { wide: boolean; bottom: number }) {
+  const notice = useNotice();
+  if (!notice) return null;
+  return (
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: "absolute",
+        bottom,
+        left: wide ? SIDEBAR_WIDTH + space.xxl : space.lg,
+        right: wide ? undefined : space.lg,
+        alignItems: wide ? "flex-start" : "center",
+      }}
+    >
+      <View
+        accessibilityLiveRegion="polite"
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: space.lg,
+          paddingVertical: 10,
+          paddingLeft: space.lg,
+          paddingRight: notice.undo ? space.md : space.lg,
+          borderRadius: 12,
+          backgroundColor: colors.ink,
+          shadowColor: "#000",
+          shadowOpacity: 0.2,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
+        }}
+      >
+        <Text style={{ fontSize: 14, color: colors.bg }}>{notice.text}</Text>
+        {notice.undo ? (
+          <Pressable
+            onPress={() => {
+              notice.undo?.();
+              dismiss(notice.id);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Undo"
+            hitSlop={10}
+            style={{ paddingHorizontal: space.sm, paddingVertical: 2 }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.royal }}>Undo</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
@@ -140,7 +199,12 @@ function Sidebar({ active }: { active: Section }) {
   const name = session?.user.name || session?.user.email || "";
   return (
     <View
-      style={{ width: 248, backgroundColor: colors.sidebar, borderRightWidth: 1, borderColor: colors.line }}
+      style={{
+        width: SIDEBAR_WIDTH,
+        backgroundColor: colors.sidebar,
+        borderRightWidth: 1,
+        borderColor: colors.line,
+      }}
     >
       <ScrollView contentContainerStyle={{ padding: space.lg, gap: 2 }}>
         <View style={{ paddingHorizontal: 6, paddingTop: 4, paddingBottom: space.lg }}>

@@ -8,6 +8,7 @@ import {
   decideMoveOut,
   decideRemove,
   emptySpace,
+  forgetPlan,
   leavesWith,
   newId,
   normalizeSpace,
@@ -785,5 +786,258 @@ describe("weekly reflections", () => {
     const r = run(space(), post("ok"));
     const broken = { ...r.state.messages.at(-1)!, body: "not json" };
     expect(readReflection(broken)).toBeNull();
+  });
+});
+
+describe("taking a tick back, and deleting", () => {
+  const todo = (title: string, extra: Partial<CommandInput["payload"]> = {}) => {
+    const itemId = newId();
+    return { itemId, c: cmd({ type: "item.create", payload: { itemId, kind: "todo", title, ...extra } }) };
+  };
+
+  it("reopens a finished to-do and takes its chat line and reactions with it", () => {
+    const t = todo("Call the bank");
+    let s = run(space(), t.c).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    const line = s.messages.find((m) => m.kind === "completion")!;
+    s = run(
+      s,
+      cmd({ type: "reaction.toggle", payload: { messageId: line.id, emoji: "🎉" } }),
+      "jordan",
+    ).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    expect(s.items[t.itemId]).toMatchObject({ status: "open", doneOn: [] });
+    expect(s.messages).toEqual([]);
+    expect(s.reactions[line.id]).toBeUndefined();
+    // Ticking again works and posts again.
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    expect(s.items[t.itemId]?.status).toBe("done");
+    expect(s.messages).toHaveLength(1);
+  });
+
+  it("reopens a won't-do, and takes back only today's tick on a habit", () => {
+    const t = todo("Fix the gate");
+    let s = run(space(), t.c).state;
+    s = run(s, cmd({ type: "item.wont", payload: { itemId: t.itemId, reason: "Moving out" } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    expect(s.items[t.itemId]?.status).toBe("open");
+    expect(s.messages).toEqual([]);
+
+    const habitId = newId();
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: habitId, kind: "habit", title: "Gym", timesPerWeek: 3 },
+      }),
+    ).state;
+    for (const on of ["2026-10-09", "2026-10-10"])
+      s = run(s, cmd({ type: "item.complete", payload: { itemId: habitId, on } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: habitId, on: "2026-10-10" } })).state;
+    expect(s.items[habitId]?.doneOn).toEqual(["2026-10-09"]);
+    expect(s.messages.filter((m) => m.itemId === habitId)).toHaveLength(1);
+  });
+
+  it("does nothing for an open item, and only the owner can reopen or delete", () => {
+    const t = todo("Write docs");
+    const s = run(space(), t.c).state;
+    expect(
+      decide(s, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } }), "maya"),
+    ).toEqual({
+      ok: true,
+      events: [],
+    });
+    const done = run(
+      s,
+      cmd({ type: "item.complete", payload: { itemId: t.itemId, on: "2026-10-10" } }),
+    ).state;
+    expect(
+      decide(done, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } }), "jordan")
+        .ok,
+    ).toBe(false);
+    expect(decide(done, cmd({ type: "item.delete", payload: { itemId: t.itemId } }), "jordan").ok).toBe(
+      false,
+    );
+  });
+
+  it("deletes a goal with its steps, keeping a shared item's chat lines", () => {
+    const goalId = newId();
+    const stepId = newId();
+    let s = run(
+      space(),
+      cmd({ type: "item.create", payload: { itemId: goalId, kind: "goal", title: "Launch" } }),
+    ).state;
+    s = run(
+      s,
+      cmd({
+        type: "item.create",
+        payload: { itemId: stepId, kind: "todo", title: "Docs", parentId: goalId },
+      }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: stepId, on: "2026-10-10" } })).state;
+    const { state, events } = run(s, cmd({ type: "item.delete", payload: { itemId: goalId } }));
+    expect(state.items).toEqual({});
+    expect(state.messages).toHaveLength(1);
+    expect(canSee(state, "jordan", events[0]!)).toBe(true);
+  });
+
+  it("keeps a private item's delete and reopen to its owner, and takes its lines along", () => {
+    const t = todo("See therapist");
+    let s = run(space(), t.c).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: t.itemId, on: "2026-10-10" } })).state;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId: t.itemId, visibility: "owner" } })).state;
+    const reopened = run(s, cmd({ type: "item.reopen", payload: { itemId: t.itemId, on: "2026-10-10" } }));
+    expect(canSee(reopened.state, "jordan", reopened.events[0]!)).toBe(false);
+    const { state, events } = run(s, cmd({ type: "item.delete", payload: { itemId: t.itemId } }));
+    expect(state.messages).toEqual([]);
+    expect(canSee(state, "jordan", events[0]!)).toBe(false);
+    expect(canSee(state, "maya", events[0]!)).toBe(true);
+  });
+
+  it("forgets a reopened item's events with it when it leaves the log", () => {
+    const e = { seq: 9, type: "item.reopened", actorId: "maya", commandId: null, at: AT } as const;
+    expect(
+      leavesWith(
+        { ...e, payload: { itemId: "a", on: "2026-10-10", messageId: null } } as SpaceEvent,
+        new Set(["a"]),
+        true,
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("review fixes for reopen and delete", () => {
+  /** Run commands, keeping the numbered log like a room does. */
+  function logOf(...cmds: Command[]) {
+    let state = space();
+    const log: SpaceEvent[] = [];
+    for (const c of cmds) {
+      const r = run(state, c);
+      state = r.state;
+      log.push(...r.events);
+    }
+    return { state, log };
+  }
+  /** What the room does on delete: commit, rewrite the log, rebuild from it. */
+  function deleteAndRebuild(start: { state: SpaceState; log: SpaceEvent[] }, itemId: string) {
+    const r = run(start.state, cmd({ type: "item.delete", payload: { itemId } }));
+    const e = r.events[0]!;
+    if (e.type !== "item.deleted") throw new Error("no delete");
+    const { drop, rewrite } = forgetPlan(
+      start.log,
+      new Set(e.payload.itemIds),
+      e.payload.visibility === "space",
+    );
+    const byNumber = new Map(rewrite.map((x) => [x.seq, x]));
+    const log = [...start.log.filter((x) => !drop.includes(x.seq)).map((x) => byNumber.get(x.seq) ?? x), e];
+    return applyEvents(
+      space(),
+      log.filter((x) => x.seq > 3),
+    );
+  }
+
+  it("deleting a step keeps its private goal private", () => {
+    const goal = newId();
+    const step = newId();
+    const start = logOf(
+      cmd({ type: "item.create", payload: { itemId: goal, kind: "goal", title: "Secret plan" } }),
+      cmd({ type: "item.create", payload: { itemId: step, kind: "todo", title: "Step", parentId: goal } }),
+      cmd({ type: "item.visibility", payload: { itemId: goal, visibility: "owner" } }),
+    );
+    const rebuilt = deleteAndRebuild(start, step);
+    expect(rebuilt.items[goal]?.visibility).toBe("owner");
+    expect(viewFor(rebuilt, "jordan").items[goal]).toBeUndefined();
+  });
+
+  it("deleting a step keeps a goal that arrived with it", () => {
+    const goal = newId();
+    const step = newId();
+    const base = { id: goal, kind: "goal", title: "Moved goal", ownerId: "maya", parentId: null } as const;
+    const item = (over: object) => ({
+      visibility: "space" as const,
+      status: "open" as const,
+      dueOn: null,
+      dueTime: null,
+      timesPerWeek: null,
+      doneOn: [],
+      skippedOn: [],
+      notes: "",
+      createdAt: AT,
+      ...base,
+      ...over,
+    });
+    const arrival: SpaceEvent = {
+      seq: 4,
+      type: "item.arrived",
+      actorId: "maya",
+      commandId: null,
+      at: AT,
+      payload: { items: [item({}), item({ id: step, kind: "todo", title: "Step", parentId: goal })] },
+    };
+    const state = applyEvents(space(), [arrival]);
+    const rebuilt = deleteAndRebuild({ state, log: [arrival] }, step);
+    expect(rebuilt.items[goal]?.title).toBe("Moved goal");
+    expect(rebuilt.items[step]).toBeUndefined();
+  });
+
+  it("a line a reopen took back stays gone after the item is deleted", () => {
+    const itemId = newId();
+    const start = logOf(
+      cmd({ type: "item.create", payload: { itemId, kind: "todo", title: "Oops" } }),
+      cmd({ type: "item.complete", payload: { itemId, on: "2026-10-10" } }),
+      cmd({ type: "item.reopen", payload: { itemId, on: "2026-10-10" } }),
+    );
+    expect(deleteAndRebuild(start, itemId).messages).toEqual([]);
+  });
+
+  it("reopening a habit's day removes that day's line, not another", () => {
+    const habitId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId: habitId, kind: "habit", title: "Gym", timesPerWeek: 3 },
+      }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: habitId, on: "2026-10-09" } })).state;
+    const yesterday = s.messages[0]!.id;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId: habitId, visibility: "owner" } })).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: habitId, on: "2026-10-10" } })).state;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId: habitId, visibility: "space" } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: habitId, on: "2026-10-10" } })).state;
+    expect(s.messages.map((m) => m.id)).toEqual([yesterday]);
+    expect(s.items[habitId]?.doneOn).toEqual(["2026-10-09"]);
+  });
+
+  it("a won't-do set while private takes back no older line when reopened", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({ type: "item.create", payload: { itemId, kind: "todo", title: "Gate" } }),
+    ).state;
+    s = run(s, cmd({ type: "item.wont", payload: { itemId, reason: "first" } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId, on: "2026-10-10" } })).state;
+    s = run(s, cmd({ type: "item.skip", payload: { itemId, on: "2026-10-10", reason: "busy" } })).state;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId, visibility: "owner" } })).state;
+    s = run(s, cmd({ type: "item.wont", payload: { itemId, reason: null } })).state;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId, visibility: "space" } })).state;
+    const before = s.messages.length;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId, on: "2026-10-10" } })).state;
+    expect(s.messages).toHaveLength(before);
+  });
+
+  it("reopens a habit marked won't do, keeping its ticks", () => {
+    const habitId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId: habitId, kind: "habit", title: "Gym", timesPerWeek: 3 },
+      }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: habitId, on: "2026-10-09" } })).state;
+    s = run(s, cmd({ type: "item.wont", payload: { itemId: habitId, reason: null } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: habitId, on: "2026-10-10" } })).state;
+    expect(s.items[habitId]).toMatchObject({ status: "open", doneOn: ["2026-10-09"] });
   });
 });

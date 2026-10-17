@@ -135,6 +135,39 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       if (shared(item)) events.push(chat("completion", item.title, item.id));
       return { ok: true, events };
     }
+    case "item.reopen": {
+      const item = ownItem(command.payload.itemId);
+      if (typeof item === "string") return reject(item);
+      const { on } = command.payload;
+      const wont = item.status === "wont";
+      const ticked = wont || (item.kind === "habit" ? item.doneOn.includes(on) : item.status === "done");
+      if (!ticked) return { ok: true, events: [] };
+      // Exactly the line that tick (or "won't do") posted, if it's still in the chat.
+      const lineId =
+        state.tickLines[item.id]?.[wont ? "wont" : item.kind === "habit" ? on : (item.doneOn[0] ?? on)];
+      const line = lineId ? state.messages.find((m) => m.id === lineId && m.authorId === actorId) : undefined;
+      return {
+        ok: true,
+        events: [
+          { ...base, type: "item.reopened", payload: { itemId: item.id, on, messageId: line?.id ?? null } },
+        ],
+      };
+    }
+    case "item.delete": {
+      const item = ownItem(command.payload.itemId);
+      if (typeof item === "string") return reject(item);
+      // Only your own steps: older data may hold someone else's step under your goal.
+      const itemIds = [
+        item.id,
+        ...Object.values(state.items)
+          .filter((i) => i.parentId === item.id && i.ownerId === actorId)
+          .map((i) => i.id),
+      ];
+      return {
+        ok: true,
+        events: [{ ...base, type: "item.deleted", payload: { itemIds, visibility: item.visibility } }],
+      };
+    }
     case "item.skip": {
       const item = ownItem(command.payload.itemId);
       if (typeof item === "string") return reject(item);

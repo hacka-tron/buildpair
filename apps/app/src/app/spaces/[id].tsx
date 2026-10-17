@@ -33,10 +33,11 @@ import {
 } from "../../lib/api";
 import { authClient } from "../../lib/auth";
 import { block, unblock, useBlocked } from "../../lib/blocks";
-import { ago, localToday, peopleLine } from "../../lib/format";
+import { ago, dueLabel, localToday, peopleLine } from "../../lib/format";
 import { applyChange, markSpaceGone, patchSpace, refreshSpaces, useSpaces } from "../../lib/spaces";
 import { nudgeFor } from "../../lib/supporting";
 import { colors, radius, space } from "../../lib/theme";
+import { toggle, useHeld, useHidden } from "../../lib/ticks";
 import { markRead, useReadPositions } from "../../lib/unread";
 import { useSpace } from "../../lib/use-space";
 
@@ -90,8 +91,13 @@ export default function SpaceScreen() {
   const members = Object.values(view.members);
   const others = members.filter((m) => m.userId !== userId);
   const items = useMemo(() => Object.values(view.items).filter((i) => !i.parentId), [view.items]);
-  const open = items.filter((i) => i.status === "open");
-  const doneCount = items.length - open.length;
+  const held = useHeld();
+  const hidden = useHidden();
+  // A just-ticked item keeps its place for a moment; finished ones fold into Done, newest first.
+  const open = items.filter((i) => !hidden.has(i.id) && (i.status === "open" || held.has(i.id)));
+  const finished = items
+    .filter((i) => !hidden.has(i.id) && i.status !== "open" && !held.has(i.id))
+    .sort((a, b) => (b.doneOn.at(-1) ?? b.createdAt).localeCompare(a.doneOn.at(-1) ?? a.createdAt));
 
   const [notice, setNotice] = useState("");
   const run = (change: Change): boolean => {
@@ -99,7 +105,7 @@ export default function SpaceScreen() {
     setNotice(problem ?? "");
     return problem === null;
   };
-  const complete = (item: Item) => run({ type: "item.complete", payload: { itemId: item.id, on: today } });
+  const complete = (item: Item) => setNotice(toggle(item, today, (c) => applyChange(id, userId, c)) ?? "");
   // "+ Add to <space>" reads plain words the same way quick add does ("gym 4x a week", "rent friday").
   const add = (text: string) => {
     const p = parseQuickAdd(text, today);
@@ -126,7 +132,7 @@ export default function SpaceScreen() {
   const itemsPanel = (
     <ItemsPanel
       items={open}
-      doneCount={doneCount}
+      finished={finished}
       spaceName={name}
       today={today}
       view={view}
@@ -440,9 +446,20 @@ export default function SpaceScreen() {
   );
 }
 
+/** When a finished item was finished ("Done today", "Done Oct 3"), or that it won't be done. */
+function finishedMeta(item: Item, today: string): string {
+  if (item.status === "wont") return "Won't do";
+  const on = item.doneOn.at(-1);
+  if (!on) return "Done";
+  if (on === today) return "Done today";
+  const text = dueLabel(on, today).text;
+  return `Done ${text === "Yesterday" ? "yesterday" : text}`;
+}
+
 function ItemsPanel(props: {
   items: Item[];
-  doneCount: number;
+  /** Finished and won't-do items, newest first. */
+  finished: Item[];
   spaceName: string;
   today: string;
   view: SpaceState;
@@ -454,6 +471,7 @@ function ItemsPanel(props: {
   selectionFor: (item: Item) => { active: boolean; selected: boolean; onSelect?: () => void };
 }) {
   const [open, setOpen] = useState(true);
+  const [showDone, setShowDone] = useState(false);
   const [title, setTitle] = useState("");
   const add = () => {
     if (!title.trim()) return;
@@ -477,18 +495,25 @@ function ItemsPanel(props: {
           selection={props.selectionFor(item)}
         />
       ))}
-      {props.doneCount ? (
-        <Text
-          style={{
-            fontSize: 13,
-            color: colors.sub,
-            paddingVertical: 10,
-            borderBottomWidth: 1,
-            borderColor: colors.line,
-          }}
-        >
-          Done · {props.doneCount}
-        </Text>
+      {props.finished.length ? (
+        <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
+          <SectionHeader open={showDone} onToggle={() => setShowDone((v) => !v)}>
+            <Text style={{ fontSize: 13, color: colors.sub }}>Done · {props.finished.length}</Text>
+          </SectionHeader>
+          {showDone
+            ? props.finished.map((item, i) => (
+                <ItemRow
+                  key={item.id}
+                  item={item}
+                  today={props.today}
+                  last={i === props.finished.length - 1}
+                  onToggle={() => props.onToggle(item)}
+                  onOpen={() => props.onOpen(item)}
+                  meta={finishedMeta(item, props.today)}
+                />
+              ))
+            : null}
+        </View>
       ) : null}
       <TextInput
         value={title}

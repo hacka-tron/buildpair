@@ -1,7 +1,8 @@
 import type { Item, SpaceColor } from "@buildpair/protocol";
 import Feather from "@expo/vector-icons/Feather";
-import type { ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 import {
+  Animated,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -211,7 +212,62 @@ export function SectionHeader({
   );
 }
 
-/** One to-do, habit or goal: the circle ticks it, the rest shows what and when. */
+/**
+ * The tick circle. Tapping a ticked one takes the tick back, so a mis-tap is one tap to fix. A faint check
+ * shows on hover (web), and a tick gives a small pop. "Won't do" shows a dash instead of a check.
+ */
+function Circle(props: {
+  done: boolean;
+  wont: boolean;
+  disabled?: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const press = () => {
+    if (!props.done)
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.25, duration: 90, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
+      ]).start();
+    props.onPress();
+  };
+  return (
+    <Pressable
+      onPress={press}
+      disabled={props.disabled}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: props.done, disabled: props.disabled }}
+      accessibilityLabel={props.label}
+      hitSlop={11}
+    >
+      {({ hovered }: HoverState) => (
+        <Animated.View
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            borderWidth: props.done ? 0 : 1.6,
+            borderColor: hovered && !props.disabled ? colors.blue : colors.control,
+            backgroundColor: props.done ? (props.wont ? colors.control : colors.blue) : "transparent",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: props.disabled && !props.done ? 0.5 : 1,
+            transform: [{ scale }],
+          }}
+        >
+          {props.done ? (
+            <Icon name={props.wont ? "minus" : "check"} size={14} color="#fff" />
+          ) : hovered && !props.disabled ? (
+            <Icon name="check" size={12} color={colors.blue} />
+          ) : null}
+        </Animated.View>
+      )}
+    </Pressable>
+  );
+}
+
+/** One to-do, habit or goal: the circle ticks it (or takes the tick back), the rest shows what and when. */
 export function ItemRow({
   item,
   onToggle,
@@ -281,26 +337,13 @@ export function ItemRow({
           {picked ? <Icon name="check" size={14} color="#fff" /> : null}
         </Pressable>
       ) : (
-        <Pressable
+        <Circle
+          done={done || closed}
+          wont={item.status === "wont"}
           onPress={onToggle}
-          disabled={done || closed || readOnly}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: done }}
-          accessibilityLabel={`Mark ${item.title} done`}
-          hitSlop={8}
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 11,
-            borderWidth: done ? 0 : 1.6,
-            borderColor: colors.control,
-            backgroundColor: done ? colors.blue : "transparent",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {done ? <Icon name="check" size={14} color="#fff" /> : null}
-        </Pressable>
+          disabled={readOnly}
+          label={done || closed ? `Mark ${item.title} not done` : `Mark ${item.title} done`}
+        />
       )}
       <Pressable
         onPress={selecting ? selection?.onSelect : onOpen}
