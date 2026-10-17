@@ -18,7 +18,8 @@ export type SpaceColor = z.infer<typeof SpaceColor>;
  */
 export const Repeat = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("week"), days: z.array(z.number().int().min(0).max(6)).min(1).max(7) }),
-  z.object({ kind: z.literal("month") }),
+  /** `day` is the day of the month it falls on (a short month uses its last day). */
+  z.object({ kind: z.literal("month"), day: z.number().int().min(1).max(31).optional() }),
   z.object({ kind: z.literal("days"), every: z.number().int().min(1).max(365) }),
 ]);
 export type Repeat = z.infer<typeof Repeat>;

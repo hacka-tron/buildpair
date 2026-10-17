@@ -1,9 +1,13 @@
-import type { Command, Item, Message, UnsequencedEvent, UserId } from "@buildpair/protocol";
+import type { Command, Item, Message, Repeat, UnsequencedEvent, UserId } from "@buildpair/protocol";
 import type { SpaceState } from "./state";
 
 export type Decision = { ok: true; events: UnsequencedEvent[] } | { ok: false; reason: string };
 
 const reject = (reason: string): Decision => ({ ok: false, reason });
+
+/** A monthly repeat remembers its day of the month, so a short month doesn't move it for good. */
+const withDay = (repeat: Repeat | null, dueOn: string | null | undefined): Repeat | null =>
+  repeat?.kind === "month" && !repeat.day && dueOn ? { ...repeat, day: Number(dueOn.slice(8, 10)) } : repeat;
 
 /**
  * Turn a command into the events it produces, or a reason it can't happen.
@@ -61,7 +65,7 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
         doneOn: [],
         skippedOn: [],
         notes: p.notes,
-        repeat: p.repeat,
+        repeat: withDay(p.repeat, p.dueOn),
         createdAt: command.at,
       };
       return { ok: true, events: [{ ...base, type: "item.created", payload: { item } }] };
@@ -90,7 +94,7 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       if (asked.notes !== undefined && asked.notes !== item.notes) changes.notes = asked.notes;
       if (asked.repeat !== undefined && JSON.stringify(asked.repeat) !== JSON.stringify(item.repeat)) {
         if (item.kind !== "todo") return reject("Only to-dos repeat on days. Habits count times a week.");
-        changes.repeat = asked.repeat;
+        changes.repeat = withDay(asked.repeat, asked.dueOn ?? item.dueOn);
       }
       if (item.kind === "habit") {
         if (asked.dueOn || asked.dueTime) return reject("Habits repeat, so they don't take a date.");
@@ -187,6 +191,11 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       if (typeof item === "string") return reject(item);
       if (item.kind === "goal") return reject("Goals can't be skipped; skip one of their steps instead.");
       if (item.skippedOn.includes(command.payload.on)) return { ok: true, events: [] };
+      // A repeating to-do skips only the one that's due, and not one already done that day.
+      if (item.repeat && item.doneOn.includes(command.payload.on))
+        return reject("This one is already done today.");
+      if (item.repeat && item.dueOn && item.dueOn > command.payload.on)
+        return reject("This one isn't due yet, so there's nothing to skip.");
       const events: UnsequencedEvent[] = [
         { ...base, type: "item.skipped", payload: { itemId: item.id, on: command.payload.on } },
       ];

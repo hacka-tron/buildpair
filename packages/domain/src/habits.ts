@@ -44,7 +44,7 @@ export function nextRepeat(repeat: Repeat, after: string, anchor: string): strin
     }
     return addDays(after, 7);
   }
-  const day = Number(anchor.slice(8, 10));
+  const day = repeat.day ?? Number(anchor.slice(8, 10));
   let y = Number(after.slice(0, 4));
   let m = Number(after.slice(5, 7)) - 1;
   for (;;) {

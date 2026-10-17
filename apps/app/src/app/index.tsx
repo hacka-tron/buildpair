@@ -53,8 +53,11 @@ type Place = "late" | "today" | "anytime" | "done" | null;
 function placeOf(item: Item, today: string, view: SpaceState | undefined, held: ReadonlySet<string>): Place {
   const ticked = doneOnDay(item, today);
   if (ticked && !held.has(item.id)) return "done";
-  // A repeating to-do has already moved on to its next date; keep it here while it settles.
-  if (ticked && item.repeat) return "today";
+  // A repeating to-do has already moved on to its next date; keep it where it was while it settles.
+  if (ticked && item.repeat) {
+    const was = view?.rolledFrom[item.id]?.[today];
+    return was && was < today ? "late" : "today";
+  }
   if (!ticked && (!forToday(item, today, view) || skippedToday(item, today))) return null;
   if (item.kind === "habit") return "today";
   if (!item.dueOn) return item.parentId ? null : "anytime";

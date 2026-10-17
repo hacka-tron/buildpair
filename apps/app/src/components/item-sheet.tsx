@@ -54,7 +54,7 @@ export function ItemSheet(props: {
   const mine = live.ownerId === props.userId;
   const open = live.status === "open";
   const shared = live.visibility === "space";
-  const doneToday = live.kind === "habit" && live.doneOn.includes(props.today);
+  const doneToday = (live.kind === "habit" || Boolean(live.repeat)) && live.doneOn.includes(props.today);
   const skippedToday = live.skippedOn.includes(props.today);
   const steps = Object.values(view?.items ?? {}).filter((i) => i.parentId === live.id);
   const owner = view?.members[live.ownerId]?.name ?? "Someone";
@@ -338,7 +338,9 @@ export function ItemSheet(props: {
             }}
           />
           <View style={{ flexDirection: "row", gap: space.sm }}>
-            {live.kind === "habit" && !doneToday && !skippedToday ? (
+            {(live.kind === "habit" || (live.repeat && live.dueOn && live.dueOn <= props.today)) &&
+            !doneToday &&
+            !skippedToday ? (
               <View style={{ flex: 1 }}>
                 <Button label="Skip" kind="secondary" onPress={() => setMode("skip")} />
               </View>

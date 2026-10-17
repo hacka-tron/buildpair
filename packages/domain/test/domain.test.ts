@@ -1123,3 +1123,45 @@ describe("repeating to-dos", () => {
     expect(no({ kind: "todo", dueOn: "2026-10-15", repeat })).toBe(true);
   });
 });
+
+describe("repeating to-do review fixes", () => {
+  it("keeps a monthly one on its day after a short month", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId, kind: "todo", title: "Rent", dueOn: "2026-01-31", repeat: { kind: "month" } },
+      }),
+    ).state;
+    const dates: (string | null | undefined)[] = [];
+    for (const on of ["2026-01-31", "2026-02-28", "2026-03-31"]) {
+      s = run(s, cmd({ type: "item.complete", payload: { itemId, on } })).state;
+      dates.push(s.items[itemId]?.dueOn);
+    }
+    expect(dates).toEqual(["2026-02-28", "2026-03-31", "2026-04-30"]);
+  });
+
+  it("won't skip a repeating to-do that's done today or not due yet", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: {
+          itemId,
+          kind: "todo",
+          title: "Bins",
+          dueOn: "2026-10-19",
+          repeat: { kind: "week", days: [1] },
+        },
+      }),
+    ).state;
+    const skip = (on: string) =>
+      decide(s, cmd({ type: "item.skip", payload: { itemId, on, reason: null } }), "maya");
+    expect(skip("2026-10-15").ok).toBe(false);
+    s = run(s, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-19" } })).state;
+    expect(skip("2026-10-19").ok).toBe(false);
+    expect(s.items[itemId]?.dueOn).toBe("2026-10-26");
+  });
+});
