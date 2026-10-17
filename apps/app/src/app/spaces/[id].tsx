@@ -18,6 +18,7 @@ import { PopIn } from "../../components/chat-fx";
 import { ItemSheet } from "../../components/item-sheet";
 import { Avatar, Card, Faces, Icon, ItemRow, SectionHeader, Sheet, SpaceTile } from "../../components/kit";
 import { ProfileSummary } from "../../components/profile-summary";
+import { ReactionBar, ReactionSummary } from "../../components/reactions";
 import { SelectionBar, useSelection } from "../../components/selection";
 import { Shell, useWide } from "../../components/shell";
 import { SpaceSettings } from "../../components/space-settings";
@@ -42,8 +43,6 @@ import { colors, radius, space } from "../../lib/theme";
 import { toggle, useHeld, useHidden } from "../../lib/ticks";
 import { markRead, useReadPositions } from "../../lib/unread";
 import { useSpace } from "../../lib/use-space";
-
-const REACTIONS = ["🔥", "👏", "❤️", "🙌", "😂"];
 
 export default function SpaceScreen() {
   const { id, item: itemParam } = useLocalSearchParams<{ id: string; item?: string }>();
@@ -862,8 +861,14 @@ function Chat(props: {
         data={rows}
         extraData={[picker, props.pendingIds, props.view.reactions, props.view.items, props.userId]}
         keyExtractor={(r) => (r.kind === "day" ? r.key : r.message.id)}
+        // Each row sits above the one over it, so a reaction bar can float over the line above.
+        CellRendererComponent={({ index, style, ...cell }) => (
+          <View {...cell} style={[style, { zIndex: rows.length - index }]} />
+        )}
         ListFooterComponent={props.header}
-        contentContainerStyle={{ paddingVertical: space.md }}
+        // Inverted, so the bottom padding shows at the top: room for a reaction bar over the oldest line.
+        contentContainerStyle={{ paddingTop: space.md, paddingBottom: 44 }}
+        ListFooterComponentStyle={{ zIndex: 0 }}
         ListEmptyComponent={
           <Text style={{ fontSize: 13, color: colors.faint, textAlign: "center", padding: space.xl }}>
             No messages yet. Say hello, or tick something off to post it here.
@@ -893,6 +898,7 @@ function Chat(props: {
               showNames={showNames}
               itemTitle={r.message.itemId ? props.view.items[r.message.itemId]?.title : undefined}
               author={props.nameOf(r.message.authorId)}
+              nameOf={props.nameOf}
               authorName={props.view.members[r.message.authorId]?.name ?? "Someone"}
               pending={props.pendingIds.has(r.message.id)}
               reactions={withoutBlocked(props.view.reactions[r.message.id] ?? {}, props.blocked)}
@@ -1039,92 +1045,51 @@ function MessageRow(props: {
   onReact: (emoji: string) => void;
   /** Missing for your own messages. */
   onReport?: () => void;
+  /** "You" or a person's name, for who reacted. */
+  nameOf: (userId: string) => string;
 }) {
   const { message: m } = props;
   const [hovered, setHovered] = useState(false);
+  // The bar lingers a moment after the pointer leaves, so moving onto it (or across a gap) doesn't lose it.
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverIn = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = null;
+    setHovered(true);
+  };
+  const hoverOut = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setHovered(false), 250);
+  };
+  useEffect(
+    () => () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    },
+    [],
+  );
   const hasReactions = Object.keys(props.reactions).length > 0;
-  // The add button shows on hover (web), once there are reactions, or while picking; on phones,
-  // pressing and holding a message opens the picker.
-  const showAdd = hovered || hasReactions || props.picking;
-  const reactions = !showAdd ? null : (
-    <View style={{ flexDirection: "row", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-      {Object.entries(props.reactions).map(([emoji, users]) => {
-        const mine = users.includes(props.userId);
-        return (
-          <Pressable
-            key={emoji}
-            onPress={() => props.onReact(emoji)}
-            accessibilityRole="button"
-            accessibilityLabel={`${emoji} ${users.length}${mine ? ", including you" : ""}`}
-            style={{
-              flexDirection: "row",
-              gap: 4,
-              borderWidth: 1,
-              borderColor: mine ? colors.royal : colors.line,
-              backgroundColor: mine ? colors.tint : colors.card,
-              borderRadius: 999,
-              paddingHorizontal: 9,
-              paddingVertical: 3,
-            }}
-          >
-            <Text style={{ fontSize: 13 }}>{emoji}</Text>
-            <Text style={{ fontSize: 12, fontWeight: "600", color: mine ? colors.blue : colors.sub }}>
-              {users.length}
-            </Text>
-          </Pressable>
-        );
-      })}
-      <Pressable
-        onPress={props.onPick}
-        accessibilityRole="button"
-        accessibilityLabel="Add a reaction"
-        style={{
-          borderWidth: 1,
-          borderStyle: "dashed",
-          borderColor: colors.line,
-          borderRadius: 999,
-          paddingHorizontal: 8,
-          paddingVertical: 3,
-        }}
-      >
-        <Text style={{ fontSize: 12, color: colors.faint }}>+ 🙂</Text>
-      </Pressable>
-      {props.picking ? (
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 2,
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.line,
-            borderRadius: 999,
-            paddingHorizontal: 4,
-          }}
-        >
-          {REACTIONS.map((e) => (
-            <Pressable
-              key={e}
-              onPress={() => props.onReact(e)}
-              accessibilityRole="button"
-              accessibilityLabel={`React ${e}`}
-              style={{ padding: 5 }}
-            >
-              <Text style={{ fontSize: 16 }}>{e}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-      {props.picking && props.onReport ? (
-        <Pressable
-          onPress={props.onReport}
-          accessibilityRole="button"
-          hitSlop={8}
-          style={{ paddingHorizontal: 6 }}
-        >
-          <Text style={{ fontSize: 12, fontWeight: "600", color: colors.sub }}>Report</Text>
-        </Pressable>
-      ) : null}
-    </View>
+  const mine = m.authorId === props.userId;
+  // Teams style: the quick bar floats on the message's top edge on hover (or press and hold on a phone),
+  // and the reactions hang off its bottom edge as pills.
+  const bar = (
+    <ReactionBar
+      visible={hovered || props.picking}
+      // Anchored on the bubble's outer edge, so it grows into the empty side of the chat.
+      side={mine ? "right" : "left"}
+      onHoverIn={hoverIn}
+      onHoverOut={hoverOut}
+      onReact={props.onReact}
+      onReport={props.onReport}
+    />
+  );
+  const reactions = (
+    <ReactionSummary
+      reactions={props.reactions}
+      userId={props.userId}
+      nameOf={props.nameOf}
+      align={mine ? "flex-end" : "flex-start"}
+      onReact={props.onReact}
+    />
   );
   const time = props.pending ? "Sending…" : ago(m.createdAt);
 
@@ -1138,8 +1103,9 @@ function MessageRow(props: {
     return (
       <Pressable
         onLongPress={props.onPick}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
+        onPress={props.picking ? props.onPick : undefined}
+        onPointerEnter={hoverIn}
+        onPointerLeave={hoverOut}
         style={{
           flexDirection: "row",
           gap: space.md,
@@ -1161,6 +1127,7 @@ function MessageRow(props: {
               backgroundColor: colors.card,
             }}
           >
+            {bar}
             <Text style={{ fontSize: 13, color: colors.sub }}>
               {props.author} wrote a weekly reflection · {time}
             </Text>
@@ -1184,8 +1151,9 @@ function MessageRow(props: {
     return (
       <Pressable
         onLongPress={props.onPick}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
+        onPress={props.picking ? props.onPick : undefined}
+        onPointerEnter={hoverIn}
+        onPointerLeave={hoverOut}
         style={{
           flexDirection: "row",
           gap: space.md,
@@ -1209,10 +1177,13 @@ function MessageRow(props: {
           <Icon name={icon} size={14} color={m.kind === "completion" ? "#fff" : colors.sub} />
         </View>
         <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-          <Text style={{ fontSize: 14, color: colors.ink, lineHeight: 28 }}>
-            {props.author} {verb} <Text style={{ fontWeight: "700" }}>{props.itemTitle ?? m.body}</Text>
-            <Text style={{ fontSize: 12, color: colors.faint }}> {time}</Text>
-          </Text>
+          <View style={{ alignSelf: "flex-start", maxWidth: 560 }}>
+            {bar}
+            <Text style={{ fontSize: 14, color: colors.ink, lineHeight: 28 }}>
+              {props.author} {verb} <Text style={{ fontWeight: "700" }}>{props.itemTitle ?? m.body}</Text>
+              <Text style={{ fontSize: 12, color: colors.faint }}> {time}</Text>
+            </Text>
+          </View>
           {m.kind !== "completion" && m.body ? (
             <View
               style={{
@@ -1227,18 +1198,18 @@ function MessageRow(props: {
               <Text style={{ fontSize: 15, color: colors.ink }}>{m.body}</Text>
             </View>
           ) : null}
-          {reactions}
+          {m.kind !== "completion" && m.body ? reactions : <View style={{ marginTop: 6 }}>{reactions}</View>}
         </View>
       </Pressable>
     );
   }
-  const mine = m.authorId === props.userId;
   return (
     <PopIn animate={props.animate} from={mine ? "right" : "left"}>
       <Pressable
         onLongPress={props.onPick}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
+        onPress={props.picking ? props.onPick : undefined}
+        onPointerEnter={hoverIn}
+        onPointerLeave={hoverOut}
         style={{
           flexDirection: mine ? "row-reverse" : "row",
           gap: space.sm,
@@ -1250,9 +1221,7 @@ function MessageRow(props: {
       >
         {/* Your lines sit on the right. Other people's runs carry one avatar, at the bottom, like iMessage. */}
         {mine ? null : props.last ? (
-          <View
-            style={{ alignSelf: "flex-end", marginBottom: Object.keys(props.reactions).length ? 26 : 18 }}
-          >
+          <View style={{ alignSelf: "flex-end", marginBottom: hasReactions ? 32 : 18 }}>
             <Avatar id={m.authorId} name={props.authorName} size={28} />
           </View>
         ) : (
@@ -1262,28 +1231,31 @@ function MessageRow(props: {
           {!mine && props.first && props.showNames ? (
             <Text style={{ fontSize: 12, color: colors.sub, marginLeft: 4 }}>{props.authorName}</Text>
           ) : null}
-          <View
-            style={{
-              backgroundColor: mine ? colors.royal : colors.tint,
-              borderRadius: 18,
-              // The tail sits on the last line of a run, toward the sender.
-              borderBottomRightRadius: mine && props.last ? 5 : 18,
-              borderBottomLeftRadius: !mine && props.last ? 5 : 18,
-              paddingHorizontal: 14,
-              paddingVertical: 9,
-              maxWidth: 520,
-            }}
-          >
-            <Text style={{ fontSize: 15, color: mine ? "#fff" : colors.noteInk, lineHeight: 21 }}>
-              {m.body}
-            </Text>
+          <View style={{ maxWidth: 520 }}>
+            {bar}
+            <View
+              style={{
+                backgroundColor: mine ? colors.royal : colors.tint,
+                borderRadius: 18,
+                // The tail sits on the last line of a run, toward the sender.
+                borderBottomRightRadius: mine && props.last ? 5 : 18,
+                borderBottomLeftRadius: !mine && props.last ? 5 : 18,
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                maxWidth: 520,
+              }}
+            >
+              <Text style={{ fontSize: 15, color: mine ? "#fff" : colors.noteInk, lineHeight: 21 }}>
+                {m.body}
+              </Text>
+            </View>
           </View>
+          {reactions}
           {props.last ? (
             <Text style={{ fontSize: 11, color: colors.faint, marginHorizontal: 4 }}>
               {mine || props.showNames ? time : `${props.author} · ${time}`}
             </Text>
           ) : null}
-          {reactions}
         </View>
       </Pressable>
     </PopIn>

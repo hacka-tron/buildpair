@@ -83,7 +83,6 @@ try {
   await maya.getByPlaceholder("Message Life…").press("Enter");
   await jordan.getByText("Flights booked!").waitFor({ timeout: 5000 });
   await jordan.getByText("Flights booked!").hover();
-  await jordan.getByLabel("Add a reaction").first().click();
   await jordan.getByLabel("React 🔥").click();
   await maya.getByLabel("🔥 1").waitFor({ timeout: 5000 });
   // An update from the item itself lands in the chat for supporters.
