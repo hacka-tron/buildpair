@@ -520,6 +520,8 @@ function ItemsPanel(props: {
         onChangeText={setTitle}
         onSubmitEditing={add}
         submitBehavior="submit"
+        // The web only reads this one; without it the box loses focus after each add.
+        blurOnSubmit={false}
         placeholder={`+ Add to ${props.spaceName || "this space"}`}
         placeholderTextColor={colors.blue}
         accessibilityLabel={`Add to ${props.spaceName}`}
@@ -966,6 +968,8 @@ function Chat(props: {
           placeholderTextColor={colors.faint}
           onSubmitEditing={send}
           submitBehavior="submit"
+          // The web only reads this one; without it the box loses focus after each add.
+          blurOnSubmit={false}
           style={{
             flex: 1,
             borderWidth: 1,

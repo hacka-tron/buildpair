@@ -583,6 +583,8 @@ function QuickAdd(props: {
             }}
             onSubmitEditing={add}
             submitBehavior="submit"
+            // The web only reads this one; without it the box loses focus after each add.
+            blurOnSubmit={false}
             placeholder="Dentist friday 3pm, or gym 4x a week"
             placeholderTextColor={colors.faint}
             accessibilityLabel="What to add"

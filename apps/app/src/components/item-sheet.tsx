@@ -266,6 +266,8 @@ export function ItemSheet(props: {
                 );
               }}
               submitBehavior="submit"
+              // The web only reads this one; without it the box loses focus after each add.
+              blurOnSubmit={false}
               placeholder="+ Add a step"
               placeholderTextColor={colors.blue}
               accessibilityLabel="Add a step"
