@@ -20,7 +20,6 @@ export type Section =
   | "supporting"
   | "activity"
   | "discover"
-  | "review"
   | "profile"
   | { spaceId: string };
 type Href = "/" | "/upcoming" | "/spaces" | "/supporting" | "/discover" | "/activity";

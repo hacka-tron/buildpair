@@ -142,6 +142,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 ## Decisions (owner)
 
+- No weekly review. The Today banner, the review screen and its ⌘K entry are gone, so nothing asks for weekly reflections now. Reflections already posted still show in their chats (2026-10-16).
+
 - Reaction emoji are drawn from Microsoft's Fluent Emoji (MIT, the 3D set Teams uses), bundled as six 96 px images in `apps/app/assets/emoji`, so they look the same on every device. Report sits behind a ⋯ More menu, and the bar shows only over the message itself (Claude's call, 2026-10-16).
 - Reactions work like Teams: a floating bar of six quick reactions (👍 ❤️ 🔥 😂 🙌 👏) on hover or press and hold, pills hanging off the message's bottom edge that bounce in, and who reacted on hover. The always-visible "+ 🙂" button is gone (Claude's call, 2026-10-16).
 - The chat gets more playful in steps, following `docs/design/chat-study.md` (WeChat pat pat and emoji rain, QQ sparks, LINE stickers, Telegram big emoji). First step: your lines on the right in blue, runs from one person grouped under one avatar, new lines pop in (Claude's call, 2026-10-16).
