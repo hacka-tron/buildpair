@@ -1080,8 +1080,11 @@ function MessageRow(props: {
       onHoverOut={hoverOut}
       onReact={props.onReact}
       onReport={props.onReport}
+      text={m.kind === "text" || m.kind === "update" ? m.body : undefined}
     />
   );
+  // While its bar shows, the message sits above its own pills and time, so the More menu covers them.
+  const lifted = hovered || props.picking ? 20 : 0;
   const reactions = (
     <ReactionSummary
       reactions={props.reactions}
@@ -1104,8 +1107,6 @@ function MessageRow(props: {
       <Pressable
         onLongPress={props.onPick}
         onPress={props.picking ? props.onPick : undefined}
-        onPointerEnter={hoverIn}
-        onPointerLeave={hoverOut}
         style={{
           flexDirection: "row",
           gap: space.md,
@@ -1117,7 +1118,10 @@ function MessageRow(props: {
         <Avatar id={m.authorId} name={props.authorName} size={28} />
         <View style={{ flex: 1, minWidth: 0, gap: 6, alignItems: "flex-start" }}>
           <View
+            onPointerEnter={hoverIn}
+            onPointerLeave={hoverOut}
             style={{
+              zIndex: lifted,
               borderWidth: 1,
               borderColor: colors.line,
               borderRadius: radius.card,
@@ -1152,8 +1156,6 @@ function MessageRow(props: {
       <Pressable
         onLongPress={props.onPick}
         onPress={props.picking ? props.onPick : undefined}
-        onPointerEnter={hoverIn}
-        onPointerLeave={hoverOut}
         style={{
           flexDirection: "row",
           gap: space.md,
@@ -1177,7 +1179,11 @@ function MessageRow(props: {
           <Icon name={icon} size={14} color={m.kind === "completion" ? "#fff" : colors.sub} />
         </View>
         <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-          <View style={{ alignSelf: "flex-start", maxWidth: 560 }}>
+          <View
+            onPointerEnter={hoverIn}
+            onPointerLeave={hoverOut}
+            style={{ alignSelf: "flex-start", maxWidth: 560, zIndex: lifted }}
+          >
             {bar}
             <Text style={{ fontSize: 14, color: colors.ink, lineHeight: 28 }}>
               {props.author} {verb} <Text style={{ fontWeight: "700" }}>{props.itemTitle ?? m.body}</Text>
@@ -1208,8 +1214,6 @@ function MessageRow(props: {
       <Pressable
         onLongPress={props.onPick}
         onPress={props.picking ? props.onPick : undefined}
-        onPointerEnter={hoverIn}
-        onPointerLeave={hoverOut}
         style={{
           flexDirection: mine ? "row-reverse" : "row",
           gap: space.sm,
@@ -1231,7 +1235,8 @@ function MessageRow(props: {
           {!mine && props.first && props.showNames ? (
             <Text style={{ fontSize: 12, color: colors.sub, marginLeft: 4 }}>{props.authorName}</Text>
           ) : null}
-          <View style={{ maxWidth: 520 }}>
+          {/* Only the message itself (not the whole row) brings up the bar. */}
+          <View onPointerEnter={hoverIn} onPointerLeave={hoverOut} style={{ maxWidth: 520, zIndex: lifted }}>
             {bar}
             <View
               style={{

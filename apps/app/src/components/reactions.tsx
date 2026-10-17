@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Platform, Pressable, Text, View } from "react-native";
 import { colors } from "../lib/theme";
+import { Icon, type IconName } from "./kit";
 
 /**
  * Reactions the way Teams does them: a small floating bar of quick reactions appears on a message's top
@@ -12,6 +13,29 @@ import { colors } from "../lib/theme";
 export const QUICK_REACTIONS = ["👍", "❤️", "🔥", "😂", "🙌", "👏"];
 
 const native = Platform.OS !== "web";
+
+/** Copy needs the browser's clipboard (phones would need a native module). */
+const COPYABLE = typeof navigator !== "undefined" && Boolean(navigator.clipboard);
+
+function MenuItem(props: { icon: IconName; label: string; danger?: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={props.onPress}
+      accessibilityRole="menuitem"
+      style={({ hovered }: { hovered?: boolean }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: hovered ? colors.hover : "transparent",
+      })}
+    >
+      <Icon name={props.icon} size={14} color={props.danger ? colors.danger : colors.sub} />
+      <Text style={{ fontSize: 13, color: props.danger ? colors.danger : colors.ink }}>{props.label}</Text>
+    </Pressable>
+  );
+}
 
 /** One emoji in the bar: grows when pointed at or pressed. */
 function BarEmoji(props: { emoji: string; onPress: () => void }) {
@@ -44,14 +68,18 @@ export function ReactionBar(props: {
   onReact: (emoji: string) => void;
   /** Missing for your own messages. */
   onReport?: () => void;
+  /** The message's words, for "Copy text" in the More menu. */
+  text?: string;
   /** The pointer is over the bar itself, so it stays. */
   onHoverIn?: () => void;
   onHoverOut?: () => void;
 }) {
   const v = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(props.visible);
+  const [menu, setMenu] = useState(false);
   useEffect(() => {
     if (props.visible) setMounted(true);
+    else setMenu(false);
     Animated.timing(v, { toValue: props.visible ? 1 : 0, duration: 140, useNativeDriver: native }).start(
       ({ finished }) => {
         if (finished && !props.visible) setMounted(false);
@@ -90,21 +118,69 @@ export function ReactionBar(props: {
       {QUICK_REACTIONS.map((e) => (
         <BarEmoji key={e} emoji={e} onPress={() => props.onReact(e)} />
       ))}
-      {props.onReport ? (
-        <Pressable
-          onPress={props.onReport}
-          accessibilityRole="button"
-          hitSlop={6}
+      {/* Less common actions wait behind More, like Teams, so Report isn't one slip away from a reaction. */}
+      <Pressable
+        onPress={() => setMenu((m) => !m)}
+        accessibilityRole="button"
+        accessibilityLabel="More actions"
+        accessibilityState={{ expanded: menu }}
+        hitSlop={6}
+        style={{
+          paddingHorizontal: 7,
+          paddingVertical: 6,
+          borderLeftWidth: 1,
+          borderColor: colors.line,
+          marginLeft: 2,
+        }}
+      >
+        <Icon name="more-horizontal" size={16} color={colors.sub} />
+      </Pressable>
+      {menu ? (
+        <View
           style={{
-            paddingHorizontal: 8,
-            paddingVertical: 6,
-            borderLeftWidth: 1,
+            position: "absolute",
+            top: 40,
+            [props.side]: 0,
+            minWidth: 150,
+            paddingVertical: 4,
+            borderRadius: 10,
+            backgroundColor: colors.card,
+            borderWidth: 1,
             borderColor: colors.line,
-            marginLeft: 2,
+            shadowColor: "#000",
+            shadowOpacity: 0.18,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: 6,
           }}
         >
-          <Text style={{ fontSize: 12, fontWeight: "600", color: colors.sub }}>Report</Text>
-        </Pressable>
+          {props.text && COPYABLE ? (
+            <MenuItem
+              icon="copy"
+              label="Copy text"
+              onPress={() => {
+                void navigator.clipboard.writeText(props.text ?? "").catch(() => undefined);
+                setMenu(false);
+              }}
+            />
+          ) : null}
+          {props.onReport ? (
+            <MenuItem
+              icon="flag"
+              label="Report"
+              danger
+              onPress={() => {
+                setMenu(false);
+                props.onReport?.();
+              }}
+            />
+          ) : null}
+          {!props.onReport && !(props.text && COPYABLE) ? (
+            <Text style={{ fontSize: 13, color: colors.faint, paddingHorizontal: 12, paddingVertical: 8 }}>
+              Nothing else here
+            </Text>
+          ) : null}
+        </View>
       ) : null}
     </Animated.View>
   );
