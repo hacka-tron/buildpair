@@ -44,6 +44,9 @@ export function ReactionBar(props: {
   onReact: (emoji: string) => void;
   /** Missing for your own messages. */
   onReport?: () => void;
+  /** The pointer is over the bar itself, so it stays. */
+  onHoverIn?: () => void;
+  onHoverOut?: () => void;
 }) {
   const v = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(props.visible);
@@ -58,6 +61,8 @@ export function ReactionBar(props: {
   if (!mounted) return null;
   return (
     <Animated.View
+      onPointerEnter={props.onHoverIn}
+      onPointerLeave={props.onHoverOut}
       style={{
         position: "absolute",
         top: -34,

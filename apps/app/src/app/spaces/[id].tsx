@@ -1048,6 +1048,23 @@ function MessageRow(props: {
 }) {
   const { message: m } = props;
   const [hovered, setHovered] = useState(false);
+  // The bar lingers a moment after the pointer leaves, so moving onto it (or across a gap) doesn't lose it.
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverIn = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = null;
+    setHovered(true);
+  };
+  const hoverOut = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setHovered(false), 250);
+  };
+  useEffect(
+    () => () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    },
+    [],
+  );
   const hasReactions = Object.keys(props.reactions).length > 0;
   const mine = m.authorId === props.userId;
   // Teams style: the quick bar floats on the message's top edge on hover (or press and hold on a phone),
@@ -1056,6 +1073,8 @@ function MessageRow(props: {
     <ReactionBar
       visible={hovered || props.picking}
       side={mine ? "left" : "right"}
+      onHoverIn={hoverIn}
+      onHoverOut={hoverOut}
       onReact={props.onReact}
       onReport={props.onReport}
     />
@@ -1082,8 +1101,8 @@ function MessageRow(props: {
       <Pressable
         onLongPress={props.onPick}
         onPress={props.picking ? props.onPick : undefined}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
+        onPointerEnter={hoverIn}
+        onPointerLeave={hoverOut}
         style={{
           flexDirection: "row",
           gap: space.md,
@@ -1130,8 +1149,8 @@ function MessageRow(props: {
       <Pressable
         onLongPress={props.onPick}
         onPress={props.picking ? props.onPick : undefined}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
+        onPointerEnter={hoverIn}
+        onPointerLeave={hoverOut}
         style={{
           flexDirection: "row",
           gap: space.md,
@@ -1186,8 +1205,8 @@ function MessageRow(props: {
       <Pressable
         onLongPress={props.onPick}
         onPress={props.picking ? props.onPick : undefined}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
+        onPointerEnter={hoverIn}
+        onPointerLeave={hoverOut}
         style={{
           flexDirection: mine ? "row-reverse" : "row",
           gap: space.sm,
