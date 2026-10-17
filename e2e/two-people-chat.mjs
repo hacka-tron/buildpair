@@ -106,7 +106,7 @@ try {
   await maya.getByRole("button", { name: "Add", exact: true }).last().click();
   // Quick add stays open for the next one; close it when done.
   await maya.getByText(/Added to Life/).waitFor();
-  await maya.getByLabel("Close").first().click();
+  await maya.keyboard.press("Escape");
   await maya.getByText("Coming up").waitFor();
   await maya
     .getByText(/6:00 PM/)
