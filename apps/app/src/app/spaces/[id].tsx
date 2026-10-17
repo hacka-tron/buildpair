@@ -810,6 +810,24 @@ function dayLabel(iso: string) {
   return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 }
 
+/**
+ * A chat row's cell. Each sits above the one over it, so a reaction bar can float over the line above.
+ * Defined once out here: a new function each render would make the list rebuild every row on every update.
+ */
+function ChatCell({ index, style, ...cell }: React.ComponentProps<typeof View> & { index: number }) {
+  return <View {...cell} style={[style, { zIndex: 100_000 - index }]} />;
+}
+
+/**
+ * Whether a line pops in: it's being sent, or it arrived while the chat was open (not in the set taken when
+ * it opened) and is recent. The age check covers lines that were still loading when that set was taken.
+ */
+function isNew(m: Message, seen: ReadonlySet<string> | null, pending: ReadonlySet<string>): boolean {
+  if (pending.has(m.id)) return true;
+  if (seen?.has(m.id)) return false;
+  return Date.now() - Date.parse(m.createdAt) < 30_000;
+}
+
 function Chat(props: {
   view: SpaceState;
   pendingIds: ReadonlySet<string>;
@@ -862,9 +880,7 @@ function Chat(props: {
         extraData={[picker, props.pendingIds, props.view.reactions, props.view.items, props.userId]}
         keyExtractor={(r) => (r.kind === "day" ? r.key : r.message.id)}
         // Each row sits above the one over it, so a reaction bar can float over the line above.
-        CellRendererComponent={({ index, style, ...cell }) => (
-          <View {...cell} style={[style, { zIndex: rows.length - index }]} />
-        )}
+        CellRendererComponent={ChatCell}
         ListFooterComponent={props.header}
         // Inverted, so the bottom padding shows at the top: room for a reaction bar over the oldest line.
         contentContainerStyle={{ paddingTop: space.md, paddingBottom: 44 }}
@@ -894,7 +910,7 @@ function Chat(props: {
               message={r.message}
               first={r.first}
               last={r.last}
-              animate={!seen.current?.has(r.message.id)}
+              animate={isNew(r.message, seen.current, props.pendingIds)}
               showNames={showNames}
               itemTitle={r.message.itemId ? props.view.items[r.message.itemId]?.title : undefined}
               author={props.nameOf(r.message.authorId)}
