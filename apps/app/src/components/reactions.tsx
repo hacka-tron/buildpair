@@ -35,8 +35,8 @@ function BarEmoji(props: { emoji: string; onPress: () => void }) {
 }
 
 /**
- * The floating bar of quick reactions. `side` is the edge it hugs (the side away from the sender's
- * avatar), and it fades and slides in when it appears.
+ * The floating bar of quick reactions. `side` is the bubble edge it's anchored to (its outer edge, so a
+ * short bubble's bar grows into the empty side), and it fades and slides in when it appears.
  */
 export function ReactionBar(props: {
   visible: boolean;

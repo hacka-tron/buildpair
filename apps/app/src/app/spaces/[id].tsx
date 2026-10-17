@@ -866,7 +866,9 @@ function Chat(props: {
           <View {...cell} style={[style, { zIndex: rows.length - index }]} />
         )}
         ListFooterComponent={props.header}
-        contentContainerStyle={{ paddingVertical: space.md }}
+        // Inverted, so the bottom padding shows at the top: room for a reaction bar over the oldest line.
+        contentContainerStyle={{ paddingTop: space.md, paddingBottom: 44 }}
+        ListFooterComponentStyle={{ zIndex: 0 }}
         ListEmptyComponent={
           <Text style={{ fontSize: 13, color: colors.faint, textAlign: "center", padding: space.xl }}>
             No messages yet. Say hello, or tick something off to post it here.
@@ -1072,7 +1074,8 @@ function MessageRow(props: {
   const bar = (
     <ReactionBar
       visible={hovered || props.picking}
-      side={mine ? "left" : "right"}
+      // Anchored on the bubble's outer edge, so it grows into the empty side of the chat.
+      side={mine ? "right" : "left"}
       onHoverIn={hoverIn}
       onHoverOut={hoverOut}
       onReact={props.onReact}
