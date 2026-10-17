@@ -277,6 +277,7 @@ export function ItemRow({
   onOpen,
   readOnly,
   selection,
+  quietToday,
 }: {
   item: Item;
   onToggle: () => void;
@@ -287,6 +288,8 @@ export function ItemRow({
   onOpen?: () => void;
   /** Show the item without letting it be ticked (someone else's, or under a closed goal). */
   readOnly?: boolean;
+  /** Leave out "Today" as the due day (the list is Today). */
+  quietToday?: boolean;
   /**
    * Selecting several items: press and hold starts it (`onSelect`); while `active`, a tap selects
    * instead of opening. Leave out `onSelect` for items that can't be selected.
@@ -296,7 +299,11 @@ export function ItemRow({
   // A habit counts as done for the day once it's checked off today.
   const done = item.status === "done" || (item.kind === "habit" && item.doneOn.includes(today));
   const closed = item.status !== "open";
-  const due = item.dueOn ? dueLabel(item.dueOn, today, item.dueTime) : null;
+  // On a list that's already "today", a bare "Today" says nothing (a time still shows).
+  const due =
+    item.dueOn && !(quietToday && item.dueOn === today && !item.dueTime)
+      ? dueLabel(item.dueOn, today, item.dueTime)
+      : null;
   const selecting = selection?.active ?? false;
   const picked = selection?.selected ?? false;
   const canPick = Boolean(selection?.onSelect);
