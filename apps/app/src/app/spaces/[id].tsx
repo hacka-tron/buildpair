@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { PopIn } from "../../components/chat-fx";
 import { ItemSheet } from "../../components/item-sheet";
 import { Avatar, Card, Faces, Icon, ItemRow, SectionHeader, Sheet, SpaceTile } from "../../components/kit";
 import { ProfileSummary } from "../../components/profile-summary";
@@ -33,6 +34,7 @@ import {
 } from "../../lib/api";
 import { authClient } from "../../lib/auth";
 import { block, unblock, useBlocked } from "../../lib/blocks";
+import { runs } from "../../lib/chat";
 import { ago, dueLabel, localToday, peopleLine } from "../../lib/format";
 import { applyChange, markSpaceGone, patchSpace, refreshSpaces, useSpaces } from "../../lib/spaces";
 import { nudgeFor } from "../../lib/supporting";
@@ -785,7 +787,10 @@ function PersonSheet(props: {
   );
 }
 
-type Row = { kind: "message"; message: Message } | { kind: "day"; label: string; key: string };
+/** A chat row. Messages know whether they start or end a run from one person, to group them. */
+type Row =
+  | { kind: "message"; message: Message; first: boolean; last: boolean }
+  | { kind: "day"; label: string; key: string };
 
 /** Reactions with blocked people taken out (and emoji nobody else used dropped). */
 function withoutBlocked(byEmoji: Record<string, string[]>, blocked: ReadonlySet<string>) {
@@ -829,17 +834,22 @@ function Chat(props: {
   const rows = useMemo(() => {
     const out: Row[] = [];
     let lastDay = "";
-    for (const m of props.view.messages) {
-      if (props.blocked.has(m.authorId)) continue;
+    const shown = props.view.messages.filter((m) => !props.blocked.has(m.authorId));
+    shown.forEach((m, i) => {
       const day = localToday(new Date(m.createdAt));
       if (day !== lastDay) {
         out.push({ kind: "day", label: dayLabel(m.createdAt), key: `day-${day}` });
         lastDay = day;
       }
-      out.push({ kind: "message", message: m });
-    }
+      out.push({ kind: "message", message: m, first: !runs(shown[i - 1], m), last: !runs(m, shown[i + 1]) });
+    });
     return out.reverse();
   }, [props.view.messages, props.blocked]);
+  // Messages already here when the chat opened stay still; ones that arrive or are sent pop in.
+  const seen = useRef<Set<string> | null>(null);
+  if (seen.current === null) seen.current = new Set(props.view.messages.map((m) => m.id));
+  // Names over other people's runs only matter when there's more than one other person.
+  const showNames = Object.keys(props.view.members).length > 2;
   const send = () => {
     const body = draft.trim();
     if (!body) return;
@@ -877,6 +887,10 @@ function Chat(props: {
           ) : (
             <MessageRow
               message={r.message}
+              first={r.first}
+              last={r.last}
+              animate={!seen.current?.has(r.message.id)}
+              showNames={showNames}
               itemTitle={r.message.itemId ? props.view.items[r.message.itemId]?.title : undefined}
               author={props.nameOf(r.message.authorId)}
               authorName={props.view.members[r.message.authorId]?.name ?? "Someone"}
@@ -1006,6 +1020,13 @@ function Chat(props: {
 
 function MessageRow(props: {
   message: Message;
+  /** Starts or ends a run of lines from one person. */
+  first: boolean;
+  last: boolean;
+  /** Pop in (it arrived or was sent while the chat is open). */
+  animate: boolean;
+  /** Show names above other people's runs (more than two people in the space). */
+  showNames: boolean;
   itemTitle?: string;
   author: string;
   /** The author's real name, for their avatar (author says "You" for your own). */
@@ -1211,39 +1232,61 @@ function MessageRow(props: {
       </Pressable>
     );
   }
+  const mine = m.authorId === props.userId;
   return (
-    <Pressable
-      onLongPress={props.onPick}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-      style={{
-        flexDirection: "row",
-        gap: space.md,
-        paddingHorizontal: space.lg,
-        paddingVertical: 6,
-        opacity: props.pending ? 0.6 : 1,
-      }}
-    >
-      <Avatar id={m.authorId} name={props.authorName} size={28} />
-      <View style={{ flex: 1, minWidth: 0, gap: 6, alignItems: "flex-start" }}>
-        <View
-          style={{
-            backgroundColor: colors.tint,
-            borderRadius: 14,
-            borderTopLeftRadius: 4,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            maxWidth: 560,
-          }}
-        >
-          <Text style={{ fontSize: 15, color: colors.noteInk, lineHeight: 21 }}>{m.body}</Text>
-          <Text style={{ fontSize: 12, color: colors.sub, marginTop: 4 }}>
-            {props.author} · {time}
-          </Text>
+    <PopIn animate={props.animate} from={mine ? "right" : "left"}>
+      <Pressable
+        onLongPress={props.onPick}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        style={{
+          flexDirection: mine ? "row-reverse" : "row",
+          gap: space.sm,
+          paddingHorizontal: space.lg,
+          paddingTop: props.first ? 6 : 1,
+          paddingBottom: props.last ? 6 : 1,
+          opacity: props.pending ? 0.6 : 1,
+        }}
+      >
+        {/* Your lines sit on the right. Other people's runs carry one avatar, at the bottom, like iMessage. */}
+        {mine ? null : props.last ? (
+          <View
+            style={{ alignSelf: "flex-end", marginBottom: Object.keys(props.reactions).length ? 26 : 18 }}
+          >
+            <Avatar id={m.authorId} name={props.authorName} size={28} />
+          </View>
+        ) : (
+          <View style={{ width: 28 }} />
+        )}
+        <View style={{ flex: 1, minWidth: 0, gap: 3, alignItems: mine ? "flex-end" : "flex-start" }}>
+          {!mine && props.first && props.showNames ? (
+            <Text style={{ fontSize: 12, color: colors.sub, marginLeft: 4 }}>{props.authorName}</Text>
+          ) : null}
+          <View
+            style={{
+              backgroundColor: mine ? colors.royal : colors.tint,
+              borderRadius: 18,
+              // The tail sits on the last line of a run, toward the sender.
+              borderBottomRightRadius: mine && props.last ? 5 : 18,
+              borderBottomLeftRadius: !mine && props.last ? 5 : 18,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              maxWidth: 520,
+            }}
+          >
+            <Text style={{ fontSize: 15, color: mine ? "#fff" : colors.noteInk, lineHeight: 21 }}>
+              {m.body}
+            </Text>
+          </View>
+          {props.last ? (
+            <Text style={{ fontSize: 11, color: colors.faint, marginHorizontal: 4 }}>
+              {mine || props.showNames ? time : `${props.author} · ${time}`}
+            </Text>
+          ) : null}
+          {reactions}
         </View>
-        {reactions}
-      </View>
-    </Pressable>
+      </Pressable>
+    </PopIn>
   );
 }
 
