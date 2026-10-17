@@ -88,8 +88,8 @@ export function SelectionBar(props: {
     const goals = new Set(picked.map((p) => p.item.id));
     const targets = picked.filter((p) => !p.item.parentId || !goals.has(p.item.parentId));
     deleteLater(
-      targets.map((p) => p.item.id),
-      targets.length === 1 ? "Deleted" : `${targets.length} deleted`,
+      picked.map((p) => p.item.id),
+      picked.length === 1 ? "Deleted" : `${picked.length} deleted`,
       () =>
         targets
           .map((p) => props.apply(p.spaceId, { type: "item.delete", payload: { itemId: p.item.id } }))
