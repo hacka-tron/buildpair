@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Platform, Pressable, Text, View } from "react-native";
 import { colors } from "../lib/theme";
+import { Emoji } from "./emoji";
 import { type HoverState, Icon, type IconName } from "./kit";
 
 /**
@@ -54,7 +55,9 @@ function BarEmoji(props: { emoji: string; onPress: () => void }) {
       accessibilityLabel={`React ${props.emoji}`}
       style={{ paddingHorizontal: 5, paddingVertical: 4 }}
     >
-      <Animated.Text style={{ fontSize: 20, transform: [{ scale }] }}>{props.emoji}</Animated.Text>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <Emoji emoji={props.emoji} size={26} />
+      </Animated.View>
     </Pressable>
   );
 }
@@ -247,9 +250,9 @@ function Pill(props: {
           transform: [{ scale: pressed ? 0.92 : 1 }],
         })}
       >
-        <Animated.Text style={{ fontSize: 13, transform: [{ scale: emojiScale }] }}>
-          {props.emoji}
-        </Animated.Text>
+        <Animated.View style={{ transform: [{ scale: emojiScale }] }}>
+          <Emoji emoji={props.emoji} size={16} />
+        </Animated.View>
         <Text style={{ fontSize: 12, fontWeight: "600", color: props.mine ? colors.blue : colors.sub }}>
           {props.users.length}
         </Text>
