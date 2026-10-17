@@ -13,7 +13,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { dueLabel } from "../lib/format";
+import { dueLabel, repeatLabel } from "../lib/format";
 import { useSpaceSummary } from "../lib/spaces";
 import { colors, personColor, radius, space, spaceColor } from "../lib/theme";
 
@@ -297,7 +297,10 @@ export function ItemRow({
   selection?: { active: boolean; selected: boolean; onSelect?: () => void };
 }) {
   // A habit counts as done for the day once it's checked off today.
-  const done = item.status === "done" || (item.kind === "habit" && item.doneOn.includes(today));
+  // Habits and repeating to-dos count as done for the day once they're ticked today.
+  const done =
+    item.status === "done" ||
+    ((item.kind === "habit" || Boolean(item.repeat)) && item.doneOn.includes(today));
   const closed = item.status !== "open";
   // On a list that's already "today", a bare "Today" says nothing (a time still shows).
   const due =
@@ -380,6 +383,11 @@ export function ItemRow({
               <Icon name="lock" size={12} color={colors.faint} />
             </View>
           ) : null}
+          {item.repeat ? (
+            <View accessible accessibilityLabel={repeatLabel(item.repeat)}>
+              <Icon name="repeat" size={12} color={colors.faint} />
+            </View>
+          ) : null}
           {item.notes ? (
             <View accessible accessibilityLabel="Has notes">
               <Icon name="file-text" size={12} color={colors.faint} />
@@ -394,7 +402,7 @@ export function ItemRow({
       </Pressable>
       {due && !closed ? (
         <Text style={{ fontSize: 13, color: due.late && !done ? colors.danger : colors.sub }}>
-          {due.text}
+          {done && item.repeat ? (due.text === "Tomorrow" ? "Again tomorrow" : `Next ${due.text}`) : due.text}
         </Text>
       ) : null}
     </View>

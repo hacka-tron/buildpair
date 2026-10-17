@@ -1,4 +1,5 @@
 import type { Item, Member, Message, SpaceColor, SpaceEvent, UserId } from "@buildpair/protocol";
+import { nextRepeat } from "./habits";
 
 export interface SpaceState {
   /** Sequence number of the last event applied. */
@@ -18,6 +19,8 @@ export interface SpaceState {
    * tick back removes exactly that line.
    */
   tickLines: Record<string, Record<string, string>>;
+  /** itemId -> the day a repeating to-do was ticked -> the date it had before, so Undo can put it back. */
+  rolledFrom: Record<string, Record<string, string>>;
 }
 
 export function emptySpace(): SpaceState {
@@ -31,6 +34,7 @@ export function emptySpace(): SpaceState {
     messages: [],
     reactions: {},
     tickLines: {},
+    rolledFrom: {},
   };
 }
 
@@ -134,26 +138,34 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
       const item = state.items[event.payload.itemId];
       if (!item) break;
       if (event.commandId) next.tickLines = withLine(state, item.id, event.payload.on, event.commandId);
-      const updated: Item =
-        item.kind === "habit"
-          ? {
-              ...item,
-              doneOn: item.doneOn.includes(event.payload.on)
-                ? item.doneOn
-                : [...item.doneOn, event.payload.on].sort(),
-            }
-          : { ...item, status: "done", doneOn: [event.payload.on] };
+      const on = event.payload.on;
+      const ticks = item.doneOn.includes(on) ? item.doneOn : [...item.doneOn, on].sort();
+      let updated: Item;
+      if (item.kind === "habit") updated = { ...item, doneOn: ticks };
+      else if (item.repeat && item.dueOn) {
+        // A repeating to-do moves on to its next date after the later of its due day and the tick.
+        const from = item.dueOn > on ? item.dueOn : on;
+        updated = { ...item, doneOn: ticks, dueOn: nextRepeat(item.repeat, from, item.dueOn) };
+        next.rolledFrom = {
+          ...state.rolledFrom,
+          [item.id]: { ...state.rolledFrom[item.id], [on]: item.dueOn },
+        };
+      } else updated = { ...item, status: "done", doneOn: [on] };
       next.items = { ...state.items, [item.id]: updated };
       break;
     }
     case "item.skipped": {
       // The reason lives in the chat; the item remembers the day so it isn't skipped twice.
       const item = state.items[event.payload.itemId];
-      if (item && !item.skippedOn.includes(event.payload.on))
-        next.items = {
-          ...state.items,
-          [item.id]: { ...item, skippedOn: [...item.skippedOn, event.payload.on].sort() },
-        };
+      if (item && !item.skippedOn.includes(event.payload.on)) {
+        const skipped = { ...item, skippedOn: [...item.skippedOn, event.payload.on].sort() };
+        // Skipping a repeating to-do moves it on to its next date, like ticking it.
+        if (item.repeat && item.dueOn) {
+          const from = item.dueOn > event.payload.on ? item.dueOn : event.payload.on;
+          skipped.dueOn = nextRepeat(item.repeat, from, item.dueOn);
+        }
+        next.items = { ...state.items, [item.id]: skipped };
+      }
       break;
     }
     case "item.wont": {
@@ -167,11 +179,16 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
       if (item) {
         // "Won't do" opens again (a habit keeps its ticks); otherwise the tick for that day goes.
         const wont = item.status === "wont";
+        const on = event.payload.on;
+        // A repeating to-do goes back to the date it had before that tick.
+        const back = state.rolledFrom[item.id]?.[on];
         const reopened: Item = wont
           ? { ...item, status: "open" }
           : item.kind === "habit"
-            ? { ...item, doneOn: item.doneOn.filter((d) => d !== event.payload.on) }
-            : { ...item, status: "open", doneOn: [] };
+            ? { ...item, doneOn: item.doneOn.filter((d) => d !== on) }
+            : item.repeat
+              ? { ...item, doneOn: item.doneOn.filter((d) => d !== on), dueOn: back ?? item.dueOn }
+              : { ...item, status: "open", doneOn: [] };
         next.items = { ...state.items, [item.id]: reopened };
         const { [wont ? "wont" : event.payload.on]: _, ...rest } = state.tickLines[item.id] ?? {};
         next.tickLines = { ...state.tickLines, [item.id]: rest };
@@ -232,6 +249,7 @@ export function normalizeItem(item: Item): Item {
     skippedOn: item.skippedOn ?? [],
     doneOn: item.doneOn ?? [],
     notes: item.notes ?? "",
+    repeat: item.repeat ?? null,
   };
 }
 
@@ -241,6 +259,7 @@ export function normalizeSpace(state: SpaceState): SpaceState {
     ...state,
     color: state.color ?? null,
     tickLines: state.tickLines ?? {},
+    rolledFrom: state.rolledFrom ?? {},
     items: Object.fromEntries(Object.entries(state.items).map(([k, i]) => [k, normalizeItem(i)])),
   };
 }

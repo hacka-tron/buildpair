@@ -433,6 +433,7 @@ function EditItem(props: { item: Item; onCancel: () => void; apply: (change: Cha
     dueTime: item.dueTime,
     timesPerWeek: item.timesPerWeek,
     deadline: item.kind === "goal",
+    repeat: item.repeat,
   });
   const save = () => {
     const trimmed = title.trim();
@@ -447,6 +448,7 @@ function EditItem(props: { item: Item; onCancel: () => void; apply: (change: Cha
               title: trimmed,
               dueOn: schedule.dueOn,
               dueTime: item.kind === "goal" || !schedule.dueOn ? null : schedule.dueTime,
+              ...(item.kind === "todo" ? { repeat: schedule.dueOn ? schedule.repeat : null } : {}),
             },
     });
   };

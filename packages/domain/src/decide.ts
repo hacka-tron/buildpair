@@ -43,6 +43,9 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       }
       if (p.kind === "habit" && !p.timesPerWeek) return reject("A habit needs a number of times per week.");
       if (p.dueTime && (p.kind === "habit" || !p.dueOn)) return reject("A time needs a day to go with it.");
+      if (p.repeat && p.kind !== "todo")
+        return reject("Only to-dos repeat on days. Habits count times a week.");
+      if (p.repeat && !p.dueOn) return reject("A repeating to-do needs a first date.");
       const item: Item = {
         id: p.itemId,
         kind: p.kind,
@@ -58,6 +61,7 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
         doneOn: [],
         skippedOn: [],
         notes: p.notes,
+        repeat: p.repeat,
         createdAt: command.at,
       };
       return { ok: true, events: [{ ...base, type: "item.created", payload: { item } }] };
@@ -84,6 +88,10 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       const changes: typeof asked = {};
       if (asked.title !== undefined && asked.title !== item.title) changes.title = asked.title;
       if (asked.notes !== undefined && asked.notes !== item.notes) changes.notes = asked.notes;
+      if (asked.repeat !== undefined && JSON.stringify(asked.repeat) !== JSON.stringify(item.repeat)) {
+        if (item.kind !== "todo") return reject("Only to-dos repeat on days. Habits count times a week.");
+        changes.repeat = asked.repeat;
+      }
       if (item.kind === "habit") {
         if (asked.dueOn || asked.dueTime) return reject("Habits repeat, so they don't take a date.");
         if (asked.timesPerWeek !== undefined && asked.timesPerWeek !== item.timesPerWeek)
@@ -97,6 +105,8 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
         const day = changes.dueOn !== undefined ? changes.dueOn : item.dueOn;
         const time = changes.dueTime !== undefined ? changes.dueTime : item.dueTime;
         if (time && !day) return reject("A time needs a day to go with it.");
+        const repeat = changes.repeat !== undefined ? changes.repeat : item.repeat;
+        if (repeat && !day) return reject("A repeating to-do needs a date.");
       }
       if (Object.keys(changes).length === 0) return { ok: true, events: [] };
       return { ok: true, events: [{ ...base, type: "item.edited", payload: { itemId: item.id, changes } }] };
@@ -130,7 +140,9 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       const item = ownItem(command.payload.itemId);
       if (typeof item === "string") return reject(item);
       if (item.kind !== "habit" && item.status !== "open") return reject("This item is already closed.");
-      if (item.kind === "habit" && item.doneOn.includes(command.payload.on)) return { ok: true, events: [] };
+      // Habits and repeating to-dos take one tick a day.
+      if ((item.kind === "habit" || item.repeat) && item.doneOn.includes(command.payload.on))
+        return { ok: true, events: [] };
       const events: UnsequencedEvent[] = [
         { ...base, type: "item.completed", payload: { itemId: item.id, on: command.payload.on } },
       ];
@@ -142,11 +154,11 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       if (typeof item === "string") return reject(item);
       const { on } = command.payload;
       const wont = item.status === "wont";
-      const ticked = wont || (item.kind === "habit" ? item.doneOn.includes(on) : item.status === "done");
+      const daily = item.kind === "habit" || Boolean(item.repeat);
+      const ticked = wont || (daily ? item.doneOn.includes(on) : item.status === "done");
       if (!ticked) return { ok: true, events: [] };
       // Exactly the line that tick (or "won't do") posted, if it's still in the chat.
-      const lineId =
-        state.tickLines[item.id]?.[wont ? "wont" : item.kind === "habit" ? on : (item.doneOn[0] ?? on)];
+      const lineId = state.tickLines[item.id]?.[wont ? "wont" : daily ? on : (item.doneOn[0] ?? on)];
       const line = lineId ? state.messages.find((m) => m.id === lineId && m.authorId === actorId) : undefined;
       return {
         ok: true,

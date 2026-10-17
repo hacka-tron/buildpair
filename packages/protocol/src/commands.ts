@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LocalDate, TimeOfDay, Timestamp, Ulid } from "./ids";
-import { ItemKind, Reflection, SpaceColor, Visibility } from "./model";
+import { ItemKind, Reflection, Repeat, SpaceColor, Visibility } from "./model";
 
 const cmd = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
   z.object({ id: Ulid, type: z.literal(type), at: Timestamp, payload });
@@ -17,6 +17,7 @@ export const CreateItem = cmd(
     timesPerWeek: z.number().int().min(1).max(7).nullable().default(null),
     dueTime: TimeOfDay.nullable().default(null),
     notes: z.string().trim().max(5000).default(""),
+    repeat: Repeat.nullable().default(null),
   }),
 );
 
@@ -30,6 +31,7 @@ export const EditItem = cmd(
     dueTime: TimeOfDay.nullable().optional(),
     timesPerWeek: z.number().int().min(1).max(7).optional(),
     notes: z.string().trim().max(5000).optional(),
+    repeat: Repeat.nullable().optional(),
   }),
 );
 

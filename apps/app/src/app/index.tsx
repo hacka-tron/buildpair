@@ -1,5 +1,5 @@
 import { newId, parseQuickAdd, reflectionDue, type SpaceState, weekProgress } from "@buildpair/domain";
-import type { Item } from "@buildpair/protocol";
+import type { Item, Repeat } from "@buildpair/protocol";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -53,6 +53,8 @@ type Place = "late" | "today" | "anytime" | "done" | null;
 function placeOf(item: Item, today: string, view: SpaceState | undefined, held: ReadonlySet<string>): Place {
   const ticked = doneOnDay(item, today);
   if (ticked && !held.has(item.id)) return "done";
+  // A repeating to-do has already moved on to its next date; keep it here while it settles.
+  if (ticked && item.repeat) return "today";
   if (!ticked && (!forToday(item, today, view) || skippedToday(item, today))) return null;
   if (item.kind === "habit") return "today";
   if (!item.dueOn) return item.parentId ? null : "anytime";
@@ -170,6 +172,8 @@ export default function Today() {
           (i) =>
             i.ownerId === userId &&
             (i.status === "open" || held.has(i.id)) &&
+            // A repeating to-do done today shows as done above, not again as its next one.
+            !(i.repeat && i.doneOn.includes(today)) &&
             !hidden.has(i.id) &&
             i.kind !== "habit" &&
             i.dueOn !== null &&
@@ -494,6 +498,7 @@ type Draft = {
   dueOn: string | null;
   dueTime: string | null;
   timesPerWeek: number | null;
+  repeat: Repeat | null;
 };
 
 /**
@@ -530,6 +535,7 @@ function QuickAdd(props: {
           dueTime: parsed.dueTime,
           timesPerWeek: parsed.timesPerWeek,
           deadline: parsed.kind === "goal",
+          repeat: parsed.repeat,
         }
       : // Adding from Today with no date means today, like Things. The date chip can clear it.
         { ...NO_SCHEDULE, dueOn: today });
@@ -549,6 +555,7 @@ function QuickAdd(props: {
       dueOn: schedule.timesPerWeek ? null : schedule.dueOn,
       dueTime: schedule.timesPerWeek || schedule.deadline ? null : schedule.dueTime,
       timesPerWeek: schedule.timesPerWeek,
+      repeat: schedule.timesPerWeek || schedule.deadline || !schedule.dueOn ? null : schedule.repeat,
     });
     if (problem) return setError(problem);
     // The box stays open for the next one, like Todoist. Close it when you're done.
@@ -626,7 +633,7 @@ function QuickAdd(props: {
               >
                 <Text style={{ fontSize: 12, color: colors.faint }}>
                   Read "{parsed.understood.join(" ")}" as the{" "}
-                  {kindOf(schedule) === "habit" ? "repeat" : "date"}
+                  {kindOf(schedule) === "habit" || schedule.repeat ? "repeat" : "date"}
                 </Text>
                 <Icon name="x" size={12} color={colors.faint} />
               </Pressable>
@@ -679,7 +686,9 @@ function QuickAdd(props: {
                   ? "a habit"
                   : kindOf(schedule) === "goal"
                     ? "a goal"
-                    : "a to-do"}
+                    : schedule.repeat
+                      ? "a repeating to-do"
+                      : "a to-do"}
               </Text>{" "}
               called <Text style={{ fontWeight: "600", color: colors.ink }}>{title}</Text>
               {kindOf(schedule) === "goal" ? ". Open it after to add steps." : "."}

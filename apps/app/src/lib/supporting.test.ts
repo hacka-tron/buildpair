@@ -64,6 +64,7 @@ function space(opts: {
         doneOn: [],
         skippedOn: [],
         notes: "",
+        repeat: null,
         createdAt: daysAgo(20),
         ...p,
       };

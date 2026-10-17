@@ -13,6 +13,7 @@ const todo = (title: string, dueOn: string | null = null, dueTime: string | null
   dueOn,
   dueTime,
   timesPerWeek: null,
+  repeat: null,
 });
 
 describe("quick add: days and times", () => {
@@ -51,7 +52,7 @@ describe("quick add: days and times", () => {
   ])("%s", (text, expected) => expect(read(text)).toEqual(expected));
 });
 
-describe("quick add: repeats make habits", () => {
+describe("quick add: a count a week makes a habit", () => {
   it.each([
     ["gym 4x a week", 4],
     ["gym 4 times a week", 4],
@@ -59,19 +60,34 @@ describe("quick add: repeats make habits", () => {
     ["read three times per week", 3],
     ["stretch every day", 7],
     ["meditate daily", 7],
-    ["standup every weekday", 5],
-    ["long run weekends", 2],
     ["call grandma once a week", 1],
     ["swim twice a week", 2],
     ["review finances weekly", 1],
     ["vitamins 7 days a week", 7],
-    ["yoga every monday", 1],
-    ["climb every tue and thu", 2],
-    ["piano every mon, wed and fri", 3],
   ])("%s", (text, times) => {
     const r = parseQuickAdd(text, TODAY);
-    expect(r).toMatchObject({ kind: "habit", timesPerWeek: times, dueOn: null, dueTime: null });
+    expect(r).toMatchObject({ kind: "habit", timesPerWeek: times, dueOn: null, dueTime: null, repeat: null });
     expect(r.title).not.toMatch(/week|every|daily|day/i);
+  });
+});
+
+describe("quick add: set days make a repeating to-do", () => {
+  // TODAY is a Thursday.
+  it.each([
+    ["bins every monday", "bins", { kind: "week", days: [1] }, "2026-10-19", null],
+    ["climb every tue and thu", "climb", { kind: "week", days: [2, 4] }, "2026-10-15", null],
+    ["piano every mon, wed and fri 6pm", "piano", { kind: "week", days: [1, 3, 5] }, "2026-10-16", "18:00"],
+    ["standup every weekday", "standup", { kind: "week", days: [1, 2, 3, 4, 5] }, "2026-10-15", null],
+    ["long run weekends", "long run", { kind: "week", days: [0, 6] }, "2026-10-17", null],
+    ["pay rent every month", "pay rent", { kind: "month" }, "2026-10-15", null],
+    ["water plants every 3 days", "water plants", { kind: "days", every: 3 }, "2026-10-15", null],
+    ["feed fish every other day", "feed fish", { kind: "days", every: 2 }, "2026-10-15", null],
+  ])("%s", (text, title, repeat, dueOn, dueTime) => {
+    expect(read(text)).toEqual({ title, kind: "todo", dueOn, dueTime, timesPerWeek: null, repeat });
+  });
+
+  it("keeps 'monthly' in the title unless it's the last word", () => {
+    expect(read("monthly budget review").repeat).toBeNull();
   });
 });
 
@@ -83,7 +99,14 @@ describe("quick add: deadlines make goals", () => {
     ["first 10 users due by dec 1", "first 10 users", "2026-12-01"],
     ["pay invoice by 10/30", "pay invoice", "2026-10-30"],
   ])("%s", (text, title, dueOn) =>
-    expect(read(text)).toEqual({ title, kind: "goal", dueOn, dueTime: null, timesPerWeek: null }),
+    expect(read(text)).toEqual({
+      title,
+      kind: "goal",
+      dueOn,
+      dueTime: null,
+      timesPerWeek: null,
+      repeat: null,
+    }),
   );
 });
 
@@ -121,6 +144,7 @@ describe("quick add: leaves unclear words alone", () => {
       dueOn: null,
       dueTime: null,
       timesPerWeek: null,
+      repeat: null,
       understood: [],
     });
   });
@@ -132,6 +156,7 @@ describe("quick add: leaves unclear words alone", () => {
       dueOn: "2026-11-21",
       dueTime: null,
       timesPerWeek: null,
+      repeat: null,
     });
   });
 

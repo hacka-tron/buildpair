@@ -1,7 +1,11 @@
+import type { Repeat } from "@buildpair/protocol";
+import { firstRepeat } from "./habits";
+
 /**
  * Reads plain words typed into quick add ("dentist friday 3pm", "gym 4x a week", "launch v1 by nov 21")
- * and pulls out the schedule. The schedule decides the kind: a repeat makes a habit, "by <day>" makes a
- * goal with that deadline, anything else is a to-do. Only clear phrases are taken; anything unsure stays
+ * and pulls out the schedule. The schedule decides the kind: a count a week makes a habit ("gym 4x a
+ * week", "daily"), repeating on set days makes a repeating to-do ("bins every monday", "weekdays",
+ * "every month"), "by <day>" makes a goal with that deadline, anything else is a to-do. Only clear phrases are taken; anything unsure stays
  * in the title, so nothing is invented.
  */
 export interface QuickAdd {
@@ -10,6 +14,8 @@ export interface QuickAdd {
   dueOn: string | null;
   dueTime: string | null;
   timesPerWeek: number | null;
+  /** A to-do that repeats on set days; its first date is in `dueOn`. */
+  repeat: Repeat | null;
   /** The phrases that were read as the schedule, as typed, for showing what was understood. */
   understood: string[];
 }
@@ -136,11 +142,26 @@ const REPEATS: Rule[] = [
   },
   {
     re: new RegExp(`${B}(?:every weekday|on weekdays)${E}|${B}weekdays${E}${AT_END}`, "i"),
-    read: () => ({ timesPerWeek: 5 }),
+    read: () => ({ repeat: { kind: "week", days: [1, 2, 3, 4, 5] } }),
   },
   {
     re: new RegExp(`${B}(?:every weekend|on weekends)${E}|${B}weekends${E}${AT_END}`, "i"),
-    read: () => ({ timesPerWeek: 2 }),
+    read: () => ({ repeat: { kind: "week", days: [0, 6] } }),
+  },
+  {
+    re: new RegExp(`${B}every month${E}|${B}monthly${E}${AT_END}`, "i"),
+    read: () => ({ repeat: { kind: "month" } }),
+  },
+  {
+    re: new RegExp(`${B}every other day${E}`, "i"),
+    read: () => ({ repeat: { kind: "days", every: 2 } }),
+  },
+  {
+    re: new RegExp(`${B}every ([2-9]|[1-9]\\d|${NUM_WORD}) days${E}`, "i"),
+    read: (m) => {
+      const every = Number(m[1]) || COUNTS[m[1]!.toLowerCase()];
+      return every && every >= 2 && every <= 365 ? { repeat: { kind: "days", every } } : null;
+    },
   },
   {
     re: new RegExp(`${B}([1-7]|${NUM_WORD}) ?(?:x|times|days)(?: (?:a|per|each|every)|/) ?week${E}`, "i"),
@@ -159,7 +180,8 @@ const REPEATS: Rule[] = [
     ),
     read: (m) => {
       const names = m[1]!.toLowerCase().split(/, ?| and | ?& ?/);
-      return { timesPerWeek: new Set(names.map((n) => DAYS[n] ?? SHORT_DAYS[n])).size };
+      const days = [...new Set(names.map((n) => (DAYS[n] ?? SHORT_DAYS[n])!))].sort();
+      return { repeat: { kind: "week", days } };
     },
   },
 ];
@@ -281,6 +303,7 @@ export function parseQuickAdd(text: string, today: string): QuickAdd {
       dueOn: null,
       dueTime: null,
       timesPerWeek: null,
+      repeat: null,
       understood: [],
     };
   let rest = ` ${text} `;
@@ -291,6 +314,7 @@ export function parseQuickAdd(text: string, today: string): QuickAdd {
     dueOn: null,
     dueTime: null,
     timesPerWeek: null,
+    repeat: null,
     understood,
   };
 
@@ -311,7 +335,11 @@ export function parseQuickAdd(text: string, today: string): QuickAdd {
   };
 
   if (take(REPEATS)) {
-    result.kind = "habit";
+    if (result.repeat) {
+      // Set days make a repeating to-do, starting on its first day from today, with a time if given.
+      result.dueOn = firstRepeat(result.repeat, today);
+      take(TIMES);
+    } else result.kind = "habit";
   } else {
     take(DATES, (before) => {
       // "by friday" sets a deadline, which makes a goal.
@@ -338,6 +366,7 @@ export function parseQuickAdd(text: string, today: string): QuickAdd {
       dueOn: null,
       dueTime: null,
       timesPerWeek: null,
+      repeat: null,
       understood: [],
     };
   return result;

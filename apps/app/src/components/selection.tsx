@@ -237,7 +237,7 @@ function Reschedule(props: {
           keep their schedule.
         </Text>
       ) : null}
-      <SchedulePanel mode="date" value={value} onChange={setValue} />
+      <SchedulePanel mode="date" value={value} onChange={setValue} noRepeat />
       <Button label="Apply" onPress={() => props.onApply(value)} />
     </Sheet>
   );
