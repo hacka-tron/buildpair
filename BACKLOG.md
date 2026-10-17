@@ -116,7 +116,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 - **Plain-words adding reads full weekday names and "today" anywhere** ("watch Friday Night Lights", "watch Today show" get a date). The add box shows what it read and one tap keeps the words as typed. Short names (fri, sat, sun) only count after on, next, this, by or due, or right before a time. "daily", "weekly" and "weekends" only count as the last words. Numeric dates need on, by, due or before ("on 10/20"). "At 7:30" stays in the words (morning or evening is unclear). A time with no day means today.
 - **Quick add small cases (review of PR #18):** "SAT 3pm prep" reads as Saturday 3pm; a trailing "due" stays in the title ("pay bill due 11/20" keeps "due"); a period after a date stays ("call friday." becomes "call ."). Lookbehind in the parser is untested on a phone (Hermes).
 - **"order 2 jan prints" reads as January 2.** A number next to a month name counts as a date anywhere in the words. The add box shows it and one tap undoes it.
-- **"Every monday" becomes 1 time a week**, not specific days. Habits only know times per week for now.
+- **A monthly repeat can drift after a short month.** Jan 31 goes to Feb 28, then Mar 28. The next date is worked out from the current one.
 - **Still to build in milestone 3:** reminders and push.
 - **Move leftovers (review, minor):** a private item's chat lines don't come back with it after a refusal. If the other space took a move but its answer was lost on the very last try (after about a day of failures), the item can end up in both spaces. Any error from the other space counts as unreachable and isn't logged. A resend with the same move ID after a refusal counts as a new move.
 - **A move to a space that can't be reached waits.** The old space keeps a copy and retries every 30 seconds until the new space takes it, so for that time the item shows in neither. If the new space refuses (deleted, or you left), the item comes back. Not tested against a real outage.
@@ -143,6 +143,9 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 ## Decisions (owner)
 
 - To-dos follow the habits of the best to-do apps, as written up in `docs/design/todo-study.md`. A tick can always be taken back. A ticked item keeps its place for a moment. Every tick and delete shows Undo for five seconds, and deletes are sent only after that. Reopening takes back the chat line it posted. No priorities or flags for now (Claude's call, 2026-10-16).
+- Today holds only your own things. Late ones gather in Overdue with "Move to today". Spaces with nothing for today are left out. Undated things sit in a folded Anytime group. Adding from Today with no date means today (Claude's call, 2026-10-16).
+- Repeating on set days ("every monday", "weekdays", "weekends", "every month", "every 3 days") makes a repeating to-do that moves to its next date when ticked or skipped. Counts a week ("4x a week", "daily", "every week") still make habits. Before this, set days made habits with no day (Claude's call, 2026-10-16).
+- Quick add stays open after each add, and items have notes saved when you leave the field (Claude's call, 2026-10-16).
 
 - Integrations (Jira, Linear, GitHub, health apps) wait. Focus on core features and polish (2026-10-16).
 - Privacy and terms drafts are fine as written, minimum age 16 (2026-10-16).
