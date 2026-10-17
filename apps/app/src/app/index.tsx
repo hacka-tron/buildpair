@@ -1,4 +1,4 @@
-import { newId, parseQuickAdd, reflectionDue, type SpaceState, weekProgress } from "@buildpair/domain";
+import { newId, parseQuickAdd, type SpaceState, weekProgress } from "@buildpair/domain";
 import type { Item, Repeat } from "@buildpair/protocol";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -98,12 +98,8 @@ export default function Today() {
   }, [toOpen, views]);
   const [problem, setProblem] = useState("");
   const [opened, setOpened] = useState<{ spaceId: string; item: Item } | null>(null);
-  const [reviewHidden, setReviewHidden] = useState(false);
   // Q adds something from anywhere on Today (on the web, when you're not typing).
   useShortcuts({ q: () => setAdding(true) }, !adding);
-  const reviewDue = (spaces ?? []).filter(
-    (s) => views[s.id] && reflectionDue(views[s.id]!, userId, new Date()),
-  );
 
   const held = useHeld();
   const hidden = useHidden();
@@ -257,32 +253,6 @@ export default function Today() {
         />
         <ErrorText>{error || problem}</ErrorText>
         {spaces && spaces.length === 0 ? <FirstRun /> : null}
-        {reviewDue.length && !reviewHidden ? (
-          <View style={{ marginTop: space.md }}>
-            <Card>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-                <Icon name="edit-3" size={20} color={colors.blue} />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>
-                    Your weekly review is ready
-                  </Text>
-                  <Text style={{ fontSize: 13, color: colors.sub }}>
-                    {reviewDue.length} shared {reviewDue.length === 1 ? "space" : "spaces"}, a few minutes.
-                    Your supporters see it in the chat.
-                  </Text>
-                </View>
-              </View>
-              <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.md }}>
-                <View style={{ flex: 1 }}>
-                  <Button label="Not now" kind="secondary" onPress={() => setReviewHidden(true)} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Button label="Start" onPress={() => router.push("/review")} />
-                </View>
-              </View>
-            </Card>
-          </View>
-        ) : null}
         {late.length ? (
           <View style={{ marginTop: space.md }}>
             <SectionHeader

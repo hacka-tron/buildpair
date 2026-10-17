@@ -67,7 +67,6 @@ export function CommandPalette() {
         icon: "folder-plus",
         run: go({ pathname: "/spaces", params: { new: "1" } }),
       },
-      { key: "review", label: "Weekly review", group: "Do", icon: "edit-3", run: go("/review") },
     ];
     for (const s of spaces ?? [])
       out.push({
