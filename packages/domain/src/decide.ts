@@ -111,6 +111,12 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
         if (time && !day) return reject("A time needs a day to go with it.");
         const repeat = changes.repeat !== undefined ? changes.repeat : item.repeat;
         if (repeat && !day) return reject("A repeating to-do needs a date.");
+        // A new date moves a monthly repeat to that day of the month.
+        if (repeat?.kind === "month" && changes.dueOn) {
+          const moved = { ...repeat, day: Number(changes.dueOn.slice(8, 10)) };
+          if (JSON.stringify(moved) !== JSON.stringify(item.repeat)) changes.repeat = moved;
+          else delete changes.repeat;
+        }
       }
       if (Object.keys(changes).length === 0) return { ok: true, events: [] };
       return { ok: true, events: [{ ...base, type: "item.edited", payload: { itemId: item.id, changes } }] };

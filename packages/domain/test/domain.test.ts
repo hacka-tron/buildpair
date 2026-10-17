@@ -1165,3 +1165,22 @@ describe("repeating to-do review fixes", () => {
     expect(s.items[itemId]?.dueOn).toBe("2026-10-26");
   });
 });
+
+describe("moving a monthly to-do", () => {
+  it("repeats on the new day of the month after its date is changed", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId, kind: "todo", title: "Rent", dueOn: "2026-01-31", repeat: { kind: "month" } },
+      }),
+    ).state;
+    s = run(
+      s,
+      cmd({ type: "item.edit", payload: { itemId, dueOn: "2026-02-15", repeat: s.items[itemId]!.repeat } }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId, on: "2026-02-15" } })).state;
+    expect(s.items[itemId]?.dueOn).toBe("2026-03-15");
+  });
+});
