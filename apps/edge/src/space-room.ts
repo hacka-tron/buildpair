@@ -38,7 +38,7 @@ export const moveRetryDelay = (tries: number) => Math.min(30_000 * 2 ** (tries -
  * What a saved snapshot was built with. Bump the last part whenever applyEvent's results change for the same
  * events, so rooms rebuild from their log instead of trusting an old snapshot.
  */
-const SNAPSHOT_VERSION = PROTOCOL_VERSION * 100 + 1;
+const SNAPSHOT_VERSION = PROTOCOL_VERSION * 100 + 2;
 const SNAPSHOT_MAX_BYTES = 1_500_000;
 const MAX_EVENTS_PER_BATCH = 500;
 /** The Worker sets this after verifying a ticket; Durable Objects are not reachable from the internet directly. */
