@@ -7,7 +7,7 @@ import {
   decideMoveOut,
   decideRemove,
   emptySpace,
-  leavesWith,
+  forgetPlan,
   normalizeSpace,
   type SpaceState,
   sequence,
@@ -226,10 +226,19 @@ export class SpaceRoom extends DurableObject<Env> {
       .toArray()[0]?.seq;
   }
 
-  private commit(unsequenced: UnsequencedEvent[], commandId?: string): SpaceEvent[] {
+  /**
+   * Store events. `inside` runs in the same transaction (for rewriting the log when items leave); when it
+   * says the log changed, the state is rebuilt from the log on next use.
+   */
+  private commit(
+    unsequenced: UnsequencedEvent[],
+    commandId?: string,
+    inside?: (events: SpaceEvent[]) => boolean,
+  ): SpaceEvent[] {
     const current = this.load();
     const events = sequence(unsequenced, current.seq);
     const sql = this.ctx.storage.sql;
+    let rewritten = false;
     this.ctx.storage.transactionSync(() => {
       for (const e of events) {
         sql.exec(
@@ -249,7 +258,13 @@ export class SpaceRoom extends DurableObject<Env> {
           events.at(-1)?.seq ?? current.seq,
         );
       }
+      if (inside) rewritten = inside(events);
     });
+    if (rewritten) {
+      this.dropSnapshot();
+      this.state = null;
+      return events;
+    }
     this.state = applyEvents(current, events);
     this.maybeSnapshot();
     return events;
@@ -416,10 +431,16 @@ export class SpaceRoom extends DurableObject<Env> {
       console.error("event failed validation", { type: command.type });
       return { ok: false, reason: "That change couldn't be saved. Try making it shorter." };
     }
-    const events = this.commit(decision.events, command.id);
-    for (const e of events)
-      if (e.type === "item.deleted")
-        this.forget(new Set(e.payload.itemIds), e.payload.visibility === "space", e.seq);
+    // A delete rewrites the log in the same transaction, so a private item's history can't outlive it.
+    const events = this.commit(decision.events, command.id, (stored) => {
+      let changed = false;
+      for (const e of stored)
+        if (e.type === "item.deleted") {
+          this.forget(new Set(e.payload.itemIds), e.payload.visibility === "space", e.seq);
+          changed = true;
+        }
+      return changed;
+    });
     // The list of spaces is updated before anyone hears about the change, so a sidebar that refreshes
     // on the news already sees it.
     for (const e of events) if (e.type === "space.edited") await this.updateIndex(e.payload.changes);
@@ -434,17 +455,15 @@ export class SpaceRoom extends DurableObject<Env> {
    */
   private forget(ids: ReadonlySet<string>, keepLines: boolean, seq: number) {
     const sql = this.ctx.storage.sql;
-    const log = this.readLog().filter((e) => e.seq < seq);
-    const gone = log.filter((e) => leavesWith(e, ids, keepLines));
-    const goneLines = new Set(
-      gone.flatMap((e) => (e.type === "message.posted" ? [e.payload.message.id] : [])),
+    // Callers run this inside the commit's transaction, so the two land together or not at all.
+    const { drop, rewrite } = forgetPlan(
+      this.readLog().filter((e) => e.seq < seq),
+      ids,
+      keepLines,
     );
-    for (const e of log)
-      if (e.type === "reaction.toggled" && goneLines.has(e.payload.messageId)) gone.push(e);
-    // Callers run this in the same synchronous step as the commit, so the two land together.
-    for (const e of gone) sql.exec("DELETE FROM events WHERE seq = ?", e.seq);
-    this.dropSnapshot();
-    this.state = null;
+    for (const s of drop) sql.exec("DELETE FROM events WHERE seq = ?", s);
+    for (const e of rewrite)
+      sql.exec("UPDATE events SET payload = ? WHERE seq = ?", JSON.stringify(e.payload), e.seq);
   }
 
   // --- Moving an item to another space ---
@@ -481,10 +500,10 @@ export class SpaceRoom extends DurableObject<Env> {
       at: new Date().toISOString(),
     });
     if (!d.ok) return d;
-    const [moved] = this.commit([d.event]);
     const ids = new Set(d.items.map((i) => i.id));
-    this.ctx.storage.transactionSync(() => {
-      this.forget(ids, d.items[0]!.visibility === "space", moved!.seq);
+    // Taken out, its history forgotten and its copy queued, all in one transaction.
+    const [moved] = this.commit([d.event], undefined, ([e]) => {
+      this.forget(ids, d.items[0]!.visibility === "space", e!.seq);
       sql.exec(
         "INSERT INTO moves (move_id, item_id, to_space, actor_id) VALUES (?, ?, ?, ?)",
         moveId,
@@ -500,9 +519,8 @@ export class SpaceRoom extends DurableObject<Env> {
         actorId,
         JSON.stringify(d.items),
       );
+      return true;
     });
-    this.dropSnapshot();
-    this.state = null;
     this.publish([moved!]);
     return this.answer(moveId, await this.deliver());
   }

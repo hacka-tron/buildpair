@@ -44,14 +44,14 @@ describe("ticks", () => {
 
   it("sends a delete only after the Undo notice, and not at all after Undo", () => {
     vi.useFakeTimers();
-    const send = vi.fn();
+    const send = vi.fn(() => null);
     deleteLater(["a"], "Deleted", send);
     vi.advanceTimersByTime(UNDO_MS - 1);
     expect(send).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(send).toHaveBeenCalledTimes(1);
     // Closing the page sends what's waiting at once.
-    const later = vi.fn();
+    const later = vi.fn(() => null);
     deleteLater(["b"], "Deleted", later);
     flushDeletes();
     expect(later).toHaveBeenCalledTimes(1);

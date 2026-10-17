@@ -8,6 +8,7 @@ import {
   decideMoveOut,
   decideRemove,
   emptySpace,
+  forgetPlan,
   leavesWith,
   newId,
   normalizeSpace,
@@ -902,5 +903,141 @@ describe("taking a tick back, and deleting", () => {
         true,
       ),
     ).toBe(true);
+  });
+});
+
+describe("review fixes for reopen and delete", () => {
+  /** Run commands, keeping the numbered log like a room does. */
+  function logOf(...cmds: Command[]) {
+    let state = space();
+    const log: SpaceEvent[] = [];
+    for (const c of cmds) {
+      const r = run(state, c);
+      state = r.state;
+      log.push(...r.events);
+    }
+    return { state, log };
+  }
+  /** What the room does on delete: commit, rewrite the log, rebuild from it. */
+  function deleteAndRebuild(start: { state: SpaceState; log: SpaceEvent[] }, itemId: string) {
+    const r = run(start.state, cmd({ type: "item.delete", payload: { itemId } }));
+    const e = r.events[0]!;
+    if (e.type !== "item.deleted") throw new Error("no delete");
+    const { drop, rewrite } = forgetPlan(
+      start.log,
+      new Set(e.payload.itemIds),
+      e.payload.visibility === "space",
+    );
+    const byNumber = new Map(rewrite.map((x) => [x.seq, x]));
+    const log = [...start.log.filter((x) => !drop.includes(x.seq)).map((x) => byNumber.get(x.seq) ?? x), e];
+    return applyEvents(
+      space(),
+      log.filter((x) => x.seq > 3),
+    );
+  }
+
+  it("deleting a step keeps its private goal private", () => {
+    const goal = newId();
+    const step = newId();
+    const start = logOf(
+      cmd({ type: "item.create", payload: { itemId: goal, kind: "goal", title: "Secret plan" } }),
+      cmd({ type: "item.create", payload: { itemId: step, kind: "todo", title: "Step", parentId: goal } }),
+      cmd({ type: "item.visibility", payload: { itemId: goal, visibility: "owner" } }),
+    );
+    const rebuilt = deleteAndRebuild(start, step);
+    expect(rebuilt.items[goal]?.visibility).toBe("owner");
+    expect(viewFor(rebuilt, "jordan").items[goal]).toBeUndefined();
+  });
+
+  it("deleting a step keeps a goal that arrived with it", () => {
+    const goal = newId();
+    const step = newId();
+    const base = { id: goal, kind: "goal", title: "Moved goal", ownerId: "maya", parentId: null } as const;
+    const item = (over: object) => ({
+      visibility: "space" as const,
+      status: "open" as const,
+      dueOn: null,
+      dueTime: null,
+      timesPerWeek: null,
+      doneOn: [],
+      skippedOn: [],
+      notes: "",
+      createdAt: AT,
+      ...base,
+      ...over,
+    });
+    const arrival: SpaceEvent = {
+      seq: 4,
+      type: "item.arrived",
+      actorId: "maya",
+      commandId: null,
+      at: AT,
+      payload: { items: [item({}), item({ id: step, kind: "todo", title: "Step", parentId: goal })] },
+    };
+    const state = applyEvents(space(), [arrival]);
+    const rebuilt = deleteAndRebuild({ state, log: [arrival] }, step);
+    expect(rebuilt.items[goal]?.title).toBe("Moved goal");
+    expect(rebuilt.items[step]).toBeUndefined();
+  });
+
+  it("a line a reopen took back stays gone after the item is deleted", () => {
+    const itemId = newId();
+    const start = logOf(
+      cmd({ type: "item.create", payload: { itemId, kind: "todo", title: "Oops" } }),
+      cmd({ type: "item.complete", payload: { itemId, on: "2026-10-10" } }),
+      cmd({ type: "item.reopen", payload: { itemId, on: "2026-10-10" } }),
+    );
+    expect(deleteAndRebuild(start, itemId).messages).toEqual([]);
+  });
+
+  it("reopening a habit's day removes that day's line, not another", () => {
+    const habitId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId: habitId, kind: "habit", title: "Gym", timesPerWeek: 3 },
+      }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: habitId, on: "2026-10-09" } })).state;
+    const yesterday = s.messages[0]!.id;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId: habitId, visibility: "owner" } })).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: habitId, on: "2026-10-10" } })).state;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId: habitId, visibility: "space" } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: habitId, on: "2026-10-10" } })).state;
+    expect(s.messages.map((m) => m.id)).toEqual([yesterday]);
+    expect(s.items[habitId]?.doneOn).toEqual(["2026-10-09"]);
+  });
+
+  it("a won't-do set while private takes back no older line when reopened", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({ type: "item.create", payload: { itemId, kind: "todo", title: "Gate" } }),
+    ).state;
+    s = run(s, cmd({ type: "item.wont", payload: { itemId, reason: "first" } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId, on: "2026-10-10" } })).state;
+    s = run(s, cmd({ type: "item.skip", payload: { itemId, on: "2026-10-10", reason: "busy" } })).state;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId, visibility: "owner" } })).state;
+    s = run(s, cmd({ type: "item.wont", payload: { itemId, reason: null } })).state;
+    s = run(s, cmd({ type: "item.visibility", payload: { itemId, visibility: "space" } })).state;
+    const before = s.messages.length;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId, on: "2026-10-10" } })).state;
+    expect(s.messages).toHaveLength(before);
+  });
+
+  it("reopens a habit marked won't do, keeping its ticks", () => {
+    const habitId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId: habitId, kind: "habit", title: "Gym", timesPerWeek: 3 },
+      }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId: habitId, on: "2026-10-09" } })).state;
+    s = run(s, cmd({ type: "item.wont", payload: { itemId: habitId, reason: null } })).state;
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId: habitId, on: "2026-10-10" } })).state;
+    expect(s.items[habitId]).toMatchObject({ status: "open", doneOn: ["2026-10-09"] });
   });
 });

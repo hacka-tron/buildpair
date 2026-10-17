@@ -139,13 +139,13 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       const item = ownItem(command.payload.itemId);
       if (typeof item === "string") return reject(item);
       const { on } = command.payload;
-      const ticked = item.kind === "habit" ? item.doneOn.includes(on) : item.status !== "open";
+      const wont = item.status === "wont";
+      const ticked = wont || (item.kind === "habit" ? item.doneOn.includes(on) : item.status === "done");
       if (!ticked) return { ok: true, events: [] };
-      // The line it posted: a "finished" line, or for "won't do" its reason line.
-      const kind = item.status === "wont" ? "skip" : "completion";
-      const line = [...state.messages]
-        .reverse()
-        .find((m) => m.itemId === item.id && m.kind === kind && m.authorId === actorId);
+      // Exactly the line that tick (or "won't do") posted, if it's still in the chat.
+      const lineId =
+        state.tickLines[item.id]?.[wont ? "wont" : item.kind === "habit" ? on : (item.doneOn[0] ?? on)];
+      const line = lineId ? state.messages.find((m) => m.id === lineId && m.authorId === actorId) : undefined;
       return {
         ok: true,
         events: [

@@ -75,6 +75,7 @@ export function SelectionBar(props: {
 
   const done = () => {
     const open = picked.filter((p) => !isTicked(p.item, today));
+    if (open.length === 0) return props.onClear();
     if (!run(open, (item) => ({ type: "item.complete", payload: { itemId: item.id, on: today } }))) return;
     notify(open.length === 1 ? "Done" : `${open.length} done`, () => {
       for (const p of open)
@@ -87,10 +88,10 @@ export function SelectionBar(props: {
     deleteLater(
       targets.map((p) => p.item.id),
       targets.length === 1 ? "Deleted" : `${targets.length} deleted`,
-      () => {
-        for (const p of targets)
-          props.apply(p.spaceId, { type: "item.delete", payload: { itemId: p.item.id } });
-      },
+      () =>
+        targets
+          .map((p) => props.apply(p.spaceId, { type: "item.delete", payload: { itemId: p.item.id } }))
+          .find(Boolean) ?? null,
     );
     setProblem("");
     props.onClear();

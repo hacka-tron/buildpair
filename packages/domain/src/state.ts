@@ -13,10 +13,25 @@ export interface SpaceState {
   messages: Message[];
   /** messageId -> emoji -> user IDs who reacted. */
   reactions: Record<string, Record<string, UserId[]>>;
+  /**
+   * itemId -> the day ticked (or "wont") -> the chat line that tick posted (its command ID), so taking the
+   * tick back removes exactly that line.
+   */
+  tickLines: Record<string, Record<string, string>>;
 }
 
 export function emptySpace(): SpaceState {
-  return { seq: 0, name: "", purpose: "", color: null, members: {}, items: {}, messages: [], reactions: {} };
+  return {
+    seq: 0,
+    name: "",
+    purpose: "",
+    color: null,
+    members: {},
+    items: {},
+    messages: [],
+    reactions: {},
+    tickLines: {},
+  };
 }
 
 /**
@@ -118,6 +133,7 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
     case "item.completed": {
       const item = state.items[event.payload.itemId];
       if (!item) break;
+      if (event.commandId) next.tickLines = withLine(state, item.id, event.payload.on, event.commandId);
       const updated: Item =
         item.kind === "habit"
           ? {
@@ -143,16 +159,22 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
     case "item.wont": {
       const item = state.items[event.payload.itemId];
       if (item) next.items = { ...state.items, [item.id]: { ...item, status: "wont" } };
+      if (item && event.commandId) next.tickLines = withLine(state, item.id, "wont", event.commandId);
       break;
     }
     case "item.reopened": {
       const item = state.items[event.payload.itemId];
       if (item) {
-        const reopened: Item =
-          item.kind === "habit"
+        // "Won't do" opens again (a habit keeps its ticks); otherwise the tick for that day goes.
+        const wont = item.status === "wont";
+        const reopened: Item = wont
+          ? { ...item, status: "open" }
+          : item.kind === "habit"
             ? { ...item, doneOn: item.doneOn.filter((d) => d !== event.payload.on) }
             : { ...item, status: "open", doneOn: [] };
         next.items = { ...state.items, [item.id]: reopened };
+        const { [wont ? "wont" : event.payload.on]: _, ...rest } = state.tickLines[item.id] ?? {};
+        next.tickLines = { ...state.tickLines, [item.id]: rest };
       }
       const line = event.payload.messageId;
       if (line) {
@@ -195,6 +217,10 @@ export function applyEvent(state: SpaceState, event: SpaceEvent): SpaceState {
   return next;
 }
 
+function withLine(state: SpaceState, itemId: string, day: string, line: string) {
+  return { ...state.tickLines, [itemId]: { ...state.tickLines[itemId], [day]: line } };
+}
+
 /**
  * Fill fields added after an item was saved, so older items (in the server's log or a device's copy)
  * read like new ones.
@@ -213,6 +239,7 @@ export function normalizeSpace(state: SpaceState): SpaceState {
   return {
     ...state,
     color: state.color ?? null,
+    tickLines: state.tickLines ?? {},
     items: Object.fromEntries(Object.entries(state.items).map(([k, i]) => [k, normalizeItem(i)])),
   };
 }

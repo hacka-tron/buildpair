@@ -74,3 +74,59 @@ export function leavesWith(event: SpaceEvent, ids: ReadonlySet<string>, keepLine
       return false;
   }
 }
+
+/**
+ * What to change in a space's log when items leave it (moved or deleted): events to delete outright, and
+ * events to rewrite because they also name items that stay (a goal's visibility change listing its steps,
+ * or an arrival of a goal with its steps). Chat lines about the items stay when `keepLines`, except a line
+ * a reopen had already taken back, which goes with that reopen. Reactions on lines that go, go too.
+ */
+export function forgetPlan(
+  log: readonly SpaceEvent[],
+  ids: ReadonlySet<string>,
+  keepLines: boolean,
+): { drop: number[]; rewrite: SpaceEvent[] } {
+  const gone = new Set<string>();
+  for (const e of log) {
+    if (e.type === "item.reopened" && ids.has(e.payload.itemId) && e.payload.messageId)
+      gone.add(e.payload.messageId);
+    if (
+      !keepLines &&
+      e.type === "message.posted" &&
+      e.payload.message.itemId &&
+      ids.has(e.payload.message.itemId)
+    )
+      gone.add(e.payload.message.id);
+  }
+  const drop: number[] = [];
+  const rewrite: SpaceEvent[] = [];
+  for (const e of log) {
+    if (e.type === "item.visibility" && e.payload.itemIds.some((id) => ids.has(id))) {
+      const itemIds = e.payload.itemIds.filter((id) => !ids.has(id));
+      if (itemIds.length === 0) drop.push(e.seq);
+      else {
+        const messages = e.payload.messages.filter(
+          (m) => !gone.has(m.id) && !(m.itemId && ids.has(m.itemId) && !keepLines),
+        );
+        const kept = new Set(messages.map((m) => m.id));
+        rewrite.push({
+          ...e,
+          payload: {
+            ...e.payload,
+            itemIds,
+            items: e.payload.items.filter((i) => !ids.has(i.id)),
+            messages,
+            reactions: Object.fromEntries(Object.entries(e.payload.reactions).filter(([id]) => kept.has(id))),
+          },
+        });
+      }
+    } else if (e.type === "item.arrived" && e.payload.items.some((i) => ids.has(i.id))) {
+      const items = e.payload.items.filter((i) => !ids.has(i.id));
+      if (items.length === 0) drop.push(e.seq);
+      else rewrite.push({ ...e, payload: { items } });
+    } else if (e.type === "message.posted" && gone.has(e.payload.message.id)) drop.push(e.seq);
+    else if (e.type === "reaction.toggled" && gone.has(e.payload.messageId)) drop.push(e.seq);
+    else if (e.type !== "message.posted" && leavesWith(e, ids, true)) drop.push(e.seq);
+  }
+  return { drop, rewrite };
+}

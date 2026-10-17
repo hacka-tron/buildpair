@@ -56,6 +56,7 @@ export function useNotice(): Notice | null {
 
 /** Whether an item counts as ticked for the day it's shown on. */
 export function isTicked(item: Item, today: string): boolean {
+  if (item.status === "wont") return true;
   return item.kind === "habit" ? item.doneOn.includes(today) : item.status !== "open";
 }
 
@@ -103,12 +104,16 @@ export function useHidden(): ReadonlySet<string> {
 
 const pending = new Map<string, { timer: ReturnType<typeof setTimeout>; send: () => void }>();
 
-/** Delete items after the Undo notice, hiding them meanwhile. `send` makes the actual change. */
-export function deleteLater(itemIds: string[], text: string, send: () => void) {
+/**
+ * Delete items after the Undo notice, hiding them meanwhile. `send` makes the actual change and returns
+ * why it didn't happen, if it didn't; then the items come back and the reason shows.
+ */
+export function deleteLater(itemIds: string[], text: string, send: () => string | null) {
   const key = itemIds.join(",");
   const finish = () => {
     if (!pending.delete(key)) return;
-    send();
+    const problem = send();
+    if (problem) notify(problem);
     hidden = new Set(hidden);
     for (const id of itemIds) hidden.delete(id);
     emit();

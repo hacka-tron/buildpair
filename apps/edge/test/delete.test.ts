@@ -56,4 +56,37 @@ describe("deleting an item", () => {
     expect(events.map((e) => e.type)).toContain("item.reopened");
     expect(await log(maya, spaceId)).toContain("Ship it");
   });
+
+  it("keeps a private goal private when one of its steps is deleted", async () => {
+    const maya = await signIn(`maya-${newId()}@example.com`);
+    const jordan = await signIn(`jordan-${newId()}@example.com`);
+    const { id: spaceId } = (await (await maya.post("/spaces", { name: "Life", purpose: "Me" })).json()) as {
+      id: string;
+    };
+    await join(maya, jordan, spaceId);
+    const goal = newId();
+    const step = newId();
+    await run(
+      maya,
+      spaceId,
+      command({ type: "item.create", payload: { itemId: goal, kind: "goal", title: "Secret plan" } }),
+      command({
+        type: "item.create",
+        payload: { itemId: step, kind: "todo", title: "Step one", parentId: goal },
+      }),
+      command({ type: "item.visibility", payload: { itemId: goal, visibility: "owner" } }),
+      command({ type: "item.delete", payload: { itemId: step } }),
+    );
+    // A later edit to the goal must still go to Maya only.
+    await run(
+      maya,
+      spaceId,
+      command({ type: "item.edit", payload: { itemId: goal, title: "Secret plan v2" } }),
+    );
+    expect(await log(jordan, spaceId)).not.toContain("Secret plan");
+    const sam = await signIn(`sam-${newId()}@example.com`);
+    await join(maya, sam, spaceId);
+    expect(await log(sam, spaceId)).not.toContain("Secret plan");
+    expect(await log(maya, spaceId)).toContain("Secret plan v2");
+  });
 });
