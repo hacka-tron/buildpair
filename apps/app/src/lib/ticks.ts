@@ -57,7 +57,8 @@ export function useNotice(): Notice | null {
 /** Whether an item counts as ticked for the day it's shown on. */
 export function isTicked(item: Item, today: string): boolean {
   if (item.status === "wont") return true;
-  return item.kind === "habit" ? item.doneOn.includes(today) : item.status !== "open";
+  // Habits and repeating to-dos are ticked per day.
+  return item.kind === "habit" || item.repeat ? item.doneOn.includes(today) : item.status !== "open";
 }
 
 /** Items that keep their place for a moment after being ticked. */

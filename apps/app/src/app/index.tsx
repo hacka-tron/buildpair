@@ -1,5 +1,5 @@
 import { newId, parseQuickAdd, reflectionDue, type SpaceState, weekProgress } from "@buildpair/domain";
-import type { Item } from "@buildpair/protocol";
+import type { Item, Repeat } from "@buildpair/protocol";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -28,7 +28,7 @@ import { useShortcuts } from "../lib/shortcuts";
 import { applyChange, useSpaces, useSpaceViews } from "../lib/spaces";
 import { TEMPLATES, type Template } from "../lib/templates";
 import { colors, radius, space } from "../lib/theme";
-import { isTicked, toggle, useHeld, useHidden } from "../lib/ticks";
+import { isTicked, notify, toggle, useHeld, useHidden } from "../lib/ticks";
 
 /**
  * What's on today: anything open that's due today or earlier, habits, top-level things without a
@@ -41,6 +41,28 @@ function forToday(item: Item, today: string, view: SpaceState | undefined) {
     return Boolean(item.dueOn && item.dueOn <= today);
   }
   return !item.dueOn || item.dueOn <= today;
+}
+
+type Place = "late" | "today" | "anytime" | "done" | null;
+
+/**
+ * Where an item shows on Today. Late things gather in Overdue, things with no date in Anytime (folded),
+ * and the rest under their space. A just-ticked item keeps its place for a moment, so a mis-tap is easy
+ * to undo, and then it moves to its space's done items.
+ */
+function placeOf(item: Item, today: string, view: SpaceState | undefined, held: ReadonlySet<string>): Place {
+  const ticked = doneOnDay(item, today);
+  if (ticked && !held.has(item.id)) return "done";
+  // A repeating to-do has already moved on to its next date; keep it where it was while it settles.
+  if (ticked && item.repeat) {
+    const was = view?.rolledFrom[item.id]?.[today];
+    return was && was < today ? "late" : "today";
+  }
+  if (!ticked && (!forToday(item, today, view) || skippedToday(item, today))) return null;
+  if (item.kind === "habit") return "today";
+  if (!item.dueOn) return item.parentId ? null : "anytime";
+  if (item.dueOn > today) return null;
+  return item.dueOn < today ? "late" : "today";
 }
 
 // Items finished before finish days were recorded fall back to their due day.
@@ -87,17 +109,61 @@ export default function Today() {
   const hidden = useHidden();
   const groups = (spaces ?? []).map((s) => {
     const view = views[s.id];
-    const all = Object.values(view?.items ?? {}).filter((i) => !hidden.has(i.id));
-    // A just-ticked item keeps its place for a moment, so a mis-tap is easy to undo.
-    const open = all.filter(
-      (i) =>
-        (forToday(i, today, view) && !doneOnDay(i, today) && !skippedToday(i, today)) ||
-        (held.has(i.id) && doneOnDay(i, today)),
-    );
-    const doneToday = all.filter((i) => doneOnDay(i, today) && !held.has(i.id));
-    return { space: s, view, open, doneToday };
+    // Your own things only: what others share shows in their spaces, not on your list.
+    const all = Object.values(view?.items ?? {}).filter((i) => i.ownerId === userId && !hidden.has(i.id));
+    const by = (where: Place) => all.filter((i) => placeOf(i, today, view, held) === where);
+    return {
+      space: s,
+      view,
+      open: by("today"),
+      doneToday: by("done"),
+      late: by("late"),
+      anytime: by("anytime"),
+    };
   });
-  const left = groups.reduce((n, g) => n + g.open.filter((i) => !isTicked(i, today)).length, 0);
+  const late = groups.flatMap((g) => g.late.map((item) => ({ item, space: g.space, view: g.view })));
+  const anytime = groups.flatMap((g) => g.anytime.map((item) => ({ item, space: g.space, view: g.view })));
+  const shown = groups.filter((g) => g.open.length + g.doneToday.length > 0);
+  const left =
+    groups.reduce((n, g) => n + g.open.filter((i) => !isTicked(i, today)).length, 0) +
+    late.filter(({ item }) => !isTicked(item, today)).length;
+  // Late things move to today in one go (keeping their times), with Undo putting the old days back.
+  const moveLateToToday = () => {
+    const targets = late.filter(({ item }) => !isTicked(item, today));
+    const failed = targets
+      .map(({ item, space: s }) =>
+        applyChange(s.id, userId, { type: "item.edit", payload: { itemId: item.id, dueOn: today } }),
+      )
+      .filter(Boolean);
+    if (failed.length) return setProblem(failed[0] ?? "");
+    notify(targets.length === 1 ? "Moved to today" : `${targets.length} moved to today`, () => {
+      for (const { item, space: s } of targets)
+        applyChange(s.id, userId, {
+          type: "item.edit",
+          payload: { itemId: item.id, dueOn: item.dueOn, dueTime: item.dueTime },
+        });
+    });
+  };
+  const [showAnytime, setShowAnytime] = useState(false);
+  const row = (
+    { item, space: s, view }: { item: Item; space: SpaceSummary; view: SpaceState | undefined },
+    last: boolean,
+    withSpace: boolean,
+  ) => (
+    <ItemRow
+      key={item.id}
+      item={item}
+      today={today}
+      last={last}
+      meta={(withSpace ? [s.name, metaFor(item, today, view)] : [metaFor(item, today, view)])
+        .filter(Boolean)
+        .join(" · ")}
+      selection={selection.rowProps(item, s.id, userId)}
+      onOpen={() => setOpened({ spaceId: s.id, item })}
+      onToggle={() => setProblem(toggle(item, today, (c) => applyChange(s.id, userId, c)) ?? "")}
+      quietToday
+    />
+  );
   const done = groups.reduce((n, g) => n + g.doneToday.length, 0);
   // Open things due in the next two weeks, and goals with any deadline, soonest first, so nothing added
   // for later drops out of sight.
@@ -107,7 +173,10 @@ export default function Today() {
       Object.values(view?.items ?? {})
         .filter(
           (i) =>
+            i.ownerId === userId &&
             (i.status === "open" || held.has(i.id)) &&
+            // A repeating to-do done today shows as done above, not again as its next one.
+            !(i.repeat && i.doneOn.includes(today)) &&
             !hidden.has(i.id) &&
             i.kind !== "habit" &&
             i.dueOn !== null &&
@@ -214,7 +283,41 @@ export default function Today() {
             </Card>
           </View>
         ) : null}
-        {groups.map(({ space: s, view, open, doneToday }) => {
+        {late.length ? (
+          <View style={{ marginTop: space.md }}>
+            <SectionHeader
+              open={!collapsed.late}
+              onToggle={() => setCollapsed((c) => ({ ...c, late: !c.late }))}
+              right={
+                <Pressable onPress={moveLateToToday} accessibilityRole="button" hitSlop={8}>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.blue }}>Move to today</Text>
+                </Pressable>
+              }
+            >
+              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Overdue</Text>
+              <Text style={{ fontSize: 12, color: colors.faint }}>{late.length}</Text>
+            </SectionHeader>
+            {!collapsed.late ? (
+              <View style={{ paddingLeft: wide ? 22 : 0 }}>
+                {late.map((l, i) => row(l, i === late.length - 1, true))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+        {spaces?.length && shown.length === 0 && late.length === 0 ? (
+          <View style={{ paddingVertical: space.xl, alignItems: "center", gap: 4 }}>
+            <Icon name="sun" size={22} color={colors.faint} />
+            <Text style={{ fontSize: 15, fontWeight: "600", color: colors.ink }}>
+              {done ? "All done for today" : "Nothing planned for today"}
+            </Text>
+            <Text style={{ fontSize: 13, color: colors.faint }}>
+              {anytime.length
+                ? "Pick something from Anytime below, or add with the +."
+                : "Add something with the +."}
+            </Text>
+          </View>
+        ) : null}
+        {shown.map(({ space: s, view, open, doneToday }) => {
           const isOpen = !collapsed[s.id];
           const people = Object.values(view?.members ?? {})
             .filter((m) => m.userId !== userId)
@@ -253,25 +356,9 @@ export default function Today() {
               </SectionHeader>
               {isOpen ? (
                 <View style={{ paddingLeft: wide ? 22 : 0 }}>
-                  {open.length === 0 && doneToday.length === 0 ? (
-                    <Text style={{ fontSize: 13, color: colors.faint, paddingVertical: space.sm }}>
-                      Nothing due. Add something with the +.
-                    </Text>
-                  ) : null}
-                  {[...open, ...doneToday].map((item, i, list) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      today={today}
-                      last={i === list.length - 1}
-                      meta={metaFor(item, today, view)}
-                      selection={selection.rowProps(item, s.id, userId)}
-                      onOpen={() => setOpened({ spaceId: s.id, item })}
-                      onToggle={() =>
-                        setProblem(toggle(item, today, (c) => applyChange(s.id, userId, c)) ?? "")
-                      }
-                    />
-                  ))}
+                  {[...open, ...doneToday].map((item, i, list) =>
+                    row({ item, space: s, view }, i === list.length - 1, false),
+                  )}
                 </View>
               ) : null}
             </View>
@@ -299,6 +386,19 @@ export default function Today() {
                     }
                   />
                 ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+        {anytime.length ? (
+          <View style={{ marginTop: space.xl }}>
+            <SectionHeader open={showAnytime} onToggle={() => setShowAnytime((v) => !v)}>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Anytime</Text>
+              <Text style={{ fontSize: 12, color: colors.faint }}>No date · {anytime.length}</Text>
+            </SectionHeader>
+            {showAnytime ? (
+              <View style={{ paddingLeft: wide ? 22 : 0 }}>
+                {anytime.map((a, i) => row(a, i === anytime.length - 1, true))}
               </View>
             ) : null}
           </View>
@@ -401,6 +501,7 @@ type Draft = {
   dueOn: string | null;
   dueTime: string | null;
   timesPerWeek: number | null;
+  repeat: Repeat | null;
 };
 
 /**
@@ -425,6 +526,7 @@ function QuickAdd(props: {
   const [asTyped, setAsTyped] = useState(false);
   const [panel, setPanel] = useState<null | "when" | "space">(null);
   const [error, setError] = useState("");
+  const [added, setAdded] = useState("");
   const chosen = spaceId ?? props.spaces[0]?.id ?? null;
   const parsed = parseQuickAdd(text, today);
   const fromWords = !asTyped && parsed.understood.length > 0;
@@ -436,8 +538,10 @@ function QuickAdd(props: {
           dueTime: parsed.dueTime,
           timesPerWeek: parsed.timesPerWeek,
           deadline: parsed.kind === "goal",
+          repeat: parsed.repeat,
         }
-      : NO_SCHEDULE);
+      : // Adding from Today with no date means today, like Things. The date chip can clear it.
+        { ...NO_SCHEDULE, dueOn: today });
   const title = fromWords ? parsed.title : text.trim();
   const reset = () => {
     setText("");
@@ -454,10 +558,14 @@ function QuickAdd(props: {
       dueOn: schedule.timesPerWeek ? null : schedule.dueOn,
       dueTime: schedule.timesPerWeek || schedule.deadline ? null : schedule.dueTime,
       timesPerWeek: schedule.timesPerWeek,
+      repeat: schedule.timesPerWeek || schedule.deadline || !schedule.dueOn ? null : schedule.repeat,
     });
     if (problem) return setError(problem);
+    // The box stays open for the next one, like Todoist. Close it when you're done.
     reset();
-    props.onClose();
+    setAdded(
+      `Added to ${props.spaces.find((s) => s.id === chosen)?.name ?? "your space"}. Add another, or close.`,
+    );
   };
   const space_ = props.spaces.find((s) => s.id === chosen);
   return (
@@ -465,6 +573,7 @@ function QuickAdd(props: {
       visible={props.visible}
       onClose={() => {
         setPanel(null);
+        setAdded("");
         props.onClose();
       }}
       title="Add"
@@ -480,8 +589,12 @@ function QuickAdd(props: {
             onChangeText={(t) => {
               setText(t);
               setError("");
+              setAdded("");
             }}
             onSubmitEditing={add}
+            submitBehavior="submit"
+            // The web only reads this one; without it the box loses focus after each add.
+            blurOnSubmit={false}
             placeholder="Dentist friday 3pm, or gym 4x a week"
             placeholderTextColor={colors.faint}
             accessibilityLabel="What to add"
@@ -523,7 +636,7 @@ function QuickAdd(props: {
               >
                 <Text style={{ fontSize: 12, color: colors.faint }}>
                   Read "{parsed.understood.join(" ")}" as the{" "}
-                  {kindOf(schedule) === "habit" ? "repeat" : "date"}
+                  {kindOf(schedule) === "habit" || schedule.repeat ? "repeat" : "date"}
                 </Text>
                 <Icon name="x" size={12} color={colors.faint} />
               </Pressable>
@@ -576,13 +689,20 @@ function QuickAdd(props: {
                   ? "a habit"
                   : kindOf(schedule) === "goal"
                     ? "a goal"
-                    : "a to-do"}
+                    : schedule.repeat
+                      ? "a repeating to-do"
+                      : "a to-do"}
               </Text>{" "}
               called <Text style={{ fontWeight: "600", color: colors.ink }}>{title}</Text>
               {kindOf(schedule) === "goal" ? ". Open it after to add steps." : "."}
             </Text>
           ) : null}
           <ErrorText>{error}</ErrorText>
+          {added ? (
+            <Text accessibilityLiveRegion="polite" style={{ fontSize: 13, color: colors.sub }}>
+              {added}
+            </Text>
+          ) : null}
           <Button label="Add" onPress={add} disabled={!title} />
         </>
       )}

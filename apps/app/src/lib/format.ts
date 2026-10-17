@@ -1,3 +1,4 @@
+import type { Repeat } from "@buildpair/protocol";
 /** Today's local date as YYYY-MM-DD, the format items and completions use. */
 export function localToday(now = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -61,4 +62,22 @@ export function peopleLine(names: string[]): string {
   if (rest.length === 0) return first;
   if (rest.length === 1) return `${first} and ${rest[0]}`;
   return `${first}, ${rest[0]} and ${rest.length - 1} ${rest.length - 1 === 1 ? "other" : "others"}`;
+}
+
+const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** "Every Mon", "Every Mon, Thu", "Weekdays", "Weekends", "Every month", "Every 3 days". */
+export function repeatLabel(repeat: Repeat): string {
+  if (repeat.kind === "month") return "Every month";
+  if (repeat.kind === "days") return repeat.every === 1 ? "Every day" : `Every ${repeat.every} days`;
+  const days = [...repeat.days].sort();
+  const key = days.join(",");
+  if (key === "1,2,3,4,5") return "Weekdays";
+  if (key === "0,6") return "Weekends";
+  if (days.length === 7) return "Every day";
+  // Monday first, the way the week reads.
+  return `Every ${[...days]
+    .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+    .map((d) => DAY_SHORT[d])
+    .join(", ")}`;
 }

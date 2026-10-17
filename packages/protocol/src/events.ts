@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LocalDate, TimeOfDay, Timestamp, Ulid, UserId } from "./ids";
-import { Item, Member, Message, SpaceColor, Visibility } from "./model";
+import { Item, Member, Message, Repeat, SpaceColor, Visibility } from "./model";
 
 const ev = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
   z.object({
@@ -45,6 +45,8 @@ export const ItemEdited = ev(
       dueOn: LocalDate.nullable().optional(),
       dueTime: TimeOfDay.nullable().optional(),
       timesPerWeek: z.number().int().min(1).max(7).optional(),
+      notes: z.string().max(5000).optional(),
+      repeat: Repeat.nullable().optional(),
     }),
   }),
 );

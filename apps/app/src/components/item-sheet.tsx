@@ -40,6 +40,7 @@ export function ItemSheet(props: {
   const [mode, setMode] = useState<Mode>(null);
   const [text, setText] = useState("");
   const [step, setStep] = useState("");
+  const [notes, setNotes] = useState(item?.notes ?? "");
   const [error, setError] = useState("");
   const [moving, setMoving] = useState(false);
   // One ID per destination, so tapping it again after a failure finishes the same move.
@@ -53,7 +54,7 @@ export function ItemSheet(props: {
   const mine = live.ownerId === props.userId;
   const open = live.status === "open";
   const shared = live.visibility === "space";
-  const doneToday = live.kind === "habit" && live.doneOn.includes(props.today);
+  const doneToday = (live.kind === "habit" || Boolean(live.repeat)) && live.doneOn.includes(props.today);
   const skippedToday = live.skippedOn.includes(props.today);
   const steps = Object.values(view?.items ?? {}).filter((i) => i.parentId === live.id);
   const owner = view?.members[live.ownerId]?.name ?? "Someone";
@@ -63,6 +64,12 @@ export function ItemSheet(props: {
     if (problem) return setError(problem);
     setError("");
     after?.();
+  };
+
+  // Saved when you leave the field, like Things and Reminders.
+  const saveNotes = () => {
+    if (notes.trim() === live.notes) return;
+    run({ type: "item.edit", payload: { itemId: live.id, notes: notes.trim() } });
   };
 
   // Deleted after the Undo notice, so a slip costs nothing. A goal takes its steps.
@@ -139,7 +146,15 @@ export function ItemSheet(props: {
     );
 
   return (
-    <Sheet visible onClose={props.onClose} title={live.title} wide={props.wide}>
+    <Sheet
+      visible
+      onClose={() => {
+        if (mine && open) saveNotes();
+        props.onClose();
+      }}
+      title={live.title}
+      wide={props.wide}
+    >
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm }}>
         <Tag tone="blue">{live.kind === "todo" ? "To-do" : live.kind === "habit" ? "Habit" : "Goal"}</Tag>
         <Text style={{ fontSize: 14, color: colors.sub }}>{describe(live, steps, props.today)}</Text>
@@ -186,6 +201,31 @@ export function ItemSheet(props: {
         </View>
       ) : null}
 
+      {mine && open ? (
+        <TextInput
+          value={notes}
+          onChangeText={setNotes}
+          onBlur={saveNotes}
+          placeholder="Notes"
+          placeholderTextColor={colors.faint}
+          accessibilityLabel="Notes"
+          multiline
+          style={{
+            fontSize: 14,
+            lineHeight: 20,
+            color: colors.ink,
+            minHeight: 44,
+            paddingVertical: space.sm,
+            textAlignVertical: "top",
+            outlineColor: colors.royal,
+          }}
+        />
+      ) : live.notes ? (
+        <Text selectable style={{ fontSize: 14, lineHeight: 20, color: colors.ink }}>
+          {live.notes}
+        </Text>
+      ) : null}
+
       {live.kind === "goal" ? (
         <View>
           <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 4 }}>Steps</Text>
@@ -226,6 +266,8 @@ export function ItemSheet(props: {
                 );
               }}
               submitBehavior="submit"
+              // The web only reads this one; without it the box loses focus after each add.
+              blurOnSubmit={false}
               placeholder="+ Add a step"
               placeholderTextColor={colors.blue}
               accessibilityLabel="Add a step"
@@ -289,13 +331,16 @@ export function ItemSheet(props: {
             }
             kind={doneToday ? "secondary" : "primary"}
             onPress={() => {
+              saveNotes();
               const problem = toggle(live, props.today, props.apply);
               if (problem) setError(problem);
               else props.onClose();
             }}
           />
           <View style={{ flexDirection: "row", gap: space.sm }}>
-            {live.kind === "habit" && !doneToday && !skippedToday ? (
+            {(live.kind === "habit" || (live.repeat && live.dueOn && live.dueOn <= props.today)) &&
+            !doneToday &&
+            !skippedToday ? (
               <View style={{ flex: 1 }}>
                 <Button label="Skip" kind="secondary" onPress={() => setMode("skip")} />
               </View>
@@ -390,6 +435,7 @@ function EditItem(props: { item: Item; onCancel: () => void; apply: (change: Cha
     dueTime: item.dueTime,
     timesPerWeek: item.timesPerWeek,
     deadline: item.kind === "goal",
+    repeat: item.repeat,
   });
   const save = () => {
     const trimmed = title.trim();
@@ -404,6 +450,7 @@ function EditItem(props: { item: Item; onCancel: () => void; apply: (change: Cha
               title: trimmed,
               dueOn: schedule.dueOn,
               dueTime: item.kind === "goal" || !schedule.dueOn ? null : schedule.dueTime,
+              ...(item.kind === "todo" ? { repeat: schedule.dueOn ? schedule.repeat : null } : {}),
             },
     });
   };

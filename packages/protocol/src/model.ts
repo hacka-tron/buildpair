@@ -12,6 +12,18 @@ export type Visibility = z.infer<typeof Visibility>;
 export const SpaceColor = z.enum(["blue", "green", "red", "purple", "amber", "teal", "pink", "slate"]);
 export type SpaceColor = z.infer<typeof SpaceColor>;
 
+/**
+ * How a to-do repeats: on some weekdays (0 is Sunday), on the same day each month, or every N days.
+ * Ticking it moves it to the next date. (Habits count times a week instead.)
+ */
+export const Repeat = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("week"), days: z.array(z.number().int().min(0).max(6)).min(1).max(7) }),
+  /** `day` is the day of the month it falls on (a short month uses its last day). */
+  z.object({ kind: z.literal("month"), day: z.number().int().min(1).max(31).optional() }),
+  z.object({ kind: z.literal("days"), every: z.number().int().min(1).max(365) }),
+]);
+export type Repeat = z.infer<typeof Repeat>;
+
 export const ItemStatus = z.enum(["open", "done", "wont"]);
 export type ItemStatus = z.infer<typeof ItemStatus>;
 
@@ -33,6 +45,10 @@ export const Item = z.object({
   doneOn: z.array(LocalDate),
   /** Days skipped (local dates). Items saved before this existed read as empty. */
   skippedOn: z.array(LocalDate).default([]),
+  /** A few lines about it (a number, a link, what done means). Items saved before this existed read as "". */
+  notes: z.string().max(5000).default(""),
+  /** To-dos only: how it repeats. Items saved before this existed read as null. */
+  repeat: Repeat.nullable().default(null),
   createdAt: Timestamp,
 });
 export type Item = z.infer<typeof Item>;

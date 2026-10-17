@@ -11,6 +11,7 @@ import {
   forgetPlan,
   leavesWith,
   newId,
+  nextRepeat,
   normalizeSpace,
   readReflection,
   reflectionDue,
@@ -529,6 +530,8 @@ describe("making an item private or shared after creating it", () => {
                 timesPerWeek: null,
                 doneOn: [],
                 skippedOn: [],
+                notes: "",
+                repeat: null,
                 createdAt: AT,
               },
             },
@@ -962,6 +965,7 @@ describe("review fixes for reopen and delete", () => {
       doneOn: [],
       skippedOn: [],
       notes: "",
+      repeat: null,
       createdAt: AT,
       ...base,
       ...over,
@@ -1039,5 +1043,144 @@ describe("review fixes for reopen and delete", () => {
     s = run(s, cmd({ type: "item.wont", payload: { itemId: habitId, reason: null } })).state;
     s = run(s, cmd({ type: "item.reopen", payload: { itemId: habitId, on: "2026-10-10" } })).state;
     expect(s.items[habitId]).toMatchObject({ status: "open", doneOn: ["2026-10-09"] });
+  });
+});
+
+describe("notes", () => {
+  it("keeps notes from creating, changes them with an edit, and reads old items as empty", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId, kind: "todo", title: "Call the bank", notes: "Ask for Sam" },
+      }),
+    ).state;
+    expect(s.items[itemId]?.notes).toBe("Ask for Sam");
+    s = run(s, cmd({ type: "item.edit", payload: { itemId, notes: "Ask for Sam, ext 204" } })).state;
+    expect(s.items[itemId]?.notes).toBe("Ask for Sam, ext 204");
+    expect(
+      decide(s, cmd({ type: "item.edit", payload: { itemId, notes: "Ask for Sam, ext 204" } }), "maya"),
+    ).toEqual({
+      ok: true,
+      events: [],
+    });
+    const { notes: _, ...old } = s.items[itemId]!;
+    expect(normalizeSpace({ ...s, items: { [itemId]: old as never } }).items[itemId]?.notes).toBe("");
+  });
+});
+
+describe("repeating to-dos", () => {
+  it("finds the next date for each kind of repeat", () => {
+    // 2026-10-15 is a Thursday.
+    expect(nextRepeat({ kind: "week", days: [1, 4] }, "2026-10-15", "2026-10-15")).toBe("2026-10-19");
+    expect(nextRepeat({ kind: "days", every: 3 }, "2026-10-20", "2026-10-15")).toBe("2026-10-21");
+    expect(nextRepeat({ kind: "month" }, "2026-01-31", "2026-01-31")).toBe("2026-02-28");
+    expect(nextRepeat({ kind: "month" }, "2026-10-15", "2026-10-15")).toBe("2026-11-15");
+  });
+
+  it("moves to its next date when ticked or skipped, and Undo puts it back", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: {
+          itemId,
+          kind: "todo",
+          title: "Bins",
+          dueOn: "2026-10-12",
+          repeat: { kind: "week", days: [1] },
+        },
+      }),
+    ).state;
+    // Ticked late, on Wednesday: the next one is the coming Monday, not the one already gone.
+    s = run(s, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-14" } })).state;
+    expect(s.items[itemId]).toMatchObject({ status: "open", dueOn: "2026-10-19", doneOn: ["2026-10-14"] });
+    expect(s.messages).toHaveLength(1);
+    // A second tick the same day changes nothing.
+    expect(decide(s, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-14" } }), "maya")).toEqual({
+      ok: true,
+      events: [],
+    });
+    s = run(s, cmd({ type: "item.reopen", payload: { itemId, on: "2026-10-14" } })).state;
+    expect(s.items[itemId]).toMatchObject({ status: "open", dueOn: "2026-10-12", doneOn: [] });
+    expect(s.messages).toEqual([]);
+    s = run(s, cmd({ type: "item.skip", payload: { itemId, on: "2026-10-12", reason: null } })).state;
+    expect(s.items[itemId]?.dueOn).toBe("2026-10-19");
+  });
+
+  it("only to-dos with a date repeat", () => {
+    const repeat = { kind: "month" } as const;
+    const no = (payload: object) =>
+      decide(
+        space(),
+        cmd({ type: "item.create", payload: { itemId: newId(), title: "x", ...payload } as never }),
+        "maya",
+      ).ok;
+    expect(no({ kind: "todo", repeat })).toBe(false);
+    expect(no({ kind: "habit", timesPerWeek: 3, repeat })).toBe(false);
+    expect(no({ kind: "todo", dueOn: "2026-10-15", repeat })).toBe(true);
+  });
+});
+
+describe("repeating to-do review fixes", () => {
+  it("keeps a monthly one on its day after a short month", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId, kind: "todo", title: "Rent", dueOn: "2026-01-31", repeat: { kind: "month" } },
+      }),
+    ).state;
+    const dates: (string | null | undefined)[] = [];
+    for (const on of ["2026-01-31", "2026-02-28", "2026-03-31"]) {
+      s = run(s, cmd({ type: "item.complete", payload: { itemId, on } })).state;
+      dates.push(s.items[itemId]?.dueOn);
+    }
+    expect(dates).toEqual(["2026-02-28", "2026-03-31", "2026-04-30"]);
+  });
+
+  it("won't skip a repeating to-do that's done today or not due yet", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: {
+          itemId,
+          kind: "todo",
+          title: "Bins",
+          dueOn: "2026-10-19",
+          repeat: { kind: "week", days: [1] },
+        },
+      }),
+    ).state;
+    const skip = (on: string) =>
+      decide(s, cmd({ type: "item.skip", payload: { itemId, on, reason: null } }), "maya");
+    expect(skip("2026-10-15").ok).toBe(false);
+    s = run(s, cmd({ type: "item.complete", payload: { itemId, on: "2026-10-19" } })).state;
+    expect(skip("2026-10-19").ok).toBe(false);
+    expect(s.items[itemId]?.dueOn).toBe("2026-10-26");
+  });
+});
+
+describe("moving a monthly to-do", () => {
+  it("repeats on the new day of the month after its date is changed", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId, kind: "todo", title: "Rent", dueOn: "2026-01-31", repeat: { kind: "month" } },
+      }),
+    ).state;
+    s = run(
+      s,
+      cmd({ type: "item.edit", payload: { itemId, dueOn: "2026-02-15", repeat: s.items[itemId]!.repeat } }),
+    ).state;
+    s = run(s, cmd({ type: "item.complete", payload: { itemId, on: "2026-02-15" } })).state;
+    expect(s.items[itemId]?.dueOn).toBe("2026-03-15");
   });
 });

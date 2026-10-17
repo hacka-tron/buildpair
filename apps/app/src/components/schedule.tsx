@@ -1,19 +1,30 @@
-import { parseTime } from "@buildpair/domain";
+import { firstRepeat, parseTime } from "@buildpair/domain";
+import type { Repeat } from "@buildpair/protocol";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
-import { daysBetween, dueLabel, localToday, timeLabel } from "../lib/format";
+import { daysBetween, dueLabel, localToday, repeatLabel, timeLabel } from "../lib/format";
 import { colors, radius, space } from "../lib/theme";
 import { Chip, ChipRow, Icon } from "./kit";
 
-/** When something is due or how often it repeats. A repeat makes a habit; a deadline makes a goal. */
+/**
+ * When something is due or how often it repeats. Times a week makes a habit, a deadline makes a goal,
+ * and a to-do can repeat on set days (`repeat`, starting on `dueOn`).
+ */
 export interface Schedule {
   dueOn: string | null;
   dueTime: string | null;
   timesPerWeek: number | null;
   deadline: boolean;
+  repeat: Repeat | null;
 }
 
-export const NO_SCHEDULE: Schedule = { dueOn: null, dueTime: null, timesPerWeek: null, deadline: false };
+export const NO_SCHEDULE: Schedule = {
+  dueOn: null,
+  dueTime: null,
+  timesPerWeek: null,
+  deadline: false,
+  repeat: null,
+};
 
 export const kindOf = (s: Schedule) => (s.timesPerWeek ? "habit" : s.deadline ? "goal" : "todo");
 
@@ -22,6 +33,7 @@ export function scheduleLabel(s: Schedule, today: string): string {
   if (s.timesPerWeek) return s.timesPerWeek === 7 ? "Every day" : `${s.timesPerWeek} times a week`;
   if (!s.dueOn) return s.deadline ? "No deadline" : "No date";
   const day = dueLabel(s.dueOn, today, s.deadline ? null : s.dueTime).text;
+  if (s.repeat) return `${day} · ${repeatLabel(s.repeat)}`;
   return s.deadline ? `By ${day}` : day;
 }
 
@@ -47,6 +59,8 @@ export function SchedulePanel(props: {
   mode: "any" | "date" | "repeat";
   /** Goals being edited: the date is a deadline and takes no time. */
   deadlineOnly?: boolean;
+  /** Leave out "Repeats" (moving several things to a new day). */
+  noRepeat?: boolean;
 }) {
   const today = localToday();
   const { value, onChange, mode } = props;
@@ -57,8 +71,26 @@ export function SchedulePanel(props: {
   const [typed, setTyped] = useState("");
   const set = (patch: Partial<Schedule>) => onChange({ ...value, ...patch });
   const pickDay = (dueOn: string | null) =>
-    set({ dueOn, timesPerWeek: null, dueTime: dueOn ? value.dueTime : null });
+    set({
+      dueOn,
+      timesPerWeek: null,
+      dueTime: dueOn ? value.dueTime : null,
+      repeat: dueOn ? value.repeat : null,
+    });
   const showTime = !value.deadline && !props.deadlineOnly && Boolean(value.dueOn);
+  const showRepeat = !value.deadline && !props.deadlineOnly && !props.noRepeat;
+  // A new rule starts on its first day from today (or keeps the picked day when that fits).
+  const setRepeat = (repeat: Repeat | null) => {
+    if (!repeat) return set({ repeat: null });
+    const from = value.dueOn && value.dueOn >= today ? value.dueOn : today;
+    set({ repeat, timesPerWeek: null, dueOn: firstRepeat(repeat, from) });
+  };
+  const dayOf = (d: string) => new Date(`${d}T00:00:00Z`).getUTCDay();
+  const weekDays = value.repeat?.kind === "week" ? value.repeat.days : [];
+  const toggleDay = (d: number) => {
+    const days = weekDays.includes(d) ? weekDays.filter((x) => x !== d) : [...weekDays, d].sort();
+    setRepeat(days.length ? { kind: "week", days } : null);
+  };
 
   return (
     <View style={{ gap: space.md }}>
@@ -68,7 +100,7 @@ export function SchedulePanel(props: {
             Date
           </Chip>
           <Chip on={tab === "repeat"} onPress={() => setTab("repeat")}>
-            Repeat
+            Habit
           </Chip>
         </View>
       ) : null}
@@ -125,9 +157,47 @@ export function SchedulePanel(props: {
               />
             </ChipRow>
           ) : null}
+          {showRepeat ? (
+            <>
+              <ChipRow label="Repeats">
+                <Chip on={!value.repeat} onPress={() => setRepeat(null)}>
+                  Never
+                </Chip>
+                <Chip
+                  on={value.repeat?.kind === "week" && weekDays.length === 1}
+                  onPress={() => setRepeat({ kind: "week", days: [dayOf(value.dueOn ?? today)] })}
+                >
+                  Every week
+                </Chip>
+                <Chip
+                  on={value.repeat?.kind === "week" && weekDays.join() === "1,2,3,4,5"}
+                  onPress={() => setRepeat({ kind: "week", days: [1, 2, 3, 4, 5] })}
+                >
+                  Weekdays
+                </Chip>
+                <Chip on={value.repeat?.kind === "month"} onPress={() => setRepeat({ kind: "month" })}>
+                  Every month
+                </Chip>
+                {value.repeat?.kind === "days" ? (
+                  <Chip on onPress={() => undefined}>
+                    {repeatLabel(value.repeat)}
+                  </Chip>
+                ) : null}
+              </ChipRow>
+              {value.repeat?.kind === "week" ? (
+                <ChipRow label="On">
+                  {[1, 2, 3, 4, 5, 6, 0].map((d, i) => (
+                    <Chip key={d} on={weekDays.includes(d)} onPress={() => toggleDay(d)}>
+                      {WEEKDAYS[i]}
+                    </Chip>
+                  ))}
+                </ChipRow>
+              ) : null}
+            </>
+          ) : null}
           {mode === "any" ? (
             <Pressable
-              onPress={() => set({ deadline: !value.deadline, dueTime: null })}
+              onPress={() => set({ deadline: !value.deadline, dueTime: null, repeat: null })}
               accessibilityRole="switch"
               accessibilityState={{ checked: value.deadline }}
               style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
@@ -163,7 +233,9 @@ export function SchedulePanel(props: {
             <Chip
               key={n}
               on={value.timesPerWeek === n}
-              onPress={() => onChange({ dueOn: null, dueTime: null, deadline: false, timesPerWeek: n })}
+              onPress={() =>
+                onChange({ dueOn: null, dueTime: null, deadline: false, timesPerWeek: n, repeat: null })
+              }
             >
               {n === 7 ? "Every day" : `${n}× a week`}
             </Chip>

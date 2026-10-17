@@ -104,6 +104,12 @@ try {
   await maya.getByLabel("What to add").fill("call mom in 2 days 6pm");
   await maya.getByText("Adds a to-do called").waitFor();
   await maya.getByRole("button", { name: "Add", exact: true }).last().click();
+  // Quick add stays open for the next one; close it when done.
+  await maya.getByText(/Added to Life/).waitFor();
+  await maya
+    .getByLabel("Close")
+    .last()
+    .click({ position: { x: 5, y: 5 } });
   await maya.getByText("Coming up").waitFor();
   await maya
     .getByText(/6:00 PM/)

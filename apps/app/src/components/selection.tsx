@@ -84,10 +84,12 @@ export function SelectionBar(props: {
   };
   // Sent after the Undo notice, like a single delete.
   const remove = () => {
-    const targets = [...picked];
+    // A goal takes its steps with it, so a step whose goal is also picked needs no delete of its own.
+    const goals = new Set(picked.map((p) => p.item.id));
+    const targets = picked.filter((p) => !p.item.parentId || !goals.has(p.item.parentId));
     deleteLater(
-      targets.map((p) => p.item.id),
-      targets.length === 1 ? "Deleted" : `${targets.length} deleted`,
+      picked.map((p) => p.item.id),
+      picked.length === 1 ? "Deleted" : `${picked.length} deleted`,
       () =>
         targets
           .map((p) => props.apply(p.spaceId, { type: "item.delete", payload: { itemId: p.item.id } }))
@@ -235,7 +237,7 @@ function Reschedule(props: {
           keep their schedule.
         </Text>
       ) : null}
-      <SchedulePanel mode="date" value={value} onChange={setValue} />
+      <SchedulePanel mode="date" value={value} onChange={setValue} noRepeat />
       <Button label="Apply" onPress={() => props.onApply(value)} />
     </Sheet>
   );

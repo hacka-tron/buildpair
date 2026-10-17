@@ -63,6 +63,8 @@ function space(opts: {
         timesPerWeek: null,
         doneOn: [],
         skippedOn: [],
+        notes: "",
+        repeat: null,
         createdAt: daysAgo(20),
         ...p,
       };

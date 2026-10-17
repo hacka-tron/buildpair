@@ -13,7 +13,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { dueLabel } from "../lib/format";
+import { dueLabel, repeatLabel } from "../lib/format";
 import { useSpaceSummary } from "../lib/spaces";
 import { colors, personColor, radius, space, spaceColor } from "../lib/theme";
 
@@ -277,6 +277,7 @@ export function ItemRow({
   onOpen,
   readOnly,
   selection,
+  quietToday,
 }: {
   item: Item;
   onToggle: () => void;
@@ -287,6 +288,8 @@ export function ItemRow({
   onOpen?: () => void;
   /** Show the item without letting it be ticked (someone else's, or under a closed goal). */
   readOnly?: boolean;
+  /** Leave out "Today" as the due day (the list is Today). */
+  quietToday?: boolean;
   /**
    * Selecting several items: press and hold starts it (`onSelect`); while `active`, a tap selects
    * instead of opening. Leave out `onSelect` for items that can't be selected.
@@ -294,9 +297,16 @@ export function ItemRow({
   selection?: { active: boolean; selected: boolean; onSelect?: () => void };
 }) {
   // A habit counts as done for the day once it's checked off today.
-  const done = item.status === "done" || (item.kind === "habit" && item.doneOn.includes(today));
+  // Habits and repeating to-dos count as done for the day once they're ticked today.
+  const done =
+    item.status === "done" ||
+    ((item.kind === "habit" || Boolean(item.repeat)) && item.doneOn.includes(today));
   const closed = item.status !== "open";
-  const due = item.dueOn ? dueLabel(item.dueOn, today, item.dueTime) : null;
+  // On a list that's already "today", a bare "Today" says nothing (a time still shows).
+  const due =
+    item.dueOn && !(quietToday && item.dueOn === today && !item.dueTime)
+      ? dueLabel(item.dueOn, today, item.dueTime)
+      : null;
   const selecting = selection?.active ?? false;
   const picked = selection?.selected ?? false;
   const canPick = Boolean(selection?.onSelect);
@@ -373,6 +383,16 @@ export function ItemRow({
               <Icon name="lock" size={12} color={colors.faint} />
             </View>
           ) : null}
+          {item.repeat ? (
+            <View accessible accessibilityLabel={repeatLabel(item.repeat)}>
+              <Icon name="repeat" size={12} color={colors.faint} />
+            </View>
+          ) : null}
+          {item.notes ? (
+            <View accessible accessibilityLabel="Has notes">
+              <Icon name="file-text" size={12} color={colors.faint} />
+            </View>
+          ) : null}
         </View>
         {meta || item.status === "wont" ? (
           <Text numberOfLines={1} style={{ fontSize: 12, color: colors.sub }}>
@@ -382,7 +402,7 @@ export function ItemRow({
       </Pressable>
       {due && !closed ? (
         <Text style={{ fontSize: 13, color: due.late && !done ? colors.danger : colors.sub }}>
-          {due.text}
+          {done && item.repeat ? (due.text === "Tomorrow" ? "Again tomorrow" : `Next ${due.text}`) : due.text}
         </Text>
       ) : null}
     </View>
