@@ -45,6 +45,7 @@ export const ItemEdited = ev(
       dueOn: LocalDate.nullable().optional(),
       dueTime: TimeOfDay.nullable().optional(),
       timesPerWeek: z.number().int().min(1).max(7).optional(),
+      notes: z.string().max(5000).optional(),
     }),
   }),
 );

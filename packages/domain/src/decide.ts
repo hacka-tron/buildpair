@@ -57,6 +57,7 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
         timesPerWeek: p.kind === "habit" ? p.timesPerWeek : null,
         doneOn: [],
         skippedOn: [],
+        notes: p.notes,
         createdAt: command.at,
       };
       return { ok: true, events: [{ ...base, type: "item.created", payload: { item } }] };
@@ -82,6 +83,7 @@ export function decide(state: SpaceState, command: Command, actorId: UserId): De
       const { itemId: _, ...asked } = command.payload;
       const changes: typeof asked = {};
       if (asked.title !== undefined && asked.title !== item.title) changes.title = asked.title;
+      if (asked.notes !== undefined && asked.notes !== item.notes) changes.notes = asked.notes;
       if (item.kind === "habit") {
         if (asked.dueOn || asked.dueTime) return reject("Habits repeat, so they don't take a date.");
         if (asked.timesPerWeek !== undefined && asked.timesPerWeek !== item.timesPerWeek)

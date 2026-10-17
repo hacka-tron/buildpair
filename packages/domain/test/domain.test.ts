@@ -529,6 +529,7 @@ describe("making an item private or shared after creating it", () => {
                 timesPerWeek: null,
                 doneOn: [],
                 skippedOn: [],
+                notes: "",
                 createdAt: AT,
               },
             },
@@ -1039,5 +1040,29 @@ describe("review fixes for reopen and delete", () => {
     s = run(s, cmd({ type: "item.wont", payload: { itemId: habitId, reason: null } })).state;
     s = run(s, cmd({ type: "item.reopen", payload: { itemId: habitId, on: "2026-10-10" } })).state;
     expect(s.items[habitId]).toMatchObject({ status: "open", doneOn: ["2026-10-09"] });
+  });
+});
+
+describe("notes", () => {
+  it("keeps notes from creating, changes them with an edit, and reads old items as empty", () => {
+    const itemId = newId();
+    let s = run(
+      space(),
+      cmd({
+        type: "item.create",
+        payload: { itemId, kind: "todo", title: "Call the bank", notes: "Ask for Sam" },
+      }),
+    ).state;
+    expect(s.items[itemId]?.notes).toBe("Ask for Sam");
+    s = run(s, cmd({ type: "item.edit", payload: { itemId, notes: "Ask for Sam, ext 204" } })).state;
+    expect(s.items[itemId]?.notes).toBe("Ask for Sam, ext 204");
+    expect(
+      decide(s, cmd({ type: "item.edit", payload: { itemId, notes: "Ask for Sam, ext 204" } }), "maya"),
+    ).toEqual({
+      ok: true,
+      events: [],
+    });
+    const { notes: _, ...old } = s.items[itemId]!;
+    expect(normalizeSpace({ ...s, items: { [itemId]: old as never } }).items[itemId]?.notes).toBe("");
   });
 });

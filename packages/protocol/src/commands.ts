@@ -16,6 +16,7 @@ export const CreateItem = cmd(
     dueOn: LocalDate.nullable().default(null),
     timesPerWeek: z.number().int().min(1).max(7).nullable().default(null),
     dueTime: TimeOfDay.nullable().default(null),
+    notes: z.string().trim().max(5000).default(""),
   }),
 );
 
@@ -28,6 +29,7 @@ export const EditItem = cmd(
     dueOn: LocalDate.nullable().optional(),
     dueTime: TimeOfDay.nullable().optional(),
     timesPerWeek: z.number().int().min(1).max(7).optional(),
+    notes: z.string().trim().max(5000).optional(),
   }),
 );
 

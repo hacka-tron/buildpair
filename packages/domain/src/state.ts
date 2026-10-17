@@ -231,6 +231,7 @@ export function normalizeItem(item: Item): Item {
     dueTime: item.dueTime ?? null,
     skippedOn: item.skippedOn ?? [],
     doneOn: item.doneOn ?? [],
+    notes: item.notes ?? "",
   };
 }
 

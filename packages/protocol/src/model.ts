@@ -33,6 +33,8 @@ export const Item = z.object({
   doneOn: z.array(LocalDate),
   /** Days skipped (local dates). Items saved before this existed read as empty. */
   skippedOn: z.array(LocalDate).default([]),
+  /** A few lines about it (a number, a link, what done means). Items saved before this existed read as "". */
+  notes: z.string().max(5000).default(""),
   createdAt: Timestamp,
 });
 export type Item = z.infer<typeof Item>;

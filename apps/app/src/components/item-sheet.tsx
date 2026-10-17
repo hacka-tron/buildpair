@@ -40,6 +40,7 @@ export function ItemSheet(props: {
   const [mode, setMode] = useState<Mode>(null);
   const [text, setText] = useState("");
   const [step, setStep] = useState("");
+  const [notes, setNotes] = useState(item?.notes ?? "");
   const [error, setError] = useState("");
   const [moving, setMoving] = useState(false);
   // One ID per destination, so tapping it again after a failure finishes the same move.
@@ -63,6 +64,12 @@ export function ItemSheet(props: {
     if (problem) return setError(problem);
     setError("");
     after?.();
+  };
+
+  // Saved when you leave the field, like Things and Reminders.
+  const saveNotes = () => {
+    if (notes.trim() === live.notes) return;
+    run({ type: "item.edit", payload: { itemId: live.id, notes: notes.trim() } });
   };
 
   // Deleted after the Undo notice, so a slip costs nothing. A goal takes its steps.
@@ -139,7 +146,15 @@ export function ItemSheet(props: {
     );
 
   return (
-    <Sheet visible onClose={props.onClose} title={live.title} wide={props.wide}>
+    <Sheet
+      visible
+      onClose={() => {
+        if (mine && open) saveNotes();
+        props.onClose();
+      }}
+      title={live.title}
+      wide={props.wide}
+    >
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm }}>
         <Tag tone="blue">{live.kind === "todo" ? "To-do" : live.kind === "habit" ? "Habit" : "Goal"}</Tag>
         <Text style={{ fontSize: 14, color: colors.sub }}>{describe(live, steps, props.today)}</Text>
@@ -184,6 +199,31 @@ export function ItemSheet(props: {
             </Text>
           </Pressable>
         </View>
+      ) : null}
+
+      {mine && open ? (
+        <TextInput
+          value={notes}
+          onChangeText={setNotes}
+          onBlur={saveNotes}
+          placeholder="Notes"
+          placeholderTextColor={colors.faint}
+          accessibilityLabel="Notes"
+          multiline
+          style={{
+            fontSize: 14,
+            lineHeight: 20,
+            color: colors.ink,
+            minHeight: 44,
+            paddingVertical: space.sm,
+            textAlignVertical: "top",
+            outlineColor: colors.royal,
+          }}
+        />
+      ) : live.notes ? (
+        <Text selectable style={{ fontSize: 14, lineHeight: 20, color: colors.ink }}>
+          {live.notes}
+        </Text>
       ) : null}
 
       {live.kind === "goal" ? (
@@ -289,6 +329,7 @@ export function ItemSheet(props: {
             }
             kind={doneToday ? "secondary" : "primary"}
             onPress={() => {
+              saveNotes();
               const problem = toggle(live, props.today, props.apply);
               if (problem) setError(problem);
               else props.onClose();

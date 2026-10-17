@@ -17,6 +17,7 @@ const item = (over: Partial<Item> = {}): Item => ({
   timesPerWeek: null,
   doneOn: [],
   skippedOn: [],
+  notes: "",
   createdAt: "2026-10-16T09:00:00.000Z",
   ...over,
 });

@@ -380,6 +380,11 @@ export function ItemRow({
               <Icon name="lock" size={12} color={colors.faint} />
             </View>
           ) : null}
+          {item.notes ? (
+            <View accessible accessibilityLabel="Has notes">
+              <Icon name="file-text" size={12} color={colors.faint} />
+            </View>
+          ) : null}
         </View>
         {meta || item.status === "wont" ? (
           <Text numberOfLines={1} style={{ fontSize: 12, color: colors.sub }}>

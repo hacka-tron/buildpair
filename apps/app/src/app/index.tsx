@@ -518,6 +518,7 @@ function QuickAdd(props: {
   const [asTyped, setAsTyped] = useState(false);
   const [panel, setPanel] = useState<null | "when" | "space">(null);
   const [error, setError] = useState("");
+  const [added, setAdded] = useState("");
   const chosen = spaceId ?? props.spaces[0]?.id ?? null;
   const parsed = parseQuickAdd(text, today);
   const fromWords = !asTyped && parsed.understood.length > 0;
@@ -550,8 +551,11 @@ function QuickAdd(props: {
       timesPerWeek: schedule.timesPerWeek,
     });
     if (problem) return setError(problem);
+    // The box stays open for the next one, like Todoist. Close it when you're done.
     reset();
-    props.onClose();
+    setAdded(
+      `Added to ${props.spaces.find((s) => s.id === chosen)?.name ?? "your space"}. Add another, or close.`,
+    );
   };
   const space_ = props.spaces.find((s) => s.id === chosen);
   return (
@@ -559,6 +563,7 @@ function QuickAdd(props: {
       visible={props.visible}
       onClose={() => {
         setPanel(null);
+        setAdded("");
         props.onClose();
       }}
       title="Add"
@@ -574,8 +579,10 @@ function QuickAdd(props: {
             onChangeText={(t) => {
               setText(t);
               setError("");
+              setAdded("");
             }}
             onSubmitEditing={add}
+            submitBehavior="submit"
             placeholder="Dentist friday 3pm, or gym 4x a week"
             placeholderTextColor={colors.faint}
             accessibilityLabel="What to add"
@@ -677,6 +684,11 @@ function QuickAdd(props: {
             </Text>
           ) : null}
           <ErrorText>{error}</ErrorText>
+          {added ? (
+            <Text accessibilityLiveRegion="polite" style={{ fontSize: 13, color: colors.sub }}>
+              {added}
+            </Text>
+          ) : null}
           <Button label="Add" onPress={add} disabled={!title} />
         </>
       )}
