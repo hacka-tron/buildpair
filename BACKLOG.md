@@ -142,6 +142,7 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 ## Decisions (owner)
 
+- Reactions work like Teams: a floating bar of six quick reactions (👍 ❤️ 🔥 😂 🙌 👏) on hover or press and hold, pills hanging off the message's bottom edge that bounce in, and who reacted on hover. The always-visible "+ 🙂" button is gone (Claude's call, 2026-10-16).
 - The chat gets more playful in steps, following `docs/design/chat-study.md` (WeChat pat pat and emoji rain, QQ sparks, LINE stickers, Telegram big emoji). First step: your lines on the right in blue, runs from one person grouped under one avatar, new lines pop in (Claude's call, 2026-10-16).
 - To-dos follow the habits of the best to-do apps, as written up in `docs/design/todo-study.md`. A tick can always be taken back. A ticked item keeps its place for a moment. Every tick and delete shows Undo for five seconds, and deletes are sent only after that. Reopening takes back the chat line it posted. No priorities or flags for now (Claude's call, 2026-10-16).
 - Today holds only your own things. Late ones gather in Overdue with "Move to today". Spaces with nothing for today are left out. Undated things sit in a folded Anytime group. Adding from Today with no date means today (Claude's call, 2026-10-16).
