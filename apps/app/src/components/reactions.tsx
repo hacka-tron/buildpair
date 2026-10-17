@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Platform, Pressable, Text, View } from "react-native";
 import { colors } from "../lib/theme";
-import { Icon, type IconName } from "./kit";
+import { type HoverState, Icon, type IconName } from "./kit";
 
 /**
  * Reactions the way Teams does them: a small floating bar of quick reactions appears on a message's top
@@ -22,13 +22,14 @@ function MenuItem(props: { icon: IconName; label: string; danger?: boolean; onPr
     <Pressable
       onPress={props.onPress}
       accessibilityRole="menuitem"
-      style={({ hovered }: { hovered?: boolean }) => ({
+      style={(state) => ({
         flexDirection: "row",
         alignItems: "center",
         gap: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        backgroundColor: hovered ? colors.hover : "transparent",
+        // The web adds `hovered`; React Native's type doesn't list it.
+        backgroundColor: (state as HoverState).hovered ? colors.hover : "transparent",
       })}
     >
       <Icon name={props.icon} size={14} color={props.danger ? colors.danger : colors.sub} />
