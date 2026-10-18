@@ -142,6 +142,8 @@ Where the work stands, what's next, and what's still open. Update it whenever so
 
 ## Decisions (owner)
 
+- Upcoming is one agenda list (Overdue, then each of the next seven days with rows you can tick, then habits), not seven calendar columns. The owner found the columns confusing (2026-10-17).
+
 - No weekly review. The Today banner, the review screen and its ⌘K entry are gone, so nothing asks for weekly reflections now. Reflections already posted still show in their chats (2026-10-16).
 
 - Reaction emoji are drawn from Microsoft's Fluent Emoji (MIT, the 3D set Teams uses), bundled as six 96 px images in `apps/app/assets/emoji`, so they look the same on every device. Report sits behind a ⋯ More menu, and the bar shows only over the message itself (Claude's call, 2026-10-16).
