@@ -2,77 +2,49 @@
 
 Where the work stands, what's next, and what's still open. Update it whenever something finishes or comes up.
 
-## > RESUME HERE (as of 2026-10-16, end of day)
+## > RESUME HERE (as of 2026-10-17)
 
-**Today (2026-10-16), all merged and live on staging, each reviewed where it touched data or privacy:** private after creating, moving items between spaces, owner-approved join requests, rate limits, report/block/leave/remove, Supporting and Activity, one inbox socket per device, unread dots, nudges, weekly reflections, privacy and terms pages, ⌘K/Upcoming/weekly review, Discover with offers and "support each other", profiles/badges/compliments, room snapshots, dark mode, and keyboard shortcuts (PRs #28 to #49). Milestones 3 to 5 are built, except reminders and push.
+**Where it stands.** Everything is merged to `main` and live on staging (`app-staging.buildpair.app`, sign in `bagel` / `bagel`). Production has never been released. Milestones 1 to 6 are built except reminders and push. Older day-by-day notes are in git history (this file before 2026-10-17).
 
-**Done and pushed to `main`:** milestone 1 (foundations) and the landing page with sign-up. CI is green: lint, typecheck, 28 unit/integration tests, two browser tests (sign-up on desktop and mobile; two people chatting live), secret scan and CodeQL.
+**Done on 2026-10-16 and 17 (PRs #51 to #68):**
+- Polish: move refusals report back, busy retries hold later changes, read positions follow you across devices, half-finished joins repair themselves.
+- To-dos, following `docs/design/todo-study.md` (Things, Todoist, TickTick, Reminders):
+  - untick and Undo, delete with Undo, and a ticked item keeps its place for a moment
+  - a calmer Today (your own things, Overdue with "Move to today", Anytime folded)
+  - notes, quick add that stays open, and repeating to-dos (protocol 10)
+  - Upcoming as one agenda list
+- Chat, following `docs/design/chat-study.md` (WeChat, QQ, LINE, Telegram, Teams):
+  - your lines on the right, runs grouped, new lines pop in
+  - Teams-style reactions (a floating bar on the bubble, pills on its edge, who reacted on hover, Report behind ⋯) drawn with Fluent Emoji
+- The weekly review was removed at the owner's request.
 
-**Staging is live (2026-10-15):** `staging.buildpair.app` (landing), `app-staging.buildpair.app` (web app), `api-staging.buildpair.app` (API, `/health` OK). Every merge to `main` deploys there. Setup done: D1 databases, GitHub environments (production needs the owner's approval), variables, secrets including `RESEND_API_KEY`, Resend domain verified, `DEPLOY_ENABLED=true`. Production has not been released. Expo is not set up yet, so no phone updates are published.
-
-**Pick it up locally:** follow "Run it locally" in [README.md](README.md). A fresh clone was checked on 2026-10-14: install, local database, `pnpm check`, and all three servers (API on 8787, web app on 8081, landing page on 8788) start and work; codes print in the API's terminal.
-
-**App design pass (2026-10-15):** the app now follows the mockups' shell. Phones get a tab bar (Today, Spaces) and a floating +. Wide screens get the sidebar with your spaces. Today lists open items from every space, grouped by space, with a quick add sheet. Spaces shows tiles, summaries and faces. A space shows the chat with completion lines, stacked reactions (hover or press and hold to add), people with presence and an invite sheet. Checked in the browser at 390 and 1440 wide; not yet run on a real phone.
-
-**Items, part 1 (2026-10-15):** quick add makes to-dos (today, tomorrow, no date), habits (times a week) and goals (finish by). Tapping an item opens its sheet: mark done, skip a habit for today, won't do, post an update to the chat, and a goal's steps with "+ Add a step". Habits show as done once checked off today; due goal steps show on Today.
-
-**Sign-in uses passwords (2026-10-15):** email codes only go out to confirm a new account or reset a password. Shared test account `bagel` / `bagel` works on staging.
-
-**Items, part 2 (2026-10-15):** plain-words adding ("dentist friday 3pm", "gym 4x a week", "launch v1 by nov 21"; the schedule decides to-do, habit or goal, and the add box shows what it read with an undo). A date picker with quick picks, a month calendar, times and a Repeat tab. Editing an item's title and schedule. Items have an optional time. To-dos record the day they were finished and skips are recorded, so both old gaps are fixed. Today has a "Coming up" section (next two weeks, plus goals). Protocol version 2.
-
-**Selecting several (2026-10-15):** press and hold an item (or Select on wide screens) on Today or in a space, tick more, then Done, Skip today, Won't do or Reschedule them together. "+ Add to <space>" reads plain words too.
-
-**Space settings (2026-10-15):** owners rename a space, change what it's for, and pick its color (gear in the space header). The global spaces list (D1, new `color` column) follows the room. Protocol version 3.
-
-**Profile and templates (2026-10-15):** a Profile screen (your avatar on Today, or your name in the sidebar) with name, what you're building, time zone from the device, change password and sign out. Quick add offers goal templates (Launch v1, First 10 users, Raise a round, Train 4x a week).
-
-**Delete your account (2026-10-15, PR #26):** on the Profile screen, confirmed with your password. Spaces you own are deleted for everyone (their members see "This space is gone"). In spaces you joined, a `member.erased` event removes you and everything you made, and the room deletes your earlier events from its log. Your other signed-in devices are disconnected. Protocol version 4. Open: accounts with no password (Google only, not turned on yet) are told to set one with Forgot password first. Pending email codes for the address aren't deleted and expire on their own within 10 minutes. Narrow races if the person joins or makes a space while the delete runs; a retry finishes it.
-
-**Private after creating (2026-10-16):** an item's sheet has "Make private" and "Share with the space". A goal takes its steps with it. Going private removes the item, its chat lines and the reactions on them from other members' screens and saved copies. Sharing again brings them all back. Steps now only go under your own top-level goal. Protocol version 5. Checked in the browser at 1440 wide; two-person behavior is covered by tests.
-
-**Move to another space (2026-10-16):** "Move to another space" on an item's sheet. A goal takes its steps and their history. The old space's log forgets the item. Chat lines about a shared item stay in the old chat, and lines about a private one go. A move that stops partway finishes when tried again. Protocol version 6. Checked in the browser at 1440 wide.
-
-**Join requests (2026-10-16):** opening an invite link now asks to join. The owner sees "Invite · N waiting" (a badge on phones, a tag on the Spaces tab), and lets people in or declines them from the invite sheet. "Stop all old links" resets them. Until let in, the person sees nothing of the space. Checked in the browser at 1440 wide.
-
-**Rate limits (2026-10-16):** sign-in, sign-up and email codes allow 20 tries a minute per network address. Changes (commands over HTTPS or the socket, invites, moves, new spaces) allow 120 a minute per person. Over the limit, people see "Too many tries in a short time. Wait a minute, then try again." IPv6 callers count by their /64. Changes over the limit wait and are sent again, never dropped, and resending changes that already landed is free. Workers rate limiting counts per Cloudflare location, so the limits are approximate.
-
-**Report, block, leave and remove (2026-10-16):** tap a person in People (on phones, tap the people line under the space name) to report, block or, as the owner, remove them. Press and hold a message (or hover on the web) for Report. Blocking hides that person's messages and reactions from you everywhere, and quietly drops their requests to join your spaces. Supporters can leave a space. People who leave or are removed keep their messages in the chat. Their items stay where they were, with private ones still hidden. Reports are stored with a copy of the message, and emailed to `MODERATION_EMAIL` once it's set. Each person can send 20 reports a day, and a repeat of the same report isn't emailed again. Protocol version 7.
-
-**Supporting and Activity (2026-10-16):** a Supporting tab (phones) and sidebar entry lists spaces others share with you, newest first. Above them, "Check in on" lists owners who haven't posted, ticked or skipped anything for 7 days while something shared is open. The Spaces tab now shows only your own spaces. Activity (the bell on Today, or the sidebar) shows people asking to join your spaces and reactions to what you said in the last two weeks. All of it is worked out on the device from spaces you can already see. Checked in the browser at 1440 wide.
-
-**One connection per device (2026-10-16):** each device keeps one inbox socket to its UserHub. Spaces that aren't on screen (Today, Spaces, Supporting, Activity) no longer hold a socket each. When the inbox says a space has news, the device fetches it over HTTPS, and changes made from Today go over HTTPS in order. Only the space you have open keeps a live socket, for presence and typing. Checked in the browser: a message posted elsewhere showed up on Supporting within a second, with only the inbox socket open.
-
-**Unread dots (2026-10-16):** a blue dot on the Spaces and Supporting rows and in the sidebar when someone else has posted since you last had the space open. Read positions live on each device (localStorage on the web, SQLite on phones), so reading on one device doesn't clear another. A space this device has never opened starts as read. Checked in the browser, including after a reload.
-
-**Nudges (2026-10-16):** in a space whose owner has been quiet for a week, supporters see "Alex has been quiet for 9 days. Send a nudge?" above the message box, with three suggestions built from the owner's last skip reason and what they're working on. Tapping one fills the box to edit. The strip can be hidden. Checked in the browser.
-
-**Weekly reflections (2026-10-16):** from Friday to Monday, Today asks owners "How did this week go?" for each space where they have something shared and open, unless they reflected there in the last six days. Three short prompts (went well, got in the way, next week's focus) post a reflection card to the chat for supporters to react and reply. "Not now" hides it until the app reloads. Protocol version 8 (new message kind). Checked in the browser.
-
-**Milestone 4 (people) is done.**
-
-**Privacy and terms (2026-10-16):** the privacy page now says what's really kept, including reports, blocks, network addresses for rate limits, and what stays on the device. It no longer claims analytics we don't have. A new plain-words terms page (`/terms`) covers age 16+, owning your content, conduct rules, reports reviewed within a day, no warranty, and changes. The app links both from the sign-in screen and the profile.
-
-**Desktop extras (2026-10-16):** ⌘K (Ctrl K) opens a command palette on wide screens. It searches pages, spaces and open items, and offers New space, Add something and Weekly review, all from the keyboard. Upcoming (sidebar, or the calendar icon on phones) shows your dated things for the next seven days, with late ones on today and habits in their own lane. Weekly review walks through every due space in one sitting, with this week's done and skipped counts. On Today a single "Your weekly review is ready" banner replaces the per-space cards. Opening an item from Upcoming or ⌘K opens its sheet in its space. Checked in the browser at 1440 wide.
-
-**Discover, first version (2026-10-16):** owners can turn on "Show on Discover" in a space's settings. Strangers then see its name, what it's for, the owner's first name, up to five shared open goals and habits, and how many people are in it. Never private items or the chat. The Discover tab (phones) and sidebar entry list these, newest first, with search. Your own spaces, spaces you're in, and anyone blocked either way are left out. "Offer support" sends a join request with an optional note, which the owner sees in the invite sheet and approves or declines. Offers and requests expire after a week, and each person can send 10 offers a day. A space on Discover shows an "On Discover" tag on the Spaces tab. Checked in the browser.
-
-**Profiles, badges and compliments (2026-10-16):** tapping someone in a space shows what they're building, a stats line (supporting, supported by, goals finished) and earned badges (Finisher at 5 goals, Reliable supporter after four weeks supporting someone). It also has compliment chips (Honest takes, Keeps me going, Friendly, Great advice, Always checks in) you can give or take back. Your own profile shows the same, with the compliments you've received. Only people who share a space with you can see your profile. Finished goals are counted by the spaces as they happen. Checked in the browser.
-
-**Support each other (2026-10-16):** when offering support from Discover, you can suggest one of your own spaces. The owner sees "Suggests supporting each other: <space>" in their requests, and can choose "Let in and support <space> back", which also adds them as a supporter of your space. A plain "Let in" doesn't. Checked in the browser.
-
-**Room snapshots (2026-10-16):** each space saves its state every 500 events (room schema 3), and waking up loads the snapshot and replays only what came after. A snapshot made under another protocol version is ignored. Erasing someone or moving an item out drops the snapshot, and spaces too big to snapshot (over about 1.5 MB) keep replaying. Tests snapshot every 3 events, so every server test runs with snapshots on, and a test checks that waking from a snapshot equals a full replay.
-
-**Dark mode (2026-10-16):** the app follows the device's light or dark setting, and redraws when it changes. On the web, `?theme=dark` or `?theme=light` forces one, which is handy for checking. Every surface color is now a theme token (card, hover, control, dangerBg, bar). Checked Today, a space and an item sheet in both themes, at phone width.
-
-**Keyboard shortcuts (2026-10-16):** on the web, Q on Today opens quick add. With items selected, D (done), S (skip today), W (won't do) and R (reschedule) act on them, and Esc stops selecting. The bar shows the keys on wide screens. Shortcuts never fire while typing in a field or with ⌘, Ctrl or Alt held.
+**How the owner wants work done now.** One feature at a time: build it, check it in the browser (desktop and phone width), merge it, then start the next. The owner tries things on staging and in the local browser and sends short feedback; act on it first.
 
 **Next, in order:**
-1. **Done (2026-10-16):** the owner signed in on staging and the web app works for them.
-2. **Owner: try it on a phone.** Make a development build (`npx eas-cli@latest build --profile development` in `apps/app`) and point `EXPO_PUBLIC_API_URL` at your laptop's local network address. The phone apps haven't been run on a real device yet.
-3. **Build: the polish list** from the known gaps below (move refusals reported, busy retries paused, read positions shared across devices), or anything the owner asks for. The big remaining features (reminders and push, Jira, Sign in with Apple, analytics) each need something only the owner can set up first. Milestone 7 (Jira) needs a Jira app registration from the owner first.
-4. **Done (2026-10-16):** the owner read the privacy and terms drafts and is fine with them as they are (age 16+).
-5. **Owner: turn on Cloudflare Email Routing** for `buildpair.app`, add a personal inbox as the destination (confirm its email), and route `hello@` and `reports@` to it. Add the `_dmarc` TXT record (`v=DMARC1; p=none`) at the same time. Then I set `MODERATION_EMAIL=reports@buildpair.app` on staging and production, check SPF still includes Resend, and send a test report.
-6. **Build: reminders and push.** Waits on the phone build (step 2) and an Expo account. Reminders run on UserHub alarms.
+1. **Chat step 3, typing indicator.** Bouncing dots with "Dana is typing". The sync layer currently drops typing notices (`case "typing": return` in `packages/sync/src/space-sync.ts`). An unmerged draft branch, `chat-alive`, has a working version of this and of steps 4 and 5 (`chat-fx.tsx`, sync `typing` in the snapshot with a test). Port one piece at a time onto a fresh branch from `main`; don't merge that branch as it is.
+2. **Chat step 4, big emoji and double-tap ❤️.** Emoji-only lines show large. Double-tapping a line reacts ❤️ with a burst over the bubble (the draft's burst needed centering on the bubble).
+3. **Chat step 5, celebrations.** Finished items as bright cards with a 🙌 High five button. Confetti when a goal is finished. Emoji rain on "congrats", "happy birthday", "shipped", "let's go" and similar words. Respect Reduce Motion.
+4. **Chat step 6, nudges (WeChat pat pat).** Double-tap an avatar to nudge, with a per-space ending. Needs a new message kind and a protocol bump, so it gets an independent review.
+5. **Chat step 7, cheer stickers.** A built-in pack of big cards. Also a new message kind, so review.
+6. **Chat step 8, the spark.** A 🔥 day count when the owner and a supporter both show up three or more days running. Computed on the device.
+7. **Swipes on phones** for to-dos (swipe right to finish, left to reschedule or delete). Step 6 of the to-do study.
+8. **Dependabot PRs #64 to #67** are open. Check each (the Expo group has 21 updates, so test the web build and the browser). Merge the safe ones.
+9. Then the known gaps below, or anything the owner asks for.
+
+**Owner steps still waiting:**
+- **Mail.** Turn on Cloudflare Email Routing for `buildpair.app`, add a personal inbox as the destination, route `hello@` and `reports@` to it, and add `_dmarc` (`v=DMARC1; p=none`). Then set `MODERATION_EMAIL=reports@buildpair.app` on staging and production and send a test report.
+- **Phone.** A development build on a real phone. It's needed before reminders and push, along with an Expo account.
+- **Integrations** (Jira, Sign in with Apple, analytics) wait, by the owner's choice.
+
+**Working notes for the next session:**
+- Local servers: `pnpm --filter @buildpair/edge dev` and `pnpm --filter @buildpair/app web`. Switching git branches while the web dev server runs reloads old code, so reload the page after switching.
+- Local end-to-end test, the way CI runs it:
+  1. Start the API with `wrangler dev --port 8787 --var EMAIL_PROVIDER:test --var ENVIRONMENT:test`.
+  2. Build the web app with `EXPO_PUBLIC_API_URL=http://localhost:8787 pnpm build:web`, then serve it with `wrangler dev --port 8081` in `apps/app`.
+  3. Run a temporary copy of `e2e/two-people-chat.mjs` with `chromium.launch({ channel: "chrome" })`, then delete the copy.
+  4. Run this before merging anything that changes hover, sheets or reactions, because CI's headless browser is stricter.
+- `pnpm check` can reuse cached results. When a type change looks suspicious, run `pnpm turbo run typecheck --force`.
+- Merge only when every CI check passes (`if gh pr checks N | grep -v pass | grep -q .; then ...`).
 
 ## What exists now
 
