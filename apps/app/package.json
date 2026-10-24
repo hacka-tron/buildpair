@@ -13,12 +13,12 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@better-auth/expo": "1.7.7",
+    "@better-auth/expo": "1.7.12",
     "@buildpair/domain": "workspace:*",
     "@buildpair/protocol": "workspace:*",
     "@buildpair/sync": "workspace:*",
     "@expo/vector-icons": "^15.1.1",
-    "better-auth": "1.7.7",
+    "better-auth": "1.7.12",
     "expo": "~57.0.27",
     "expo-constants": "~57.0.21",
     "expo-device": "~57.0.2",
@@ -45,8 +45,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3",
-    "vitest": "4.1.11",
+    "typescript": "~7.0.2",
+    "vitest": "5.0.5",
     "wrangler": "4.149.0"
   }
 }
