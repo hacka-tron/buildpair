@@ -17,6 +17,6 @@
     "ulidx": "2.4.1"
   },
   "devDependencies": {
-    "vitest": "4.1.11"
+    "vitest": "5.0.5"
   }
 }

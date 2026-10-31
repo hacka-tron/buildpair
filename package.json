@@ -14,8 +14,8 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
-    "turbo": "2.11.7",
-    "typescript": "6.0.3"
+    "@biomejs/biome": "2.6.3",
+    "turbo": "2.11.10",
+    "typescript": "7.0.2"
   }
 }
